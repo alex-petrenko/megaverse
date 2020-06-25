@@ -1,0 +1,2 @@
+add_subdirectory(textured_triangle)
+add_subdirectory(picking_objects)

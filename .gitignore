@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+# IDE
+.idea/**
+
+# CMake build
+cmake-build*
+
+# Libs (TODO: use submodules!)
+corrade/**
+magnum/**
+src/3rdparty/googletest-1.10.0/**
+
+
