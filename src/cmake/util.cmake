@@ -28,13 +28,12 @@ macro(set_compiler_flags)
 endmacro()
 
 macro(find_modules)
-# TODO: organize this!
 #  list(APPEND CMAKE_MODULE_PATH "${CURRENT_DIR}/modules/")
 #  message(STATUS "${CURRENT_DIR}/modules/")
 #  message(STATUS "${CMAKE_MODULE_PATH}")
 #
-#  find_package(OpenCV REQUIRED)
-#  include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
+  find_package(OpenCV REQUIRED)
+  include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
 #
 #  find_package(GLFW3 3.2 REQUIRED)
 #

@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -198,8 +196,8 @@ void PrimitivesExample::drawEvent() {
 //
 //        _shader.setLightPosition({7.0f, 5.0f, 2.5f})
 //                .setLightColor(Color3{1.0f})
-//                .setDiffuseColor(_color)
-//                .setAmbientColor(Color3::fromHsv({_color.hue(), 1.0f, 0.3f}))
+//                .setDiffuseColor(colorBuffer)
+//                .setAmbientColor(Color3::fromHsv({colorBuffer.hue(), 1.0f, 0.3f}))
 //                .setTransformationMatrix(transformation)
 //                .setNormalMatrix(transformation.normalMatrix())
 //                .setProjectionMatrix(_projection)
@@ -208,7 +206,7 @@ void PrimitivesExample::drawEvent() {
 
 
     /* Draw to custom framebuffer */
-//    _framebuffer
+//    framebuffer
 //            .clearColor(0, Color3{0.125f})
 //            .clearColor(1, Vector4ui{})
 //            .clearDepth(1.0f)

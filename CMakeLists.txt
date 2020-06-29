@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(sapphire)
+project(sapphire-rl)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/modules/" ${CMAKE_MODULE_PATH})
 
