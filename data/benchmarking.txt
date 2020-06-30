@@ -1,0 +1,43 @@
+July 29th, 2020
+
+parallel -N0 './test_performance' ::: {1..20}
+30x30 grid of cubes instanced, 128x72
+11800 polygons
+
+1 core: 7596 FPS
+2 cores: 5815 * 2 = 11630 FPS
+4 cores: 3852 * 4 = 15408 FPS
+8 cores: 1950 * 8 = 15600 FPS
+10 cores: 1546 * 10 = 15460 FPS
+20 cores: 764 * 20 = 15280 FPS
+
+10x10 grid of cubes instanced, 128x72
+1200 polygons
+1 core: 36000 FPS
+2 cores: 9253 * 2 = 18506 FPS
+3 cores: 6211 * 3 = 18633 FPS
+4 cores: 4619 * 4 = 18476 FPS
+10 cores: 1796 * 10 = 17960 FPS
+
+
+parallel -N0 './test_performance --magnum-device 2 --magnum-log verbose' ::: {1..10}
+30x30 grid of cubes instanced, 128x72
+11800 polygons
+software rendering
+
+1 core: 440 FPS
+2 cores: 481 * 2 = 962 FPS
+4 cores: 468 * 4 = 1872 FPS
+8 cores: 429 * 8 = 3432 FPS
+10 cores: 411 * 10 = 4110 FPS
+20 cores: 286 * 20 = 5720 FPS
+
+10x10 grid of cubes instanced, 128x72
+1200 polygons
+software rendering
+
+1 core: 2464 FPS
+2 cores: 2047 * 2 = 4094 FPS
+4 cores: 2087 * 4 = 8348 FPS
+10 cores: 1706 * 10 = 17060 FPS
+20 cores: 1248 * 20 = 24960 FPS

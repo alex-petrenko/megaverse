@@ -207,8 +207,8 @@ WindowlessTestApp::WindowlessTestApp(const Arguments& arguments)
 //        _translations.push_back(translation);
 //    }
 
-    for (int x = 0; x < 30; ++x) {
-        for (int z = 0; z < 30; ++z) {
+    for (int x = 0; x < 10; ++x) {
+        for (int z = 0; z < 10; ++z) {
 //            auto transformation = Matrix4::scaling(Vector3{0.45f}) * Matrix4::translation({float(-x), 0, float(-z)});
             auto transformation = Matrix4::scaling(Vector3{1.0f});
 
@@ -342,7 +342,7 @@ int WindowlessTestApp::exec()
     TLOG(DEBUG) << "OpenGL version:" << GL::Context::current().versionString();
     TLOG(DEBUG) << "OpenGL renderer:" << GL::Context::current().rendererString();
 
-    constexpr auto nFrames = 5000;
+    constexpr auto nFrames = 10000;
     tprof().startTimer("loop");
     for (int i = 0; i < nFrames; ++i) {
         tick();
@@ -350,7 +350,7 @@ int WindowlessTestApp::exec()
     }
     const auto usecPassed = tprof().stopTimer("loop");
 
-    TLOG(DEBUG) << "FPS: " << nFrames / (usecPassed / 1e6);
+    TLOG(DEBUG) << "FPS: " << nFrames / (usecPassed / 1e6) << " for " << nFrames << " frames";
 
     return EXIT_SUCCESS;
 }

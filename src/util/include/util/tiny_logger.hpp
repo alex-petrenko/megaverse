@@ -57,6 +57,9 @@ inline NullStream & operator<<(NullStream &stream, T &&)
 
 #define TLOG_IF(level, cond) !(cond) ? NullStream()() : TLOG(level)
 
+// die if condition is not true
+#define TCHECK(cond) TLOG_IF(FATAL, !(cond))
+
 
 // various helper functions
 
