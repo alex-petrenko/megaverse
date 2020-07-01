@@ -37,8 +37,9 @@
 #include <util/tiny_profiler.hpp>
 
 
-#define VIZ 0
-
+constexpr bool viz = false;
+constexpr bool hires = false;
+constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
@@ -54,44 +55,18 @@ struct InstanceData {
     Color3 color;
 };
 
-class VoxelCube : public Object3D, SceneGraph::Drawable3D
-{
-public:
-    explicit VoxelCube(UnsignedInt id, Shaders::Phong& shader, const Color3& color, GL::Mesh& mesh, Object3D& parent, SceneGraph::DrawableGroup3D& drawables):
-            Object3D{&parent}, SceneGraph::Drawable3D{*this, &drawables}, _id{id}, _shader(shader), _color{color}, _mesh(mesh)
-    {}
 
-private:
-    virtual void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override {
-        _shader.setTransformationMatrix(transformationMatrix)
-                .setNormalMatrix(transformationMatrix.normalMatrix())
-                .setProjectionMatrix(camera.projectionMatrix())
-                .setDiffuseColor(_color*1.0f)
-                        /* relative to the camera */
-                .setLightPosition({0.0f, 5.0f, 5.0f})
-                .setObjectId(_id)
-                .draw(_mesh);
-    }
-
-    UnsignedInt _id;
-    Shaders::Phong& _shader;
-    Color3 _color;
-    GL::Mesh& _mesh;
-};
-
-
-class ColoredDrawable: public Object3D, SceneGraph::Drawable3D
+class ColoredDrawable: public SceneGraph::Drawable3D
 {
 public:
     explicit ColoredDrawable(
-            Object3D& parent,
+            Object3D &parentObject,
             Containers::Array<InstanceData> &instanceData,
             const Color3 &color,
             const Matrix4 &primitiveTransformation,
             SceneGraph::DrawableGroup3D& drawables
     )
-    : Object3D{&parent}
-    , SceneGraph::Drawable3D{*this, &drawables}
+    : SceneGraph::Drawable3D{parentObject, &drawables}
     , _instanceData(instanceData)
     , _color{color}
     , _primitiveTransformation{primitiveTransformation}
@@ -124,12 +99,13 @@ private:
     SceneGraph::Camera3D* _camera;
     SceneGraph::DrawableGroup3D _drawables;
 
-    std::vector<std::unique_ptr<VoxelCube>> voxels;
+    std::vector<std::unique_ptr<Object3D>> voxelObjects;
     std::vector<std::unique_ptr<ColoredDrawable>> instancedVoxels;
 
     Shaders::Phong _shader{NoCreate};
 
-    Vector2i framebufferSize{128, 72};
+    Vector2i framebufferSize{W, H};
+
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
@@ -212,10 +188,13 @@ WindowlessTestApp::WindowlessTestApp(const Arguments& arguments)
 //            auto transformation = Matrix4::scaling(Vector3{0.45f}) * Matrix4::translation({float(-x), 0, float(-z)});
             auto transformation = Matrix4::scaling(Vector3{1.0f});
 
-            auto voxelPtr = new ColoredDrawable{_scene, voxelInstanceData, 0xa5c9ea_rgbf, transformation, _drawables};
-            std::unique_ptr<ColoredDrawable> voxel{voxelPtr};
-            voxel->scale(Vector3(0.20f)).translate({float(-x), 0, float(-z)});
+            auto voxelObject = std::make_unique<Object3D>(&_scene);
+            voxelObject->scale(Vector3(0.20f)).translate({float(-x), 0, float(-z)});
 
+            auto voxel = std::make_unique<ColoredDrawable>(*voxelObject, voxelInstanceData, 0xa5c9ea_rgbf, transformation, _drawables);
+//            voxel->scale(Vector3(0.20f)).translate({float(-x), 0, float(-z)});
+
+            voxelObjects.push_back(std::move(voxelObject));
             instancedVoxels.push_back(std::move(voxel));
 
 //            std::unique_ptr<VoxelCube> voxel{new VoxelCube{uint(100 * x + z), _shader, 0xa5c9ea_rgbf, _cube, _scene, _drawables}};
@@ -305,13 +284,13 @@ void WindowlessTestApp::render()
 
     framebuffer.mapForRead(GL::Framebuffer::ColorAttachment{0}).read(framebuffer.viewport(), rgbaImageView);
 
-#if VIZ
-    cv::Mat mat(framebufferSize.y(), framebufferSize.x(), CV_8UC4, rgbaImageView.data());
-    cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-    cv::flip(mat, mat, 0);
-    cv::imshow("window", mat);
-    cv::waitKey(10);
-#endif
+    if constexpr (viz) {
+        cv::Mat mat(framebufferSize.y(), framebufferSize.x(), CV_8UC4, rgbaImageView.data());
+        cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
+        cv::flip(mat, mat, 0);
+        cv::imshow("window", mat);
+        cv::waitKey(10);
+    }
 
 //    /* Bind the main buffer back */
 //    GL::defaultFramebuffer.clear(GL::FramebufferClear::Color|GL::FramebufferClear::Depth).bind();
@@ -326,11 +305,16 @@ void WindowlessTestApp::render()
 
 void WindowlessTestApp::tick()
 {
-    _cameraObject->translate(Vector3{direction * 0.2f, 0, 0});
+    for (auto &v : voxelObjects) {
+        auto transformation = Matrix4::rotationY(2.0_degf);
+        v->transformLocal(transformation);
+    }
+
+    _cameraObject->translate(Vector3{direction * 0.02f, 0, 0});
 //    TLOG(DEBUG) << "tick " << _cameraObject->transformation().translation().x();
 
     const auto xCoord = _cameraObject->transformation().translation().x();
-    if (fabs(double(xCoord)) > 12)
+    if (fabs(double(xCoord)) > 10)
         direction *= -1;
 }
 
