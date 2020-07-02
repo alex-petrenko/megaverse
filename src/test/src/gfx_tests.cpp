@@ -11,12 +11,3 @@ TEST(gfx, context)
 
     EXPECT_EQ(device, context.gpuDevice());
 }
-
-TEST(gfx, contextCpu)
-{
-    // this will only work if the GPU is present
-    constexpr int device = std::numeric_limits<int>::max();
-    WindowlessContext context{device};
-
-    EXPECT_EQ(device, context.gpuDevice());
-}

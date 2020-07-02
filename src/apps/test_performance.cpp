@@ -8,8 +8,6 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
-#include <Magnum/MeshTools/Interleave.h>
-#include <Magnum/MeshTools/CompressIndices.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Trade/MeshData.h>
@@ -22,7 +20,6 @@
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/Version.h>
 #include <Magnum/GL/Framebuffer.h>
-#include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/Context.h>
@@ -37,8 +34,8 @@
 #include <util/tiny_profiler.hpp>
 
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool viz = true;
+constexpr bool hires = true;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
 
 using namespace Magnum;
@@ -183,8 +180,8 @@ WindowlessTestApp::WindowlessTestApp(const Arguments& arguments)
 //        _translations.push_back(translation);
 //    }
 
-    for (int x = 0; x < 10; ++x) {
-        for (int z = 0; z < 10; ++z) {
+    for (int x = 0; x < 30; ++x) {
+        for (int z = 0; z < 30; ++z) {
 //            auto transformation = Matrix4::scaling(Vector3{0.45f}) * Matrix4::translation({float(-x), 0, float(-z)});
             auto transformation = Matrix4::scaling(Vector3{1.0f});
 
@@ -197,7 +194,7 @@ WindowlessTestApp::WindowlessTestApp(const Arguments& arguments)
             voxelObjects.push_back(std::move(voxelObject));
             instancedVoxels.push_back(std::move(voxel));
 
-//            std::unique_ptr<VoxelCube> voxel{new VoxelCube{uint(100 * x + z), _shader, 0xa5c9ea_rgbf, _cube, _scene, _drawables}};
+//            std::unique_ptr<VoxelCube> voxel{new VoxelCube{uint(100 * x + z), _shader, 0xa5c9ea_rgbf, cubeMesh, _scene, drawables}};
 
 //            voxels.push_back(std::move(voxel));
         }
@@ -264,7 +261,7 @@ void WindowlessTestApp::render()
 
     /* Draw to custom framebuffer */
     framebuffer.clearColor(0, Color3{0.125f}).clearDepth(1.0).bind();
-//    _camera->draw(_drawables);
+//    _camera->draw(drawables);
 
     arrayResize(voxelInstanceData, 0);
     _camera->draw(_drawables);

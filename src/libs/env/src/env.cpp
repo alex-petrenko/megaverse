@@ -8,5 +8,10 @@ Env::Env()
     TLOG(INFO) << "Creating an environment";
 
     layoutGenerator.generateFloorWalls(grid);
-    auto drawables = layoutGenerator.extractPrimitives(grid);
+    layoutDrawables = layoutGenerator.extractPrimitives(grid);
+}
+
+const std::vector<BoundingBox> & Env::getLayoutDrawables()
+{
+    return layoutDrawables;
 }
