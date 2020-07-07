@@ -12,6 +12,7 @@
 #include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Primitives/Axis.h>
+#include <Magnum/Primitives/Plane.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/MeshData.h>
@@ -131,6 +132,7 @@ private:
 
 private:
     Env env;
+
     const std::vector<BoundingBox> &layoutDrawables = env.getLayoutDrawables();
 
     std::vector<std::unique_ptr<Object3D>> layoutObjects;
@@ -138,6 +140,9 @@ private:
 
     std::unique_ptr<Object3D> axisObject;
     std::unique_ptr<FlatDrawable> axisDrawable;
+
+    std::unique_ptr<Object3D> exitPadObject;
+    std::unique_ptr<SimpleDrawable3D> exitPadDrawable;
 
     GL::Buffer voxelInstanceBuffer{NoCreate};
     Containers::Array<InstanceData> voxelInstanceData;
@@ -147,13 +152,14 @@ private:
     SceneGraph::Camera3D* camera;
     SceneGraph::DrawableGroup3D drawables;
 
-    Shaders::Phong shader{Shaders::Phong::Flag::ObjectId};
+    Shaders::Phong shader{NoCreate};
+    Shaders::Phong shaderInstanced{NoCreate};
     Shaders::Flat3D flatShader{NoCreate};
 
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh cubeMesh, axis;
+    GL::Mesh cubeMesh, axis, exitPadMesh;
 
     int direction = -1;
 };
@@ -176,8 +182,11 @@ Viewer::Viewer(const Arguments& arguments):
 
     CORRADE_INTERNAL_ASSERT(framebuffer.checkStatus(GL::FramebufferTarget::Draw) == GL::Framebuffer::Status::Complete);
 
-    shader = Shaders::Phong{Shaders::Phong::Flag::VertexColor|Shaders::Phong::Flag::InstancedTransformation};
+    shader = Shaders::Phong{Shaders::Phong::Flag::VertexColor};
     shader.setAmbientColor(0x111111_rgbf).setSpecularColor(0x330000_rgbf).setLightPosition({10.0f, 15.0f, 5.0f});
+
+    shaderInstanced = Shaders::Phong{Shaders::Phong::Flag::VertexColor|Shaders::Phong::Flag::InstancedTransformation};
+    shaderInstanced.setAmbientColor(0x111111_rgbf).setSpecularColor(0x330000_rgbf).setLightPosition({10.0f, 15.0f, 5.0f});
 
     flatShader = Shaders::Flat3D {};
     flatShader.setColor(0xffffff_rgbf);
@@ -187,6 +196,14 @@ Viewer::Viewer(const Arguments& arguments):
     axisObject = std::make_unique<Object3D>(&_scene);
     axisObject->scale(Vector3{3, 3, 3});
     axisDrawable = std::make_unique<FlatDrawable>(*axisObject, drawables, flatShader, axis);
+
+    exitPadMesh = MeshTools::compile(Primitives::planeSolid());
+    exitPadObject = std::make_unique<Object3D>(&_scene);
+    const auto exitPadCoords = env.getExitPadCoords();
+    const Vector3 exitPadPos(exitPadCoords.min.x(), exitPadCoords.min.y(), exitPadCoords.min.z());
+    exitPadObject->rotateX(-90.0_degf).scale({0.5, 0.5, 0.5}).translate({0.5, 0.05, 0.5});
+    exitPadObject->translate(exitPadPos);
+    exitPadDrawable = std::make_unique<SimpleDrawable3D>(*exitPadObject, drawables, shader, exitPadMesh);
 
     cubeMesh = MeshTools::compile(Primitives::cubeSolid());
     voxelInstanceBuffer = GL::Buffer{};
@@ -227,8 +244,8 @@ Viewer::Viewer(const Arguments& arguments):
     /* Configure camera */
     cameraObject = new Object3D{&_scene};
     cameraObject->rotateX(0.0_degf);
-    cameraObject->rotateY(0.0_degf);
-    cameraObject->translate(Vector3{17, 4, 22});
+    cameraObject->rotateY(250.0_degf);
+    cameraObject->translate(Vector3{1.5, 3, 1.5});
     camera = new SceneGraph::Camera3D{*cameraObject};
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
         .setProjectionMatrix(Matrix4::perspectiveProjection(60.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
@@ -258,14 +275,14 @@ void Viewer::drawEvent() {
     arrayResize(voxelInstanceData, 0);
     camera->draw(drawables);
 
-    shader.setProjectionMatrix(camera->projectionMatrix());
+    shaderInstanced.setProjectionMatrix(camera->projectionMatrix());
 
     /* Upload instance data to the GPU (orphaning the previous buffer
        contents) and draw all cubes in one call, and all spheres (if any)
        in another call */
     voxelInstanceBuffer.setData(voxelInstanceData, GL::BufferUsage::DynamicDraw);
     cubeMesh.setInstanceCount(voxelInstanceData.size());
-    shader.draw(cubeMesh);
+    shaderInstanced.draw(cubeMesh);
 
     /* Bind the main buffer back */
     GL::defaultFramebuffer.clear(GL::FramebufferClear::Color|GL::FramebufferClear::Depth).bind();

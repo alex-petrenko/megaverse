@@ -9,6 +9,8 @@ Env::Env()
 
     layoutGenerator.generateFloorWalls(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
+
+    exitPad = layoutGenerator.levelExit(numAgents);
 }
 
 const std::vector<BoundingBox> & Env::getLayoutDrawables()

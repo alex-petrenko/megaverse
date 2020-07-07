@@ -5,6 +5,9 @@
 
 #include <env/layout_generator.hpp>
 
+#include <util/util.hpp>
+#include <util/magnum.hpp>
+
 
 Magnum::Vector3i directions[] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
@@ -123,4 +126,21 @@ std::vector<BoundingBox> LayoutGenerator::extractPrimitives(VoxelGrid<VoxelState
     }
 
     return parallelepipeds;
+}
+
+BoundingBox LayoutGenerator::levelExit(int numAgents)
+{
+    // make sure exit pad will fit
+    assert(width - 2 >= numAgents);
+
+    // TODO!
+    srand(time(nullptr));
+
+    const int xCoord = randRange(1, length - 1);
+    const int zCoord = randRange(1, width - numAgents);
+
+    const VoxelCoords minCoord{xCoord, 1, zCoord}, maxCoord{xCoord + 1, 1, zCoord + numAgents};
+
+    TLOG(INFO) << minCoord << " " << maxCoord;
+    return {minCoord, maxCoord};
 }

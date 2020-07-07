@@ -27,7 +27,9 @@ public:
 
     std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid);
 
+    BoundingBox levelExit(int numAgents);
+
 private:
     // length = x, height = y, width = z
-    static constexpr int length = 20, height = 4, width = 14;
+    static constexpr int length = 5, height = 4, width = 4;
 };

@@ -11,7 +11,6 @@
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
-#include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/SceneGraph/Scene.h>
@@ -22,15 +21,13 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/Context.h>
 
+#include <util/magnum.hpp>
 #include <util/tiny_logger.hpp>
 
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
-
-typedef SceneGraph::Object<SceneGraph::MatrixTransformation3D> Object3D;
-typedef SceneGraph::Scene<SceneGraph::MatrixTransformation3D> Scene3D;
 
 class VoxelCube : public Object3D, SceneGraph::Drawable3D {
 public:
