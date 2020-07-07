@@ -28,5 +28,6 @@ public:
     std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid);
 
 private:
-    static constexpr int width = 10, length = 8, height = 3;
+    // length = x, height = y, width = z
+    static constexpr int length = 20, height = 4, width = 14;
 };

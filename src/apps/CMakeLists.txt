@@ -17,5 +17,8 @@ target_link_libraries(test_performance PRIVATE util ${MAGNUM_DEPENDENCIES} Magnu
 add_app_default(viewer viewer.cpp)
 target_link_libraries(viewer PRIVATE util env ${MAGNUM_DEPENDENCIES} Magnum::Application)
 
+add_app_default(wireframe wireframe.cpp)
+target_link_libraries(wireframe PRIVATE util env ${MAGNUM_DEPENDENCIES} Magnum::Application)
+
 # Make the executable a default target to build & run in Visual Studio
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT viewer)

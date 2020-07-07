@@ -11,7 +11,9 @@
 #include <Magnum/MeshTools/CompressIndices.h>
 #include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Primitives/Cube.h>
+#include <Magnum/Primitives/Axis.h>
 #include <Magnum/Shaders/Phong.h>
+#include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
@@ -70,6 +72,49 @@ private:
 };
 
 
+class SimpleDrawable3D : public SceneGraph::Drawable3D
+{
+public:
+    explicit SimpleDrawable3D(Object3D &parentObject, SceneGraph::DrawableGroup3D &drawables,
+        Shaders::Phong & shader, GL::Mesh& mesh)
+        : SceneGraph::Drawable3D{parentObject, &drawables}
+        , _shader(shader), _mesh(mesh)
+    {}
+
+    void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override {
+        _shader.setTransformationMatrix(transformationMatrix)
+            .setNormalMatrix(transformationMatrix.normalMatrix())
+            .setProjectionMatrix(camera.projectionMatrix())
+            .draw(_mesh);
+    }
+
+private:
+    Shaders::Phong& _shader;
+    GL::Mesh& _mesh;
+};
+
+
+class FlatDrawable : public SceneGraph::Drawable3D
+{
+public:
+    explicit FlatDrawable(Object3D &parentObject, SceneGraph::DrawableGroup3D &drawables,
+                          Shaders::Flat3D & shader, GL::Mesh& mesh)
+        : SceneGraph::Drawable3D{parentObject, &drawables}
+        , _shader(shader), _mesh(mesh)
+    {}
+
+    void draw(const Matrix4& transformation, SceneGraph::Camera3D& camera) override
+    {
+        _shader.setTransformationProjectionMatrix(camera.projectionMatrix() * transformation).draw(_mesh);
+    }
+
+private:
+    Shaders::Flat3D& _shader;
+    GL::Mesh& _mesh;
+};
+
+
+
 class Viewer: public Platform::Application
 {
 public:
@@ -82,12 +127,17 @@ private:
 
     void mouseScrollEvent(MouseScrollEvent& event) override;
 
+    void keyPressEvent(KeyEvent &event) override;
+
 private:
     Env env;
     const std::vector<BoundingBox> &layoutDrawables = env.getLayoutDrawables();
 
     std::vector<std::unique_ptr<Object3D>> layoutObjects;
     std::vector<std::unique_ptr<CustomDrawable>> instancedLayoutDrawables;
+
+    std::unique_ptr<Object3D> axisObject;
+    std::unique_ptr<FlatDrawable> axisDrawable;
 
     GL::Buffer voxelInstanceBuffer{NoCreate};
     Containers::Array<InstanceData> voxelInstanceData;
@@ -98,11 +148,12 @@ private:
     SceneGraph::DrawableGroup3D drawables;
 
     Shaders::Phong shader{Shaders::Phong::Flag::ObjectId};
+    Shaders::Flat3D flatShader{NoCreate};
 
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh cubeMesh;
+    GL::Mesh cubeMesh, axis;
 
     int direction = -1;
 };
@@ -119,12 +170,23 @@ Viewer::Viewer(const Arguments& arguments):
 
     framebuffer.attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer);
     framebuffer.attachRenderbuffer(GL::Framebuffer::BufferAttachment::Depth, depthBuffer);
-    framebuffer.mapForDraw({{Shaders::Phong::ColorOutput, GL::Framebuffer::ColorAttachment{0}}});
+    framebuffer.mapForDraw({
+        {Shaders::Phong::ColorOutput, GL::Framebuffer::ColorAttachment{0}},
+    });
 
     CORRADE_INTERNAL_ASSERT(framebuffer.checkStatus(GL::FramebufferTarget::Draw) == GL::Framebuffer::Status::Complete);
 
     shader = Shaders::Phong{Shaders::Phong::Flag::VertexColor|Shaders::Phong::Flag::InstancedTransformation};
     shader.setAmbientColor(0x111111_rgbf).setSpecularColor(0x330000_rgbf).setLightPosition({10.0f, 15.0f, 5.0f});
+
+    flatShader = Shaders::Flat3D {};
+    flatShader.setColor(0xffffff_rgbf);
+
+    axis = MeshTools::compile(Primitives::axis3D());
+
+    axisObject = std::make_unique<Object3D>(&_scene);
+    axisObject->scale(Vector3{3, 3, 3});
+    axisDrawable = std::make_unique<FlatDrawable>(*axisObject, drawables, flatShader, axis);
 
     cubeMesh = MeshTools::compile(Primitives::cubeSolid());
     voxelInstanceBuffer = GL::Buffer{};
@@ -140,13 +202,13 @@ Viewer::Viewer(const Arguments& arguments):
 
         const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
         auto scale = Vector3{
-            float(bboxMax.x() - bboxMin.x() + 1),
-            float(bboxMax.y() - bboxMin.y() + 1),
-            float(bboxMax.z() - bboxMin.z() + 1)
+            float(bboxMax.x() - bboxMin.x() + 1) / 2,
+            float(bboxMax.y() - bboxMin.y() + 1) / 2,
+            float(bboxMax.z() - bboxMin.z() + 1) / 2,
         };
         TLOG(INFO) << scale.x() << " " << scale.y() << " " << scale.z();
 
-        voxelObject->scale(scale).translate({
+        voxelObject->scale(scale).translate({0.5, 0.5, 0.5}).translate({
             float((bboxMin.x() + bboxMax.x())) / 2,
             float((bboxMin.y() + bboxMax.y())) / 2,
             float((bboxMin.z() + bboxMax.z())) / 2,
@@ -164,12 +226,12 @@ Viewer::Viewer(const Arguments& arguments):
 
     /* Configure camera */
     cameraObject = new Object3D{&_scene};
-    cameraObject->rotateX(-10.0_degf);
-    cameraObject->rotateY(20.0_degf);
-    cameraObject->translate(Vector3{7, 4, 22});
+    cameraObject->rotateX(0.0_degf);
+    cameraObject->rotateY(0.0_degf);
+    cameraObject->translate(Vector3{17, 4, 22});
     camera = new SceneGraph::Camera3D{*cameraObject};
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-        .setProjectionMatrix(Matrix4::perspectiveProjection(60.0_degf, 4.0f/3.0f, 0.001f, 100.0f))
+        .setProjectionMatrix(Matrix4::perspectiveProjection(60.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 }
 
@@ -217,13 +279,49 @@ void Viewer::drawEvent() {
 }
 
 void Viewer::tickEvent() {
-    cameraObject->translate(Vector3{float(direction) * 0.0002f, 0, 0});
-//    TLOG(DEBUG) << "tick " << cameraObject->transformation().translation().x();
-
-    if (abs(cameraObject->transformation().translation().x()) > 10)
-        direction *= -1;
+//    cameraObject->translate(Vector3{float(direction) * 0.001f, 0, 0});
+////    TLOG(DEBUG) << "tick " << cameraObject->transformation().translation().x();
+//
+//    if (abs(cameraObject->transformation().translation().x()) > 18)
+//        direction *= -1;
 
     redraw();
+}
+
+void Viewer::keyPressEvent(KeyEvent& event)
+{
+//    camera.rotate(-glm::vec2(yDelta, xDelta) * angularVelocity);
+
+    constexpr auto step = 0.5f;
+    constexpr auto turn = 5.0_degf;
+
+    switch(event.key()) {
+        case KeyEvent::Key::W:
+            cameraObject->translate(-step * cameraObject->transformation().backward());
+            break;
+        case KeyEvent::Key::S:
+            cameraObject->translate(step * cameraObject->transformation().backward());
+            break;
+        case KeyEvent::Key::A:
+        case KeyEvent::Key::Left:
+            cameraObject->rotateYLocal(turn);
+            break;
+        case KeyEvent::Key::D:
+        case KeyEvent::Key::Right:
+            cameraObject->rotateYLocal(-turn);
+            break;
+        case KeyEvent::Key::Up:
+            cameraObject->rotateXLocal(turn);
+            break;
+        case KeyEvent::Key::Down:
+            cameraObject->rotateXLocal(-turn);
+            break;
+        default:
+            return;
+    }
+
+    event.setAccepted();
+    redraw(); /* camera has changed, redraw! */
 }
 
 MAGNUM_APPLICATION_MAIN(Viewer)
