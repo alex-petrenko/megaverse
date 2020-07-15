@@ -34,8 +34,8 @@
 #include <util/tiny_profiler.hpp>
 
 
-constexpr bool viz = true;
-constexpr bool hires = true;
+constexpr bool viz = false;
+constexpr bool hires = false;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
 
 using namespace Magnum;

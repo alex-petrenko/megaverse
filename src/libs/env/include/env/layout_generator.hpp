@@ -32,7 +32,7 @@ public:
 
     BoundingBox levelExit(int numAgents);
 
-    std::vector<VoxelCoords> agentStartingPositions();
+    std::vector<VoxelCoords> startingPositions();
 
 private:
     // length = x, height = y, width = z

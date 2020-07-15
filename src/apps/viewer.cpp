@@ -18,7 +18,6 @@
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
-#include <Magnum/SceneGraph/Scene.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/Version.h>
@@ -32,10 +31,6 @@
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
-
-
-typedef SceneGraph::Object<SceneGraph::MatrixTransformation3D> Object3D;
-typedef SceneGraph::Scene<SceneGraph::MatrixTransformation3D> Scene3D;
 
 
 struct InstanceData {
@@ -147,11 +142,9 @@ private:
 
 private:
     Env env;
+    Action latestAction;
 
-    std::vector<std::unique_ptr<Agent>> agents;
     std::vector<std::unique_ptr<SimpleDrawable3D>> agentDrawables;
-
-    const std::vector<BoundingBox> &layoutDrawables = env.getLayoutDrawables();
 
     std::vector<std::unique_ptr<Object3D>> layoutObjects;
     std::vector<std::unique_ptr<CustomDrawable>> instancedLayoutDrawables;
@@ -164,7 +157,6 @@ private:
     GL::Buffer voxelInstanceBuffer{NoCreate};
     Containers::Array<InstanceData> voxelInstanceData;
 
-    Scene3D _scene;
     Object3D* freeCameraObject;
     SceneGraph::Camera3D* freeCamera;
     SceneGraph::DrawableGroup3D drawables;
@@ -179,7 +171,7 @@ private:
     GL::Mesh cubeMesh, axis, exitPadMesh, agentMesh, agentEyeMesh;
 
     int activeAgent = 0;
-    bool noclip = true, noclipCamera = true;
+    bool noclip = false, noclipCamera = false;
 };
 
 Viewer::Viewer(const Arguments& arguments):
@@ -213,32 +205,31 @@ Viewer::Viewer(const Arguments& arguments):
     agentMesh = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
     agentEyeMesh = MeshTools::compile(Primitives::cubeSolid());
 
-    auto startingPositions = env.getAgentStartingPositions();
+    const auto &startingPositions = env.agentStartingPositions;
     for (int i = 0; i < env.numAgents; ++i) {
-        auto agentObj = std::make_unique<Agent>(&_scene);
+        auto &agentObj = env.agents[i];
         auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
         agentObj->rotateY(rand() * 360.0_degf);
         agentObj->translate(pos);
 
         auto agentDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentMesh, 0xf9d71c_rgbf);
-        agentDrawable->scale({0.25, 0.25 * 0.9, 0.25});
+        agentDrawable->scale({0.25f, 0.25f * 0.9f, 0.25f});
 
         auto agentEyeDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentEyeMesh, 0x222222_rgbf);
         agentEyeDrawable->scale({0.17, 0.075, 0.17}).translate({0.0f, 0.2f, -0.08f});
 
-        agents.emplace_back(std::move(agentObj));
         agentDrawables.emplace_back(std::move(agentDrawable));
         agentDrawables.emplace_back(std::move(agentEyeDrawable));
     }
 
     axis = MeshTools::compile(Primitives::axis3D());
 
-    axisObject = std::make_unique<Object3D>(&_scene);
+    axisObject = std::make_unique<Object3D>(&env.scene);
     axisObject->scale(Vector3{1, 1, 1});
     axisDrawable = std::make_unique<FlatDrawable>(*axisObject, drawables, flatShader, axis);
 
     exitPadMesh = MeshTools::compile(Primitives::cubeSolid());
-    const auto exitPadCoords = env.getExitPadCoords();
+    const auto exitPadCoords = env.exitPad;
     const auto exitPadScale = Vector3(
         exitPadCoords.max.x() - exitPadCoords.min.x(),
         1.0,
@@ -246,7 +237,7 @@ Viewer::Viewer(const Arguments& arguments):
     );
     const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(), exitPadCoords.min.z() + exitPadScale.z() / 2);
 
-    exitPadDrawable = std::make_unique<SimpleDrawable3D>(_scene, drawables, shader, exitPadMesh, 0x50c878_rgbf);
+    exitPadDrawable = std::make_unique<SimpleDrawable3D>(env.scene, drawables, shader, exitPadMesh, 0x50c878_rgbf);
     exitPadDrawable->scale({0.5, 0.025, 0.5}).scale(exitPadScale);
     exitPadDrawable->translate({0.0, 0.025, 0.0});
     exitPadDrawable->translate(exitPadPos);
@@ -260,8 +251,8 @@ Viewer::Viewer(const Arguments& arguments):
         Shaders::Phong::Color3{}
     );
 
-    for (auto layoutDrawable : layoutDrawables) {
-        auto voxelObject = std::make_unique<Object3D>(&_scene);
+    for (auto layoutDrawable : env.layoutDrawables) {
+        auto voxelObject = std::make_unique<Object3D>(&env.scene);
 
         const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
         auto scale = Vector3{
@@ -269,7 +260,6 @@ Viewer::Viewer(const Arguments& arguments):
             float(bboxMax.y() - bboxMin.y() + 1) / 2,
             float(bboxMax.z() - bboxMin.z() + 1) / 2,
         };
-        TLOG(INFO) << scale.x() << " " << scale.y() << " " << scale.z();
 
         voxelObject->scale(scale).translate({0.5, 0.5, 0.5}).translate({
             float((bboxMin.x() + bboxMax.x())) / 2,
@@ -288,7 +278,7 @@ Viewer::Viewer(const Arguments& arguments):
     }
 
     /* Configure free camera */
-    freeCameraObject = new Object3D{&_scene};
+    freeCameraObject = new Object3D{&env.scene};
     freeCameraObject->rotateX(0.0_degf);
     freeCameraObject->rotateY(270.0_degf);
     freeCameraObject->translate(Vector3{1.5, 5, 1.5});
@@ -322,7 +312,7 @@ void Viewer::drawEvent()
 
     auto activeCameraPtr = freeCamera;
     if (!noclipCamera)
-        activeCameraPtr = agents[activeAgent]->camera.get();
+        activeCameraPtr = env.agents[activeAgent]->camera.get();
 
     activeCameraPtr->draw(drawables);
 
@@ -347,73 +337,56 @@ void Viewer::drawEvent()
 }
 
 void Viewer::tickEvent() {
-    if (env.checkStatus(agents)) {
+    env.setAction(activeAgent, latestAction);
+    const auto done = env.step();
+
+    latestAction = Action::Idle;
+
+    if (done) {
         TLOG(INFO) << "Done!";
         this->exit(0);
     }
+
     redraw();
 }
 
 void Viewer::keyPressEvent(KeyEvent& event)
 {
-//    camera.rotate(-glm::vec2(yDelta, xDelta) * angularVelocity);
-
-    constexpr auto step = 0.5f;
-    constexpr auto turn = 7.0_degf;
-
-    auto objectToMovePtr = freeCameraObject;
-    if (!noclip)
-        objectToMovePtr = agents[activeAgent].get();
-
-    Vector3 delta;
-
     switch(event.key()) {
-        case KeyEvent::Key::N:
-            noclip = !noclip;
-            break;
-        case KeyEvent::Key::C:
-            noclipCamera = !noclipCamera;
-            break;
+        case KeyEvent::Key::W: latestAction |= Action::Forward; break;
+        case KeyEvent::Key::S: latestAction |= Action::Backward; break;
+        case KeyEvent::Key::A: latestAction |= Action::Left; break;
+        case KeyEvent::Key::D: latestAction |= Action::Right; break;
 
-        case KeyEvent::Key::W:
-            delta = -step * objectToMovePtr->transformation().backward();
-            break;
-        case KeyEvent::Key::S:
-            delta = step * objectToMovePtr->transformation().backward();
-            break;
-        case KeyEvent::Key::A:
-            delta = -step * objectToMovePtr->transformation().right();
-            break;
-        case KeyEvent::Key::D:
-            delta = step * objectToMovePtr->transformation().right();
-            break;
-        default:
-            break;
+        case KeyEvent::Key::Left: latestAction |= Action::LookLeft; break;
+        case KeyEvent::Key::Right: latestAction |= Action::LookRight; break;
+        case KeyEvent::Key::Up: latestAction |= Action::LookUp; break;
+        case KeyEvent::Key::Down: latestAction |= Action::LookDown; break;
+
+        default: break;
     }
 
-    if (noclip)
-        freeCameraObject->translate(delta);
-    else
-        moveAgent(*agents[activeAgent], delta, env.getVoxelGrid());
-
-    switch (event.key()) {
-        case KeyEvent::Key::Left:
-            objectToMovePtr->rotateYLocal(turn);
-            break;
-        case KeyEvent::Key::Right:
-            objectToMovePtr->rotateYLocal(-turn);
-            break;
-        case KeyEvent::Key::Up:
-            if (noclip)
-                objectToMovePtr->rotateXLocal(turn);
-            break;
-        case KeyEvent::Key::Down:
-            if (noclip)
-                objectToMovePtr->rotateXLocal(-turn);
-            break;
-        default:
-            break;
-    }
+//    auto objectToMovePtr = freeCameraObject;
+//    if (!noclip)
+//        objectToMovePtr = env.agents[activeAgent].get();
+//
+//    Vector3 delta;
+//
+//    switch(event.key()) {
+//        case KeyEvent::Key::N:
+//            noclip = !noclip;
+//            break;
+//        case KeyEvent::Key::C:
+//            noclipCamera = !noclipCamera;
+//            break;
+//
+//    }
+//
+//    if (noclip)
+//        freeCameraObject->translate(delta);
+//    else
+//        moveAgent(*agents[activeAgent], delta, env.getVoxelGrid());
+//
 
     switch (event.key()) {
         case KeyEvent::Key::One:

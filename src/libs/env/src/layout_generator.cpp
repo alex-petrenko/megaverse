@@ -226,7 +226,7 @@ BoundingBox LayoutGenerator::levelExit(int numAgents)
     return {minCoord, maxCoord};
 }
 
-std::vector<VoxelCoords> LayoutGenerator::agentStartingPositions()
+std::vector<VoxelCoords> LayoutGenerator::startingPositions()
 {
     std::vector<VoxelCoords> positions;
 

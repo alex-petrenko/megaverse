@@ -1,7 +1,13 @@
 #include <random>
+
+#include <Magnum/SceneGraph/Camera.h>
+
 #include <util/tiny_logger.hpp>
 
 #include <env/env.hpp>
+
+
+using namespace Magnum::Math::Literals;
 
 
 Env::Env()
@@ -14,34 +20,73 @@ Env::Env()
 
     exitPad = layoutGenerator.levelExit(numAgents);
 
-    agentStartingPositions = layoutGenerator.agentStartingPositions();
-    std::shuffle(agentStartingPositions.begin(), agentStartingPositions.end(), std::mt19937(std::random_device()()));
+    auto possibleStartingPositions = layoutGenerator.startingPositions();
+    std::shuffle(possibleStartingPositions.begin(), possibleStartingPositions.end(), std::mt19937(std::random_device()()));
+
+    agentStartingPositions = std::vector<VoxelCoords>{possibleStartingPositions.cbegin(), possibleStartingPositions.cbegin() + numAgents};
+
+    for (int i = 0; i < numAgents; ++i)
+        agents.emplace_back(std::make_unique<Agent>(&scene));
 }
 
-const std::vector<BoundingBox> & Env::getLayoutDrawables()
+void Env::setAction(int agentIdx, Action action)
 {
-    return layoutDrawables;
+    currAction[agentIdx] = action;
 }
 
-bool Env::checkStatus(const std::vector<std::unique_ptr<Agent>> &agents)
+bool Env::step()
 {
-    bool finished = true;
+    constexpr auto turnSpeed = 7.0_degf;
 
-    for (size_t i = 0; i < agents.size(); ++i) {
-        const auto t = agents[i]->transformation().translation();
+    for (int i = 0; i < numAgents; ++i) {
+        Magnum::Vector3 delta;
 
-//        TLOG(INFO) << "Exit pad: (" << exitPad.min << ", " << exitPad.max << ")";
-//        TLOG(INFO) << "Agent: " << t;
+        const auto a = currAction[i];
+        const auto &agent = agents[i];
+
+        if (!!(a & Action::Forward))
+            delta = -walkSpeed * agent->transformation().backward();
+        else if (!!(a & Action::Backward))
+            delta = walkSpeed * agent->transformation().backward();
+
+        if (!!(a & Action::Left))
+            delta = -strafeSpeed * agent->transformation().right();
+        else if (!!(a & Action::Right))
+            delta = strafeSpeed * agent->transformation().right();
+
+        if (!!(a & Action::LookLeft))
+            agent->rotateYLocal(turnSpeed);
+        else if (!!(a & Action::LookRight))
+            agent->rotateYLocal(-turnSpeed);
+
+        if (agent->allowLookUp) {
+            if (!!(a & Action::LookUp))
+                agent->rotateXLocal(turnSpeed);
+            else if (!!(a & Action::LookDown))
+                agent->rotateXLocal(-turnSpeed);
+        }
+
+        agent->move(delta, grid);
+    }
+
+    bool done = true;
+
+    for (auto &agent : agents) {
+        const auto t = agent->transformation().translation();
+
         if (t.x() >= exitPad.min.x() && t.x() <= exitPad.max.x()
             && t.y() >= exitPad.min.y() && t.y() <= exitPad.max.y()
             && t.z() >= exitPad.min.z() && t.z() <= exitPad.max.z()) {
-//            TLOG(INFO) << "Agent #" << i << " is on exit pad!";
             continue;
         }
 
-        finished = false;
+        done = false;
         break;
     }
 
-    return finished;
+    // clear the actions
+    for (int i = 0; i < numAgents; ++i)
+        currAction[i] = Action::Idle;
+
+    return done;
 }
