@@ -62,6 +62,15 @@ public:
      * @param coords location in voxel grid.
      * @return pointer to VoxelState at the "coords" location, or nullptr if nothing is there.
      */
+    const VoxelState * get(const VoxelCoords &coords) const
+    {
+        auto voxelIt = grid.find(coords);
+        if (voxelIt == grid.end())
+            return nullptr;
+
+        return &(voxelIt->second);
+    }
+
     VoxelState * get(const VoxelCoords &coords)
     {
         auto voxelIt = grid.find(coords);
@@ -72,7 +81,7 @@ public:
     }
 
     /**
-     * Override the voxel state in the particular voxel.
+     * Override the voxel state in the particulwar voxel.
      * @param coords
      * @param state
      */
@@ -104,4 +113,3 @@ private:
     Magnum::Vector3 origin;
     float voxelSize;
 };
-

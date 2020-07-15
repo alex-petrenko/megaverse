@@ -9,6 +9,12 @@
 #define ARR_LENGTH(arr) sizeof(arr) / sizeof(arr[0])
 
 
+template <typename T>
+int sgn(T val)
+{
+    return (T(0) < val) - (val < T(0));
+}
+
 template<typename T>
 FORCE_INLINE T sqr(T x)
 {

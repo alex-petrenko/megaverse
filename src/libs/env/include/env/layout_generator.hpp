@@ -22,14 +22,21 @@ struct BoundingBox
 class LayoutGenerator
 {
 public:
+    LayoutGenerator();
+
     void generateFloor(VoxelGrid<VoxelState> &grid);
     void generateFloorWalls(VoxelGrid<VoxelState> &grid);
+    void generateCave(VoxelGrid<VoxelState> &grid);
 
     std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid);
 
     BoundingBox levelExit(int numAgents);
 
+    std::vector<VoxelCoords> agentStartingPositions();
+
 private:
     // length = x, height = y, width = z
-    static constexpr int length = 5, height = 4, width = 4;
+    int length, height, width;
+
+    int caveHeight;
 };

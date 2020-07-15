@@ -7,16 +7,14 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
-#include <Magnum/MeshTools/Interleave.h>
-#include <Magnum/MeshTools/CompressIndices.h>
 #include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Primitives/Axis.h>
 #include <Magnum/Primitives/Plane.h>
+#include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/MeshData.h>
-#include <Magnum/SceneGraph/SceneGraph.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
@@ -73,25 +71,42 @@ private:
 };
 
 
-class SimpleDrawable3D : public SceneGraph::Drawable3D
+class SimpleDrawable3D : public Object3D, public SceneGraph::Drawable3D
 {
 public:
     explicit SimpleDrawable3D(Object3D &parentObject, SceneGraph::DrawableGroup3D &drawables,
-        Shaders::Phong & shader, GL::Mesh& mesh)
-        : SceneGraph::Drawable3D{parentObject, &drawables}
-        , _shader(shader), _mesh(mesh)
+        Shaders::Phong & shader, GL::Mesh& mesh, const Color3 &color)
+    : Object3D{&parentObject}
+    , SceneGraph::Drawable3D{*this, &drawables}
+    , _shader(shader), _mesh(mesh), _color(color)
     {}
 
-    void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override {
+    void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override
+    {
+//        _shader.setTransformationMatrix(transformationMatrix)
+//            .setNormalMatrix(transformationMatrix.normalMatrix())
+//            .setProjectionMatrix(camera.projectionMatrix())
+//            .setAmbientColor(_color)
+////            .setDiffuseColor(_color)
+////            .setSpecularColor(_color)
+//            .setLightPosition({13.0f, 2.0f, 5.0f})
+//            .draw(_mesh);
         _shader.setTransformationMatrix(transformationMatrix)
             .setNormalMatrix(transformationMatrix.normalMatrix())
             .setProjectionMatrix(camera.projectionMatrix())
+            .setAmbientColor(0.4 * _color)
+            .setDiffuseColor(_color)
+            .setShininess(150)
+                /* relative to the camera */
+            .setLightPosition({13.0f, 2.0f, 5.0f})
+            .setLightColor(0xaaaaaa_rgbf)
             .draw(_mesh);
     }
 
 private:
     Shaders::Phong& _shader;
     GL::Mesh& _mesh;
+    Color3 _color;
 };
 
 
@@ -133,6 +148,9 @@ private:
 private:
     Env env;
 
+    std::vector<std::unique_ptr<Agent>> agents;
+    std::vector<std::unique_ptr<SimpleDrawable3D>> agentDrawables;
+
     const std::vector<BoundingBox> &layoutDrawables = env.getLayoutDrawables();
 
     std::vector<std::unique_ptr<Object3D>> layoutObjects;
@@ -141,15 +159,14 @@ private:
     std::unique_ptr<Object3D> axisObject;
     std::unique_ptr<FlatDrawable> axisDrawable;
 
-    std::unique_ptr<Object3D> exitPadObject;
     std::unique_ptr<SimpleDrawable3D> exitPadDrawable;
 
     GL::Buffer voxelInstanceBuffer{NoCreate};
     Containers::Array<InstanceData> voxelInstanceData;
 
     Scene3D _scene;
-    Object3D* cameraObject;
-    SceneGraph::Camera3D* camera;
+    Object3D* freeCameraObject;
+    SceneGraph::Camera3D* freeCamera;
     SceneGraph::DrawableGroup3D drawables;
 
     Shaders::Phong shader{NoCreate};
@@ -159,9 +176,10 @@ private:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh cubeMesh, axis, exitPadMesh;
+    GL::Mesh cubeMesh, axis, exitPadMesh, agentMesh, agentEyeMesh;
 
-    int direction = -1;
+    int activeAgent = 0;
+    bool noclip = true, noclipCamera = true;
 };
 
 Viewer::Viewer(const Arguments& arguments):
@@ -182,28 +200,56 @@ Viewer::Viewer(const Arguments& arguments):
 
     CORRADE_INTERNAL_ASSERT(framebuffer.checkStatus(GL::FramebufferTarget::Draw) == GL::Framebuffer::Status::Complete);
 
-    shader = Shaders::Phong{Shaders::Phong::Flag::VertexColor};
-    shader.setAmbientColor(0x111111_rgbf).setSpecularColor(0x330000_rgbf).setLightPosition({10.0f, 15.0f, 5.0f});
+    shaderInstanced = Shaders::Phong{Shaders::Phong::Flag::InstancedTransformation};
+    shaderInstanced.setAmbientColor(0x555555_rgbf).setDiffuseColor(0xbbbbbb_rgbf).setShininess(300).setLightPosition({0,4,2}).setLightColor(0xaaaaaa_rgbf);
 
-    shaderInstanced = Shaders::Phong{Shaders::Phong::Flag::VertexColor|Shaders::Phong::Flag::InstancedTransformation};
-    shaderInstanced.setAmbientColor(0x111111_rgbf).setSpecularColor(0x330000_rgbf).setLightPosition({10.0f, 15.0f, 5.0f});
+    shader = Shaders::Phong{};
+//    shader.setAmbientColor(0x111111_rgbf).setSpecularColor(0x330000_rgbf).setLightPosition({10.0f, 15.0f, 5.0f});
 
     flatShader = Shaders::Flat3D {};
     flatShader.setColor(0xffffff_rgbf);
 
+    // agents
+    agentMesh = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
+    agentEyeMesh = MeshTools::compile(Primitives::cubeSolid());
+
+    auto startingPositions = env.getAgentStartingPositions();
+    for (int i = 0; i < env.numAgents; ++i) {
+        auto agentObj = std::make_unique<Agent>(&_scene);
+        auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
+        agentObj->rotateY(rand() * 360.0_degf);
+        agentObj->translate(pos);
+
+        auto agentDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentMesh, 0xf9d71c_rgbf);
+        agentDrawable->scale({0.25, 0.25 * 0.9, 0.25});
+
+        auto agentEyeDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentEyeMesh, 0x222222_rgbf);
+        agentEyeDrawable->scale({0.17, 0.075, 0.17}).translate({0.0f, 0.2f, -0.08f});
+
+        agents.emplace_back(std::move(agentObj));
+        agentDrawables.emplace_back(std::move(agentDrawable));
+        agentDrawables.emplace_back(std::move(agentEyeDrawable));
+    }
+
     axis = MeshTools::compile(Primitives::axis3D());
 
     axisObject = std::make_unique<Object3D>(&_scene);
-    axisObject->scale(Vector3{3, 3, 3});
+    axisObject->scale(Vector3{1, 1, 1});
     axisDrawable = std::make_unique<FlatDrawable>(*axisObject, drawables, flatShader, axis);
 
-    exitPadMesh = MeshTools::compile(Primitives::planeSolid());
-    exitPadObject = std::make_unique<Object3D>(&_scene);
+    exitPadMesh = MeshTools::compile(Primitives::cubeSolid());
     const auto exitPadCoords = env.getExitPadCoords();
-    const Vector3 exitPadPos(exitPadCoords.min.x(), exitPadCoords.min.y(), exitPadCoords.min.z());
-    exitPadObject->rotateX(-90.0_degf).scale({0.5, 0.5, 0.5}).translate({0.5, 0.05, 0.5});
-    exitPadObject->translate(exitPadPos);
-    exitPadDrawable = std::make_unique<SimpleDrawable3D>(*exitPadObject, drawables, shader, exitPadMesh);
+    const auto exitPadScale = Vector3(
+        exitPadCoords.max.x() - exitPadCoords.min.x(),
+        1.0,
+        exitPadCoords.max.z() - exitPadCoords.min.z()
+    );
+    const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(), exitPadCoords.min.z() + exitPadScale.z() / 2);
+
+    exitPadDrawable = std::make_unique<SimpleDrawable3D>(_scene, drawables, shader, exitPadMesh, 0x50c878_rgbf);
+    exitPadDrawable->scale({0.5, 0.025, 0.5}).scale(exitPadScale);
+    exitPadDrawable->translate({0.0, 0.025, 0.0});
+    exitPadDrawable->translate(exitPadPos);
 
     cubeMesh = MeshTools::compile(Primitives::cubeSolid());
     voxelInstanceBuffer = GL::Buffer{};
@@ -241,14 +287,14 @@ Viewer::Viewer(const Arguments& arguments):
         instancedLayoutDrawables.emplace_back(std::move(voxel));
     }
 
-    /* Configure camera */
-    cameraObject = new Object3D{&_scene};
-    cameraObject->rotateX(0.0_degf);
-    cameraObject->rotateY(250.0_degf);
-    cameraObject->translate(Vector3{1.5, 3, 1.5});
-    camera = new SceneGraph::Camera3D{*cameraObject};
-    camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-        .setProjectionMatrix(Matrix4::perspectiveProjection(60.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
+    /* Configure free camera */
+    freeCameraObject = new Object3D{&_scene};
+    freeCameraObject->rotateX(0.0_degf);
+    freeCameraObject->rotateY(270.0_degf);
+    freeCameraObject->translate(Vector3{1.5, 5, 1.5});
+    freeCamera = new SceneGraph::Camera3D{*freeCameraObject};
+    freeCamera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
+        .setProjectionMatrix(Matrix4::perspectiveProjection(75.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 }
 
@@ -257,25 +303,30 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
     if(!event.offset().y()) return;
 
     /* Distance to origin */
-    const Float distance = cameraObject->transformation().translation().z();
+    const Float distance = freeCameraObject->transformation().translation().z();
 
     /* Move 15% of the distance back or forward */
-    cameraObject->translate(Vector3::zAxis(distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))));
+    freeCameraObject->translate(Vector3::zAxis(distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))));
 
     redraw();
 }
 
-void Viewer::drawEvent() {
+void Viewer::drawEvent()
+{
     framebuffer
         .clearColor(0, Color3{0.125f})
-        .clearColor(1, Vector4ui{})
         .clearDepth(1.0f)
         .bind();
 
     arrayResize(voxelInstanceData, 0);
-    camera->draw(drawables);
 
-    shaderInstanced.setProjectionMatrix(camera->projectionMatrix());
+    auto activeCameraPtr = freeCamera;
+    if (!noclipCamera)
+        activeCameraPtr = agents[activeAgent]->camera.get();
+
+    activeCameraPtr->draw(drawables);
+
+    shaderInstanced.setProjectionMatrix(freeCamera->projectionMatrix());
 
     /* Upload instance data to the GPU (orphaning the previous buffer
        contents) and draw all cubes in one call, and all spheres (if any)
@@ -296,12 +347,10 @@ void Viewer::drawEvent() {
 }
 
 void Viewer::tickEvent() {
-//    cameraObject->translate(Vector3{float(direction) * 0.001f, 0, 0});
-////    TLOG(DEBUG) << "tick " << cameraObject->transformation().translation().x();
-//
-//    if (abs(cameraObject->transformation().translation().x()) > 18)
-//        direction *= -1;
-
+    if (env.checkStatus(agents)) {
+        TLOG(INFO) << "Done!";
+        this->exit(0);
+    }
     redraw();
 }
 
@@ -310,31 +359,74 @@ void Viewer::keyPressEvent(KeyEvent& event)
 //    camera.rotate(-glm::vec2(yDelta, xDelta) * angularVelocity);
 
     constexpr auto step = 0.5f;
-    constexpr auto turn = 5.0_degf;
+    constexpr auto turn = 7.0_degf;
+
+    auto objectToMovePtr = freeCameraObject;
+    if (!noclip)
+        objectToMovePtr = agents[activeAgent].get();
+
+    Vector3 delta;
 
     switch(event.key()) {
+        case KeyEvent::Key::N:
+            noclip = !noclip;
+            break;
+        case KeyEvent::Key::C:
+            noclipCamera = !noclipCamera;
+            break;
+
         case KeyEvent::Key::W:
-            cameraObject->translate(-step * cameraObject->transformation().backward());
+            delta = -step * objectToMovePtr->transformation().backward();
             break;
         case KeyEvent::Key::S:
-            cameraObject->translate(step * cameraObject->transformation().backward());
+            delta = step * objectToMovePtr->transformation().backward();
             break;
         case KeyEvent::Key::A:
-        case KeyEvent::Key::Left:
-            cameraObject->rotateYLocal(turn);
+            delta = -step * objectToMovePtr->transformation().right();
             break;
         case KeyEvent::Key::D:
-        case KeyEvent::Key::Right:
-            cameraObject->rotateYLocal(-turn);
-            break;
-        case KeyEvent::Key::Up:
-            cameraObject->rotateXLocal(turn);
-            break;
-        case KeyEvent::Key::Down:
-            cameraObject->rotateXLocal(-turn);
+            delta = step * objectToMovePtr->transformation().right();
             break;
         default:
-            return;
+            break;
+    }
+
+    if (noclip)
+        freeCameraObject->translate(delta);
+    else
+        moveAgent(*agents[activeAgent], delta, env.getVoxelGrid());
+
+    switch (event.key()) {
+        case KeyEvent::Key::Left:
+            objectToMovePtr->rotateYLocal(turn);
+            break;
+        case KeyEvent::Key::Right:
+            objectToMovePtr->rotateYLocal(-turn);
+            break;
+        case KeyEvent::Key::Up:
+            if (noclip)
+                objectToMovePtr->rotateXLocal(turn);
+            break;
+        case KeyEvent::Key::Down:
+            if (noclip)
+                objectToMovePtr->rotateXLocal(-turn);
+            break;
+        default:
+            break;
+    }
+
+    switch (event.key()) {
+        case KeyEvent::Key::One:
+            activeAgent = 0;
+            break;
+        case KeyEvent::Key::Two:
+            activeAgent = 1;
+            break;
+        case KeyEvent::Key::Three:
+            activeAgent = 2;
+            break;
+        default:
+            break;
     }
 
     event.setAccepted();
