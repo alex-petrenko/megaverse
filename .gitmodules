@@ -1,0 +1,9 @@
+[submodule "corrade"]
+	path = corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "magnum"]
+	path = magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "src/3rdparty/googletest-1.10.0"]
+	path = src/3rdparty/googletest-1.10.0
+	url = https://github.com/google/googletest.git
