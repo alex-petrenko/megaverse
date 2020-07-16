@@ -45,6 +45,8 @@ class Env
 public:
     explicit Env(int seed = -1);
 
+    void reset();
+
     /**
      * Set action for the next tick.
      * @param agentIdx index of the agent for which we're setting the action
@@ -65,17 +67,18 @@ private:
 public:
     static constexpr int numAgents = 2;
 
-    Scene3D scene;
+    std::unique_ptr<Scene3D> scene;
 
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
     std::vector<BoundingBox> layoutDrawables;
     BoundingBox exitPad;
 
     std::vector<VoxelCoords> agentStartingPositions;
-    std::vector<std::unique_ptr<Agent>> agents;
+    std::vector<Agent *> agents;
 
 private:
-    static constexpr auto walkSpeed = 0.66f, strafeSpeed = 0.5f;
+    const int horizon = 1000;
+    int episodeDuration = 0;
 
     Rng rng{std::random_device{}()};
 

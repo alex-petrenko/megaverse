@@ -17,6 +17,20 @@ Env::Env(int seed)
     if (seed != -1)
         rng.seed((unsigned long)seed);
 
+    reset();
+}
+
+void Env::reset()
+{
+    auto seed = randRange(0, 10000, rng);
+    rng.seed((unsigned long)seed);
+    TLOG(INFO) << "Using seed " << seed;
+
+    episodeDuration = 0;
+
+    // delete the previous layout/state
+    grid.clear();
+
     layoutGenerator.init();
     layoutGenerator.generateFloorWalls(grid);
     layoutGenerator.generateCave(grid);
@@ -29,8 +43,13 @@ Env::Env(int seed)
 
     agentStartingPositions = std::vector<VoxelCoords>{possibleStartingPositions.cbegin(), possibleStartingPositions.cbegin() + numAgents};
 
-    for (int i = 0; i < numAgents; ++i)
-        agents.emplace_back(std::make_unique<Agent>(&scene));
+    scene = std::make_unique<Scene3D>();
+
+    agents.clear();
+    for (int i = 0; i < numAgents; ++i) {
+        auto &agent = scene->addChild<Agent>();
+        agents.emplace_back(&agent);
+    }
 }
 
 void Env::setAction(int agentIdx, Action action)
@@ -40,7 +59,8 @@ void Env::setAction(int agentIdx, Action action)
 
 bool Env::step()
 {
-    constexpr auto turnSpeed = 7.0_degf;
+    static constexpr auto walkSpeed = 0.66f, strafeSpeed = 0.5f;
+    static constexpr auto turnSpeed = 7.0_degf;
 
     for (int i = 0; i < numAgents; ++i) {
         Magnum::Vector3 delta;
@@ -88,9 +108,17 @@ bool Env::step()
         break;
     }
 
+    ++episodeDuration;
+    if (episodeDuration >= horizon)
+        done = true;
+
+    if (episodeDuration % 1000 == 0)
+        TLOG(INFO) << "Episode frames " << episodeDuration << "/" << horizon;
+
     // clear the actions
     for (int i = 0; i < numAgents; ++i)
         currAction[i] = Action::Idle;
 
     return done;
 }
+

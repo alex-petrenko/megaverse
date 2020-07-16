@@ -24,8 +24,7 @@ private:
 public:
     bool allowLookUp = false;
 
-    std::unique_ptr<Object3D> cameraObject;
-    std::unique_ptr<Magnum::SceneGraph::Camera3D> camera;
+    Magnum::SceneGraph::Camera3D *camera;
 };
 
 

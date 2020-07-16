@@ -41,8 +41,8 @@ void LayoutGenerator::init()
 {
     caveHeight = 3;
 
-    length = randRange(10, 25, rng);
-    width = randRange(4, 25, rng);
+    length = randRange(8, 25, rng);
+    width = randRange(5, 20, rng);
     height = randRange(3, 6, rng) + caveHeight;
 
 }

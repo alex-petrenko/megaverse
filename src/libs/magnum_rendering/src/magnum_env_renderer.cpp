@@ -46,7 +46,7 @@ class CustomDrawable : public SceneGraph::Drawable3D
 {
 public:
     explicit CustomDrawable(
-        Object3D &parentObject,
+        SceneGraph::AbstractObject3D &parentObject,
         Containers::Array<InstanceData> &instanceData,
         const Color3 &color,
         const Matrix4 &primitiveTransformation,
@@ -71,9 +71,9 @@ private:
 class SimpleDrawable3D : public Object3D, public SceneGraph::Drawable3D
 {
 public:
-    explicit SimpleDrawable3D(Object3D &parentObject, SceneGraph::DrawableGroup3D &drawables,
-                              Shaders::Phong & shader, GL::Mesh& mesh, const Color3 &color)
-        : Object3D{&parentObject}
+    explicit SimpleDrawable3D(SceneGraph::DrawableGroup3D &drawables,
+                              Shaders::Phong & shader, GL::Mesh& mesh, const Color3 &color, Object3D *parentObject)
+        : Object3D{parentObject}
         , SceneGraph::Drawable3D{*this, &drawables}
         , _shader(shader), _mesh(mesh), _color(color)
     {}
@@ -107,6 +107,12 @@ public:
     // this is pure virtual in the base class, but we're not using it
     virtual int exec() override { return 0; }
 
+    /**
+     * Reset the state of the renderer between episodes.
+     * @param env
+     */
+    void reset(Env &env);
+
     void draw(Env &env);
 
     const uint8_t * getObservation(int agentIdx) const;
@@ -114,17 +120,10 @@ public:
 public:
     Vector2i framebufferSize;
 
-    std::vector<std::unique_ptr<SimpleDrawable3D>> agentDrawables;
-
-    std::vector<std::unique_ptr<Object3D>> layoutObjects;
-    std::vector<std::unique_ptr<CustomDrawable>> instancedLayoutDrawables;
-
-    std::unique_ptr<SimpleDrawable3D> exitPadDrawable;
+    SceneGraph::DrawableGroup3D drawables;
 
     GL::Buffer voxelInstanceBuffer{NoCreate};
     Containers::Array<InstanceData> voxelInstanceData;
-
-    SceneGraph::DrawableGroup3D drawables;
 
     Shaders::Phong shader{NoCreate};
     Shaders::Phong shaderInstanced{NoCreate};
@@ -170,34 +169,53 @@ MagnumEnvRenderer::Impl::Impl(const Platform::WindowlessEglApplication::Argument
 
     shader = Shaders::Phong{};
 
-    // agents
+    // meshes
     {
         agentMesh = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
         agentEyeMesh = MeshTools::compile(Primitives::cubeSolid());
 
+        exitPadMesh = MeshTools::compile(Primitives::cubeSolid());
+
+        cubeMesh = MeshTools::compile(Primitives::cubeSolid());
+        voxelInstanceBuffer = GL::Buffer{};
+        cubeMesh.addVertexBufferInstanced(
+            voxelInstanceBuffer, 1, 0,
+            Shaders::Phong::TransformationMatrix{},
+            Shaders::Phong::NormalMatrix{},
+            Shaders::Phong::Color3{}
+        );
+    }
+
+    reset(env);
+}
+
+void MagnumEnvRenderer::Impl::reset(Env &env)
+{
+    // reset renderer data structures
+    {
+        drawables = SceneGraph::DrawableGroup3D{};
+        arrayResize(voxelInstanceData, 0);
+    }
+
+    // agents
+    {
         const auto &startingPositions = env.agentStartingPositions;
         for (int i = 0; i < env.numAgents; ++i) {
-            auto &agentObj = env.agents[i];
+            auto agentPtr = env.agents[i];
             auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
-            agentObj->rotateY(frand(env.getRng()) * 360.0_degf);
-            agentObj->translate(pos);
+            agentPtr->rotateY(frand(env.getRng()) * 360.0_degf);
+            agentPtr->translate(pos);
 
-            auto agentDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentMesh,
-                                                                    0xf9d71c_rgbf);
-            agentDrawable->scale({0.25f, 0.25f * 0.9f, 0.25f});
+            auto & agentDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentMesh, 0xf9d71c_rgbf);
+            agentDrawable.scale({0.25f, 0.25f * 0.9f, 0.25f});
 
-            auto agentEyeDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentEyeMesh,
-                                                                       0x222222_rgbf);
-            agentEyeDrawable->scale({0.17, 0.075, 0.17}).translate({0.0f, 0.2f, -0.08f});
-
-            agentDrawables.emplace_back(std::move(agentDrawable));
-            agentDrawables.emplace_back(std::move(agentEyeDrawable));
+            auto & agentEyeDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentEyeMesh, 0x222222_rgbf);
+            agentEyeDrawable.scale({0.17, 0.075, 0.17}).translate({0.0f, 0.2f, -0.08f});
         }
     }
 
     // exit pad
     {
-        exitPadMesh = MeshTools::compile(Primitives::cubeSolid());
         const auto exitPadCoords = env.exitPad;
         const auto exitPadScale = Vector3(
             exitPadCoords.max.x() - exitPadCoords.min.x(),
@@ -207,27 +225,18 @@ MagnumEnvRenderer::Impl::Impl(const Platform::WindowlessEglApplication::Argument
         const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(),
                                         exitPadCoords.min.z() + exitPadScale.z() / 2);
 
-        exitPadDrawable = std::make_unique<SimpleDrawable3D>(env.scene, drawables, shader, exitPadMesh, 0x50c878_rgbf);
-        exitPadDrawable->scale({0.5, 0.025, 0.5}).scale(exitPadScale);
-        exitPadDrawable->translate({0.0, 0.025, 0.0});
-        exitPadDrawable->translate(exitPadPos);
+        auto &exitPadDrawable = env.scene->addChild<SimpleDrawable3D>(drawables, shader, exitPadMesh, 0x50c878_rgbf);
+        exitPadDrawable.scale({0.5, 0.025, 0.5}).scale(exitPadScale);
+        exitPadDrawable.translate({0.0, 0.025, 0.0});
+        exitPadDrawable.translate(exitPadPos);
     }
 
     // map layout
     {
-        cubeMesh = MeshTools::compile(Primitives::cubeSolid());
-        voxelInstanceBuffer = GL::Buffer{};
-        cubeMesh.addVertexBufferInstanced(
-            voxelInstanceBuffer, 1, 0,
-            Shaders::Phong::TransformationMatrix{},
-            Shaders::Phong::NormalMatrix{},
-            Shaders::Phong::Color3{}
-        );
-
         TLOG(INFO) << "Rendering " << env.layoutDrawables.size() << " layout drawables";
 
         for (auto layoutDrawable : env.layoutDrawables) {
-            auto voxelObject = std::make_unique<Object3D>(&env.scene);
+            auto &voxelObject = env.scene->addChild<Object3D>();
 
             const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
             auto scale = Vector3{
@@ -236,20 +245,13 @@ MagnumEnvRenderer::Impl::Impl(const Platform::WindowlessEglApplication::Argument
                 float(bboxMax.z() - bboxMin.z() + 1) / 2,
             };
 
-            voxelObject->scale(scale).translate({0.5, 0.5, 0.5}).translate({
-                float((bboxMin.x() + bboxMax.x())) / 2,
-                float((bboxMin.y() + bboxMax.y())) / 2,
-                float((bboxMin.z() + bboxMax.z())) / 2
-            });
+            voxelObject.scale(scale)
+                .translate({0.5, 0.5, 0.5})
+                .translate({float((bboxMin.x() + bboxMax.x())) / 2, float((bboxMin.y() + bboxMax.y())) / 2, float((bboxMin.z() + bboxMax.z())) / 2});
 
             auto transformation = Matrix4::scaling(Vector3{1.0f});
 
-            auto voxel = std::make_unique<CustomDrawable>(
-                *voxelObject, voxelInstanceData, 0xa5c9ea_rgbf, transformation, drawables
-            );
-
-            layoutObjects.emplace_back(std::move(voxelObject));
-            instancedLayoutDrawables.emplace_back(std::move(voxel));
+            voxelObject.addFeature<CustomDrawable>(voxelInstanceData, 0xa5c9ea_rgbf, transformation, drawables);
         }
     }
 }
@@ -264,8 +266,9 @@ void MagnumEnvRenderer::Impl::draw(Env &env)
 
         arrayResize(voxelInstanceData, 0);
 
-        auto activeCameraPtr = env.agents[i]->camera.get();
+        auto activeCameraPtr = env.agents[i]->camera;
 
+        // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
         activeCameraPtr->draw(drawables);
 
         shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());
@@ -299,6 +302,11 @@ MagnumEnvRenderer::MagnumEnvRenderer(Env &env, int w, int h)
 
 MagnumEnvRenderer::~MagnumEnvRenderer() = default;
 
+
+void MagnumEnvRenderer::reset(Env &env)
+{
+    pimpl->reset(env);
+}
 
 void MagnumEnvRenderer::draw(Env &env)
 {

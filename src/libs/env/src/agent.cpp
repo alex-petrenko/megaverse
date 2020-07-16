@@ -15,14 +15,16 @@ using namespace Magnum::Math::Literals;
 
 Agent::Agent(Object3D *parent) : Object(parent)
 {
-    cameraObject = std::make_unique<Object3D>(this);
-    cameraObject->rotateY(0.0_degf);
-    cameraObject->translate(Magnum::Vector3{0, 0.25f, 0});
-    camera = std::make_unique<SceneGraph::Camera3D>(*cameraObject);
+    auto &cameraObject = addChild<Object3D>();
+    // cameraObject.rotateY(0.0_degf);
+    cameraObject.translate(Magnum::Vector3{0, 0.25f, 0});
+
+    camera = &(cameraObject.addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
         .setProjectionMatrix(Matrix4::perspectiveProjection(75.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
+
 }
 
 Agent::~Agent() = default;

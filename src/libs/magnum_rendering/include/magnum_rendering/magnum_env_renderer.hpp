@@ -14,9 +14,11 @@ public:
     explicit MagnumEnvRenderer(Env &env, int w, int h);
     ~MagnumEnvRenderer() override;
 
-    virtual void draw(Env &env) override;
+    void reset(Env &env) override;
 
-    virtual const uint8_t * getObservation(int agentIdx) const override;
+    void draw(Env &env) override;
+
+    const uint8_t * getObservation(int agentIdx) const override;
 
 private:
     struct Impl;

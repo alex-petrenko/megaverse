@@ -44,10 +44,19 @@ public:
      * @param voxelSize scale of one voxel
      */
     explicit VoxelGrid(size_t voxelCount, const Magnum::Vector3 &origin, float voxelSize)
-    : grid{voxelCount}
+    : voxelCount{voxelCount}
+    , grid{voxelCount}
     , origin{origin}
     , voxelSize{voxelSize}
     {}
+
+    /**
+     * Reset the grid (empty).
+     */
+    void clear()
+    {
+        grid = HashMap{voxelCount};
+    }
 
     /**
      * @param coords coordinates of a voxel.
@@ -108,6 +117,8 @@ public:
     }
 
 private:
+    size_t voxelCount;
+
     HashMap grid;
 
     Magnum::Vector3 origin;
