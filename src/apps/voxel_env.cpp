@@ -13,9 +13,9 @@
 #include <util/tiny_profiler.hpp>
 
 
-constexpr bool viz = true;
-constexpr bool hires = true;
-bool randomActions = true;
+constexpr bool viz = false;
+constexpr bool hires = false;
+bool randomActions = false;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
@@ -144,11 +144,11 @@ int main(int argc, char** argv)
     tprof().startTimer("loop");
     auto nFrames = main_loop(env, renderer);
     const auto usecPassed = tprof().stopTimer("loop");
+    tprof().stopTimer("reset");
 
     auto fps = nFrames / (usecPassed / 1e6);
 
-    TLOG(DEBUG) << fps * env.numAgents << "FPS (" << env.numAgents << "*" << fps << ") for " << nFrames << " frames";
-    tprof().stopTimer("reset");
+    TLOG(DEBUG) << "\n\n" << fps * env.numAgents << " FPS! (" << env.numAgents << "*" << fps << ") for " << nFrames << " frames";
 
     return EXIT_SUCCESS;
 }
