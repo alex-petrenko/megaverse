@@ -78,14 +78,6 @@ public:
 
     void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override
     {
-//        _shader.setTransformationMatrix(transformationMatrix)
-//            .setNormalMatrix(transformationMatrix.normalMatrix())
-//            .setProjectionMatrix(camera.projectionMatrix())
-//            .setAmbientColor(_color)
-////            .setDiffuseColor(_color)
-////            .setSpecularColor(_color)
-//            .setLightPosition({13.0f, 2.0f, 5.0f})
-//            .draw(_mesh);
         _shader.setTransformationMatrix(transformationMatrix)
             .setNormalMatrix(transformationMatrix.normalMatrix())
             .setProjectionMatrix(camera.projectionMatrix())
@@ -209,7 +201,7 @@ Viewer::Viewer(const Arguments& arguments):
     for (int i = 0; i < env.numAgents; ++i) {
         auto &agentObj = env.agents[i];
         auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
-        agentObj->rotateY(rand() * 360.0_degf);
+        agentObj->rotateY(frand(env.getRng()) * 360.0_degf);
         agentObj->translate(pos);
 
         auto agentDrawable = std::make_unique<SimpleDrawable3D>(*agentObj, drawables, shader, agentMesh, 0xf9d71c_rgbf);
@@ -316,7 +308,7 @@ void Viewer::drawEvent()
 
     activeCameraPtr->draw(drawables);
 
-    shaderInstanced.setProjectionMatrix(freeCamera->projectionMatrix());
+    shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());
 
     /* Upload instance data to the GPU (orphaning the previous buffer
        contents) and draw all cubes in one call, and all spheres (if any)

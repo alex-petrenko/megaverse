@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include <cstdint>
 #include <algorithm>
 
@@ -21,7 +22,23 @@ FORCE_INLINE T sqr(T x)
     return x * x;
 }
 
-int randRange(int low, int high);
+using Rng = std::mt19937;
+
+/**
+ * @return random integer from [low, high).
+ */
+inline int randRange(int low, int high, Rng &rng)
+{
+    return std::uniform_int_distribution<>{low, high - 1}(rng);
+}
+
+/**
+ * @return random number in [0, 1)
+ */
+inline float frand(Rng &rng)
+{
+    return std::uniform_real_distribution<float>{0, 1}(rng);
+}
 
 template<typename T>
 void endianSwap(T *x)

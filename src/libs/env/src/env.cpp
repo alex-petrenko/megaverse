@@ -10,10 +10,14 @@
 using namespace Magnum::Math::Literals;
 
 
-Env::Env()
+Env::Env(int seed)
 {
     TLOG(INFO) << "Creating an environment";
 
+    if (seed != -1)
+        rng.seed((unsigned long)seed);
+
+    layoutGenerator.init();
     layoutGenerator.generateFloorWalls(grid);
     layoutGenerator.generateCave(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
@@ -21,7 +25,7 @@ Env::Env()
     exitPad = layoutGenerator.levelExit(numAgents);
 
     auto possibleStartingPositions = layoutGenerator.startingPositions();
-    std::shuffle(possibleStartingPositions.begin(), possibleStartingPositions.end(), std::mt19937(std::random_device()()));
+    std::shuffle(possibleStartingPositions.begin(), possibleStartingPositions.end(), rng);
 
     agentStartingPositions = std::vector<VoxelCoords>{possibleStartingPositions.cbegin(), possibleStartingPositions.cbegin() + numAgents};
 

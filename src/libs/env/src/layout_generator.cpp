@@ -31,18 +31,21 @@ CoordRange startEndCoord(int bboxMin, int bboxMax, int direction)
 }
 
 
-LayoutGenerator::LayoutGenerator()
+LayoutGenerator::LayoutGenerator(Rng &rng)
+    : rng{rng}
 {
-    // TODO!
-    srand(time(nullptr));
-
-    caveHeight = 3;
-
-    length = randRange(10, 25);
-    width = randRange(4, 25);
-    height = randRange(3, 6) + caveHeight;
 }
 
+
+void LayoutGenerator::init()
+{
+    caveHeight = 3;
+
+    length = randRange(10, 25, rng);
+    width = randRange(4, 25, rng);
+    height = randRange(3, 6, rng) + caveHeight;
+
+}
 
 void LayoutGenerator::generateFloor(VoxelGrid<VoxelState> &grid)
 {
@@ -74,8 +77,8 @@ void LayoutGenerator::generateCave(VoxelGrid<VoxelState> &grid)
 {
     auto growthProb = 0.39f;
 
-    auto seedX = randRange(2, length - 2);
-    auto seedZ = randRange(2, width - 2);
+    auto seedX = randRange(2, length - 2, rng);
+    auto seedZ = randRange(2, width - 2, rng);
 
     std::unordered_set<VoxelCoords> cave;
 
@@ -94,7 +97,7 @@ void LayoutGenerator::generateCave(VoxelGrid<VoxelState> &grid)
                 auto d = sign * direction;
                 VoxelCoords newCoords{curr.x() + d.x(), curr.y() + d.y(), curr.z() + d.z()};
 
-                auto p = rand() / double(RAND_MAX);
+                auto p = frand(rng);
                 if (p > growthProb)
                     continue;
 
@@ -217,8 +220,8 @@ BoundingBox LayoutGenerator::levelExit(int numAgents)
     // make sure exit pad will fit
     assert(width - 2 >= numAgents);
 
-    const int xCoord = randRange(1, length - 1);
-    const int zCoord = randRange(1, width - numAgents);
+    const int xCoord = randRange(1, length - 1, rng);
+    const int zCoord = randRange(1, width - numAgents, rng);
 
     const VoxelCoords minCoord{xCoord, caveHeight + 1, zCoord}, maxCoord{xCoord + 1, caveHeight + 2, zCoord + numAgents};
 

@@ -25,6 +25,9 @@ Agent::Agent(Object3D *parent) : Object(parent)
         .setViewport(GL::defaultFramebuffer.viewport().size());
 }
 
+Agent::~Agent() = default;
+
+
 void Agent::ensureAgentNotOnVoxelBoundary(const VoxelCoords &v)
 {
     // make sure we're well within the current voxel and not right on the boundary

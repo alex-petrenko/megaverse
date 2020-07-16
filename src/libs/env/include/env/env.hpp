@@ -1,9 +1,12 @@
 #pragma once
 
+#include <random>
 #include <vector>
 
 #include <Magnum/SceneGraph/Scene.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
+
+#include <util/util.hpp>
 
 #include <env/agent.hpp>
 #include <env/layout_generator.hpp>
@@ -22,6 +25,8 @@ enum class Action
     LookUp = 1 << 8,
 
     Interact = 1 << 9,
+
+    NumActions = 10,
 };
 
 
@@ -38,7 +43,7 @@ typedef Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D> Sc
 class Env
 {
 public:
-    Env();
+    explicit Env(int seed = -1);
 
     /**
      * Set action for the next tick.
@@ -52,6 +57,8 @@ public:
      * @return episode termination flag
      */
     bool step();
+
+    Rng & getRng() { return rng; }
 
 private:
 
@@ -70,7 +77,9 @@ public:
 private:
     static constexpr auto walkSpeed = 0.66f, strafeSpeed = 0.5f;
 
-    LayoutGenerator layoutGenerator;
+    Rng rng{std::random_device{}()};
 
     std::array<Action, numAgents> currAction;
+
+    LayoutGenerator layoutGenerator{rng};
 };

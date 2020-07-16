@@ -5,8 +5,12 @@
 
 TEST(env, layout)
 {
+    Rng rng{std::random_device{}()};
+
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
-    LayoutGenerator lg;
+    LayoutGenerator lg{rng};
+
+    lg.init();
     lg.generateFloorWalls(grid);
 
     const auto ptr = grid.get({0, 0, 0});

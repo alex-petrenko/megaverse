@@ -12,7 +12,7 @@
 
 #include <glad/glad_egl.h>
 
-#include <gfx/windowless_context.hpp>
+#include <magnum_rendering/windowless_context.hpp>
 
 #include <util/tiny_logger.hpp>
 

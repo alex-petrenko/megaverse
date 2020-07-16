@@ -1,5 +1,6 @@
 #pragma once
 
+#include <util/util.hpp>
 #include <util/voxel_grid.hpp>
 
 #include <env/voxel_state.hpp>
@@ -22,8 +23,9 @@ struct BoundingBox
 class LayoutGenerator
 {
 public:
-    LayoutGenerator();
+    explicit LayoutGenerator(Rng &rng);
 
+    void init();
     void generateFloor(VoxelGrid<VoxelState> &grid);
     void generateFloorWalls(VoxelGrid<VoxelState> &grid);
     void generateCave(VoxelGrid<VoxelState> &grid);
@@ -35,6 +37,8 @@ public:
     std::vector<VoxelCoords> startingPositions();
 
 private:
+    Rng &rng;
+
     // length = x, height = y, width = z
     int length, height, width;
 

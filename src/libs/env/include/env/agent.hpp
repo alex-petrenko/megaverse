@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Magnum/SceneGraph/SceneGraph.h>
 
 #include <util/magnum.hpp>
@@ -12,6 +14,7 @@ class Agent : public Object3D
 {
 public:
     explicit Agent(Object3D *parent);
+    ~Agent() override;
 
     void move(const Magnum::Vector3 &delta, const VoxelGrid<VoxelState> &vg, int depth=0);
 

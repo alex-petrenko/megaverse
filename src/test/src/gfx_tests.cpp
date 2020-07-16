@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <gfx/windowless_context.hpp>
+#include <magnum_rendering/windowless_context.hpp>
 
 
 TEST(gfx, context)
