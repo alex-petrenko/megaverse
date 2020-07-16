@@ -36,6 +36,7 @@
 
 # CMake build
 cmake-build*
+build*
 
 # Libs (TODO: use submodules!)
 corrade/**
