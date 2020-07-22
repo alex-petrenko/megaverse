@@ -7,7 +7,16 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <util/tiny_logger.hpp>
+
 namespace py = pybind11;
+
+
+
+void setVoxelEnvLogLevel(int level)
+{
+    setLogLevel(LogLevel(level));
+}
 
 
 class VoxelEnvGym
@@ -114,6 +123,8 @@ private:
 PYBIND11_MODULE(voxel_env, m)
 {
     m.doc() = "voxel env"; // optional module docstring
+
+    m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
         .def(py::init<int, int, int>())

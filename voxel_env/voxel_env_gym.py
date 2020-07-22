@@ -5,11 +5,13 @@ import numpy as np
 from gym.spaces import Discrete
 
 # noinspection PyUnresolvedReferences
-from voxel_env.extension.voxel_env import VoxelEnvGym
+from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
     def __init__(self, num_agents=2):
+        set_voxel_env_log_level(2)
+
         self.img_w = 128
         self.img_h = 72
         self.channels = 3

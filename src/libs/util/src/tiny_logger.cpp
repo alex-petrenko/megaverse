@@ -16,7 +16,9 @@ namespace
 {
 
 /// Everything with level higher than logLevel will be discarded.
-const LogLevel logLevel = DEBUG;
+LogLevel logLevel = DEBUG;
+
+
 
 const char * levelToStr(LogLevel level)
 {
@@ -52,6 +54,12 @@ void printTime(std::ostream &stream)
     stream << timeStr << '.' << std::setw(3) << std::setfill('0') << ms << ' ';
 }
 
+}
+
+
+void setLogLevel(LogLevel level)
+{
+    logLevel = level;
 }
 
 

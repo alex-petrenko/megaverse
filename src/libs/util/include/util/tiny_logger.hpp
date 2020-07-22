@@ -17,6 +17,10 @@ enum LogLevel
     DEBUG,
 };
 
+
+void setLogLevel(LogLevel level);
+
+
 class LogMessage
 {
 public:
