@@ -17,8 +17,8 @@ target_link_libraries(test_performance PRIVATE util ${MAGNUM_DEPENDENCIES} Magnu
 add_app_default(viewer viewer.cpp)
 target_link_libraries(viewer PRIVATE util env ${MAGNUM_DEPENDENCIES} Magnum::Application)
 
-add_app_default(voxel_env voxel_env.cpp)
-target_link_libraries(voxel_env PRIVATE util env magnum_rendering ${MAGNUM_DEPENDENCIES} Magnum::WindowlessEglApplication ${OpenCV_LIBS})
+add_app_default(voxel_env_app voxel_env_app.cpp)
+target_link_libraries(voxel_env_app PRIVATE util env magnum_rendering ${MAGNUM_DEPENDENCIES} Magnum::WindowlessEglApplication ${OpenCV_LIBS})
 
 add_app_default(wireframe wireframe.cpp)
 target_link_libraries(wireframe PRIVATE util env ${MAGNUM_DEPENDENCIES} Magnum::Application)

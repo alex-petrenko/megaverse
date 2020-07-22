@@ -216,7 +216,7 @@ Viewer::Viewer(const Arguments& arguments):
 
     axis = MeshTools::compile(Primitives::axis3D());
 
-    axisObject = std::make_unique<Object3D>(&env.scene);
+    axisObject = std::make_unique<Object3D>(env.scene.get());
     axisObject->scale(Vector3{1, 1, 1});
     axisDrawable = std::make_unique<FlatDrawable>(*axisObject, drawables, flatShader, axis);
 
@@ -229,7 +229,7 @@ Viewer::Viewer(const Arguments& arguments):
     );
     const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(), exitPadCoords.min.z() + exitPadScale.z() / 2);
 
-    exitPadDrawable = std::make_unique<SimpleDrawable3D>(env.scene, drawables, shader, exitPadMesh, 0x50c878_rgbf);
+    exitPadDrawable = std::make_unique<SimpleDrawable3D>(*env.scene, drawables, shader, exitPadMesh, 0x50c878_rgbf);
     exitPadDrawable->scale({0.5, 0.025, 0.5}).scale(exitPadScale);
     exitPadDrawable->translate({0.0, 0.025, 0.0});
     exitPadDrawable->translate(exitPadPos);
@@ -244,7 +244,7 @@ Viewer::Viewer(const Arguments& arguments):
     );
 
     for (auto layoutDrawable : env.layoutDrawables) {
-        auto voxelObject = std::make_unique<Object3D>(&env.scene);
+        auto voxelObject = std::make_unique<Object3D>(env.scene.get());
 
         const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
         auto scale = Vector3{
@@ -270,7 +270,7 @@ Viewer::Viewer(const Arguments& arguments):
     }
 
     /* Configure free camera */
-    freeCameraObject = new Object3D{&env.scene};
+    freeCameraObject = new Object3D{env.scene.get()};
     freeCameraObject->rotateX(0.0_degf);
     freeCameraObject->rotateY(270.0_degf);
     freeCameraObject->translate(Vector3{1.5, 5, 1.5});
@@ -304,7 +304,7 @@ void Viewer::drawEvent()
 
     auto activeCameraPtr = freeCamera;
     if (!noclipCamera)
-        activeCameraPtr = env.agents[activeAgent]->camera.get();
+        activeCameraPtr = env.agents[activeAgent]->camera;
 
     activeCameraPtr->draw(drawables);
 

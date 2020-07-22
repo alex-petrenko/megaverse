@@ -27,8 +27,11 @@
 #include <Magnum/Platform/WindowlessEglApplication.h>
 #include <Magnum/PixelFormat.h>
 
-#include <magnum_rendering/magnum_env_renderer.hpp>
 #include <util/tiny_logger.hpp>
+
+#include <magnum_rendering/windowless_context.hpp>
+#include <magnum_rendering/magnum_env_renderer.hpp>
+
 
 
 using namespace Magnum;
@@ -99,13 +102,12 @@ private:
 };
 
 
-struct MagnumEnvRenderer::Impl : public Platform::WindowlessApplication
+struct MagnumEnvRenderer::Impl
 {
 public:
-    explicit Impl(const Arguments& arguments, Env &env, int w, int h);
+    explicit Impl(Env &env, int w, int h);
 
-    // this is pure virtual in the base class, but we're not using it
-    virtual int exec() override { return 0; }
+    ~Impl();
 
     /**
      * Reset the state of the renderer between episodes.
@@ -118,6 +120,8 @@ public:
     const uint8_t * getObservation(int agentIdx) const;
 
 public:
+    WindowlessContext ctx;
+
     Vector2i framebufferSize;
 
     SceneGraph::DrawableGroup3D drawables;
@@ -138,8 +142,8 @@ public:
 };
 
 
-MagnumEnvRenderer::Impl::Impl(const Platform::WindowlessEglApplication::Arguments &arguments, Env &env, int w, int h)
-    : Platform::WindowlessApplication{arguments}
+MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h)
+    : ctx{}
     , framebufferSize{w, h}
     , framebuffer{Magnum::Range2Di{{}, framebufferSize}}
 {
@@ -189,8 +193,16 @@ MagnumEnvRenderer::Impl::Impl(const Platform::WindowlessEglApplication::Argument
     reset(env);
 }
 
+MagnumEnvRenderer::Impl::~Impl()
+{
+    TLOG(INFO) << __PRETTY_FUNCTION__;
+    ctx.makeCurrent();
+}
+
 void MagnumEnvRenderer::Impl::reset(Env &env)
 {
+    ctx.makeCurrent();
+
     // reset renderer data structures
     {
         drawables = SceneGraph::DrawableGroup3D{};
@@ -206,10 +218,10 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
             agentPtr->rotateY(frand(env.getRng()) * 360.0_degf);
             agentPtr->translate(pos);
 
-            auto & agentDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentMesh, 0xf9d71c_rgbf);
+            auto & agentDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentMesh, 0xf9d71c_rgbf, agentPtr);
             agentDrawable.scale({0.25f, 0.25f * 0.9f, 0.25f});
 
-            auto & agentEyeDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentEyeMesh, 0x222222_rgbf);
+            auto & agentEyeDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentEyeMesh, 0x222222_rgbf, agentPtr);
             agentEyeDrawable.scale({0.17, 0.075, 0.17}).translate({0.0f, 0.2f, -0.08f});
         }
     }
@@ -225,7 +237,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
         const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(),
                                         exitPadCoords.min.z() + exitPadScale.z() / 2);
 
-        auto &exitPadDrawable = env.scene->addChild<SimpleDrawable3D>(drawables, shader, exitPadMesh, 0x50c878_rgbf);
+        auto &exitPadDrawable = env.scene->addChild<SimpleDrawable3D>(drawables, shader, exitPadMesh, 0x50c878_rgbf, env.scene.get());
         exitPadDrawable.scale({0.5, 0.025, 0.5}).scale(exitPadScale);
         exitPadDrawable.translate({0.0, 0.025, 0.0});
         exitPadDrawable.translate(exitPadPos);
@@ -292,12 +304,7 @@ const uint8_t * MagnumEnvRenderer::Impl::getObservation(int agentIdx) const
 
 MagnumEnvRenderer::MagnumEnvRenderer(Env &env, int w, int h)
 {
-    // TODO: just create a windowless context here explicitly, no need to derive from WindowlessApplication
-    int fakeArgc = 1;
-    char *fakeArgv[1] = {"test"};
-    Platform::WindowlessApplication::Arguments args{fakeArgc, &fakeArgv[0]};
-
-    pimpl = std::make_unique<Impl>(args, env, w, h);
+    pimpl = std::make_unique<Impl>(env, w, h);
 }
 
 MagnumEnvRenderer::~MagnumEnvRenderer() = default;

@@ -38,9 +38,5 @@
 cmake-build*
 build*
 
-# Libs (TODO: use submodules!)
-corrade/**
-magnum/**
-src/3rdparty/googletest-1.10.0/**
-
-
+# Python build stuff
+*.egg-info/**

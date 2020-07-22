@@ -51,14 +51,6 @@ struct ContextEGL
 
         static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
                                                EGL_PBUFFER_BIT,
-                                               EGL_BLUE_SIZE,
-                                               8,
-                                               EGL_GREEN_SIZE,
-                                               8,
-                                               EGL_RED_SIZE,
-                                               8,
-                                               EGL_DEPTH_SIZE,
-                                               24,
                                                EGL_RENDERABLE_TYPE,
                                                EGL_OPENGL_BIT,
                                                EGL_NONE};
@@ -104,7 +96,7 @@ struct ContextEGL
         }
         CHECK_EGL_ERROR();
 
-        TLOG(INFO) << "[EGL] Version: " << eglQueryString(display_, EGL_VERSION);
+        TLOG(INFO) << "[EGL] Version: " << eglQueryString(display_, EGL_VERSION) << " display: " << display_;
         TLOG(INFO) << "[EGL] Vendor: " << eglQueryString(display_, EGL_VENDOR);
 
         // 2. Select an appropriate configuration
@@ -129,19 +121,25 @@ struct ContextEGL
         CHECK_EGL_ERROR();
 
         // 5. Make context current and create Magnum context
-        makeCurrent();
+        makeCurrent(false);
 
         TCHECK(magnumGlContext_.tryCreate())
             << "[EGL] Failed to create OpenGL context";
         isValid_ = true;
     };
 
-    void makeCurrent()
+    void makeCurrent(bool updateMagnumContext = true)
     {
+        if (Magnum::GL::Context::hasCurrent())
+            Magnum::GL::Context::makeCurrent(nullptr);
+
         EGLBoolean retval = eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_);
         if (!retval)
             TLOG(ERROR) << "[EGL] Failed to make EGL context current";
         CHECK_EGL_ERROR();
+
+        if (updateMagnumContext)
+            magnumGlContext_.makeCurrent(&magnumGlContext_);
     };
 
     bool isValid() { return isValid_; };
@@ -151,7 +149,9 @@ struct ContextEGL
     ~ContextEGL()
     {
         eglDestroyContext(display_, context_);
-        eglTerminate(display_);
+//        eglTerminate(display_);
+
+        Magnum::GL::Context::makeCurrent(nullptr);
     }
 
 private:

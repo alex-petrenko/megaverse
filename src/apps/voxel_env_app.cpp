@@ -5,17 +5,17 @@
 #include <opencv2/highgui.hpp>
 
 #include <util/tiny_logger.hpp>
+#include <util/util.hpp>
+#include <util/tiny_profiler.hpp>
 
 #include <env/env.hpp>
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
-#include <util/util.hpp>
-#include <util/tiny_profiler.hpp>
 
 
 constexpr bool viz = false;
 constexpr bool hires = false;
-bool randomActions = false;
+bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
@@ -68,7 +68,7 @@ int main_loop(Env &env, EnvRenderer &renderer)
 
             if constexpr (viz) {
                 auto latestAction = Action::Idle;
-                auto key = cv::waitKeyEx(40);
+                auto key = cv::waitKeyEx(1);
 
                 switch (key) {
                     case 'w':

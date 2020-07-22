@@ -47,7 +47,7 @@ void Env::reset()
 
     agents.clear();
     for (int i = 0; i < numAgents; ++i) {
-        auto &agent = scene->addChild<Agent>();
+        auto &agent = scene->addChild<Agent>(scene.get());
         agents.emplace_back(&agent);
     }
 }
