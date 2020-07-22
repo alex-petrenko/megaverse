@@ -74,17 +74,19 @@ class TestEnv(TestCase):
         for e in envs:
             e.reset()
 
-        actions = sample_actions(e)
+        total_reward = 0.0
+        actions = sample_actions(envs[0])
         start = time.time()
         for step in range(n_steps):
             for i, e in enumerate(envs):
                 obs, rew, dones, infos = e.step(actions)
+                total_reward += sum(rew)
                 if all(dones):
                     print(f'Episode boundary env {i}')
         end = time.time()
         elapsed = end - start
         fps = envs[0].num_agents * n * n_steps / elapsed
-        print(f'Time {elapsed:.3f}, fps: {fps:.1f}')
+        print(f'Time {elapsed:.3f}, fps: {fps:.1f}, total reward: {total_reward:.3f}')
 
         for e in envs:
             e.close()

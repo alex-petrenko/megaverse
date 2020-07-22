@@ -67,6 +67,15 @@ public:
     bool step();
 
     /**
+     * @param agentIdx agent for which to query the last reward
+     * @return reward in the last tick
+     */
+    float getLastReward(int agentIdx)
+    {
+        return lastReward[agentIdx];
+    }
+
+    /**
      * Seed the rng with specific seed value.
      */
     void seed(int seedValue);
@@ -94,6 +103,7 @@ private:
     Rng rng{std::random_device{}()};
 
     std::vector<Action> currAction;
+    std::vector<float> lastReward;
 
     LayoutGenerator layoutGenerator{rng};
 };

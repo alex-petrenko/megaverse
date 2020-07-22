@@ -58,8 +58,7 @@ public:
 
     float getLastReward(int agentIdx)
     {
-        // TODO
-        return 0.0f;
+        return env->getLastReward(agentIdx);
     }
 
     py::array_t<uint8_t> getObservation(int agentIdx)

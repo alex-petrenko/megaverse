@@ -13,6 +13,7 @@ using namespace Magnum::Math::Literals;
 Env::Env(int numAgents)
     : numAgents{numAgents}
     , currAction(size_t(numAgents), Action::Idle)
+    , lastReward(size_t(numAgents), 0.0f)
 {
 }
 
@@ -63,6 +64,8 @@ bool Env::step()
     static constexpr auto walkSpeed = 0.66f, strafeSpeed = 0.5f;
     static constexpr auto turnSpeed = 7.0_degf;
 
+    std::fill(lastReward.begin(), lastReward.end(), 0.0f);
+
     for (int i = 0; i < numAgents; ++i) {
         Magnum::Vector3 delta;
 
@@ -94,19 +97,25 @@ bool Env::step()
         agent->move(delta, grid);
     }
 
-    bool done = true;
+    bool done = false;
+    int numAgentsAtExit = 0;
 
-    for (auto &agent : agents) {
+    for (int i = 0; i < int(agents.size()); ++i) {
+        const auto &agent = agents[i];
         const auto t = agent->transformation().translation();
 
         if (t.x() >= exitPad.min.x() && t.x() <= exitPad.max.x()
             && t.y() >= exitPad.min.y() && t.y() <= exitPad.max.y()
             && t.z() >= exitPad.min.z() && t.z() <= exitPad.max.z()) {
-            continue;
+            ++numAgentsAtExit;
+            lastReward[i] += 0.05f;
         }
+    }
 
-        done = false;
-        break;
+    if (numAgentsAtExit == numAgents) {
+        done = true;
+        for (int i = 0; i < int(agents.size()); ++i)
+            lastReward[i] += 5.0f;
     }
 
     ++episodeDuration;

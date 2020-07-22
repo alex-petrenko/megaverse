@@ -12,12 +12,15 @@ class VoxelEnv(gym.Env):
     def __init__(self, num_agents=2):
         self.img_w = 128
         self.img_h = 72
+        self.channels = 3
 
         self.num_agents = num_agents
         self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents)
-        self.action_space = self.generate_action_space()
 
         self.empty_infos = [{} for _ in range(self.num_agents)]
+
+        self.action_space = self.generate_action_space()
+        self.observation_space = gym.spaces.Box(0, 255, (self.channels, self.img_h, self.img_w), dtype=np.uint8)
 
     @staticmethod
     def generate_action_space():
@@ -56,6 +59,7 @@ class VoxelEnv(gym.Env):
         for i in range(self.num_agents):
             o = self.env.get_observation(i)
             o = o[:, :, :3]
+            o = np.transpose(o, (2, 0, 1))  # convert to CHW for PyTorch
             obs.append(o)
 
         return obs
