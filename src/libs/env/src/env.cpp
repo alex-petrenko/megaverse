@@ -10,14 +10,15 @@
 using namespace Magnum::Math::Literals;
 
 
-Env::Env(int seed)
+Env::Env(int numAgents)
+    : numAgents{numAgents}
+    , currAction(size_t(numAgents), Action::Idle)
 {
-    TLOG(INFO) << "Creating an environment";
+}
 
-    if (seed != -1)
-        rng.seed((unsigned long)seed);
-
-    reset();
+void Env::seed(int seedValue)
+{
+    rng.seed((unsigned long)seedValue);
 }
 
 void Env::reset()
@@ -121,4 +122,3 @@ bool Env::step()
 
     return done;
 }
-

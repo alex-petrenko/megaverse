@@ -33,13 +33,13 @@ TEST(env, multipleEnvs)
     Env env1;
     Env env2;
 
-    MagnumEnvRenderer renderer1{env1, 128, 72};
     env1.reset();
+    MagnumEnvRenderer renderer1{env1, 128, 72};
     renderer1.reset(env1);
     renderer1.draw(env1);
 
-    MagnumEnvRenderer renderer2{env2, 128, 72};
     env2.reset();
+    MagnumEnvRenderer renderer2{env2, 128, 72};
     renderer2.reset(env2);
     renderer2.draw(env2);
 }

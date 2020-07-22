@@ -35,7 +35,7 @@ int main_loop(Env &env, EnvRenderer &renderer)
     int numFrames = 0;
 
     if constexpr (viz) {
-        for (int i = 0; i < env.numAgents; ++i) {
+        for (int i = 0; i < env.getNumAgents(); ++i) {
             const auto wname = std::to_string(i);
             cv::namedWindow(wname);
             cv::moveWindow(wname, int(W * i * 1.1), 0);
@@ -55,7 +55,7 @@ int main_loop(Env &env, EnvRenderer &renderer)
             done = env.step();
             renderer.draw(env);
 
-            for (int i = 0; i < env.numAgents; ++i) {
+            for (int i = 0; i < env.getNumAgents(); ++i) {
                 const uint8_t *obsData = renderer.getObservation(i);
 
                 if constexpr (viz) {
@@ -138,7 +138,9 @@ int main(int argc, char** argv)
 {
     (void)argc, void(argv);  // annoying warnings
 
-    Env env{42};
+    Env env;
+    env.seed(42);
+    env.reset();
     MagnumEnvRenderer renderer{env, W, H};
 
     tprof().startTimer("loop");
@@ -148,7 +150,7 @@ int main(int argc, char** argv)
 
     auto fps = nFrames / (usecPassed / 1e6);
 
-    TLOG(DEBUG) << "\n\n" << fps * env.numAgents << " FPS! (" << env.numAgents << "*" << fps << ") for " << nFrames << " frames";
+    TLOG(DEBUG) << "\n\n" << fps * env.getNumAgents() << " FPS! (" << env.getNumAgents() << "*" << fps << ") for " << nFrames << " frames";
 
     return EXIT_SUCCESS;
 }

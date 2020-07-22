@@ -33,4 +33,8 @@ make -j10
 cd Release/bin
 ./voxel_env_app
 
+6) To build the Python package and install it in the active Python env:
+python setup.py develop
+pip install -e .
+
 ```

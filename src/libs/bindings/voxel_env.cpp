@@ -13,22 +13,30 @@ namespace py = pybind11;
 class VoxelEnvGym
 {
 public:
-    VoxelEnvGym(int w, int h)
+    VoxelEnvGym(int w, int h, int numAgents)
     : w{w}, h{h}
     {
-        env = std::make_unique<Env>(42);
-        renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
+        env = std::make_unique<Env>(numAgents);
+    }
+
+    void seed(int seedValue)
+    {
+        env->seed(seedValue);
     }
 
     int numAgents() const
     {
-        return env->numAgents;
+        return env->getNumAgents();
     }
 
     void reset()
     {
         env->reset();
+
+        if (!renderer)
+            renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
         renderer->reset(*env);
+        renderer->draw(*env);
     }
 
     void setAction(int agentIdx, int actionIdx)
@@ -36,11 +44,22 @@ public:
         env->setAction(agentIdx, Action(1 << actionIdx));
     }
 
+    void setActionMask(int agentIdx, int actionMask)
+    {
+        env->setAction(agentIdx, Action(actionMask));
+    }
+
     bool step()
     {
         auto done = env->step();
         renderer->draw(*env);
         return done;
+    }
+
+    float getLastReward(int agentIdx)
+    {
+        // TODO
+        return 0.0f;
     }
 
     py::array_t<uint8_t> getObservation(int agentIdx)
@@ -54,7 +73,7 @@ public:
         // TODO: remove
 
         if (!windowsInitialized) {
-            for (int i = 0; i < env->numAgents; ++i) {
+            for (int i = 0; i < env->getNumAgents(); ++i) {
                 const auto wname = std::to_string(i);
                 cv::namedWindow(wname);
                 cv::moveWindow(wname, int(w * i * 1.1), 0);
@@ -62,7 +81,7 @@ public:
             windowsInitialized = true;
         }
 
-        for (int i = 0; i < env->numAgents; ++i) {
+        for (int i = 0; i < env->getNumAgents(); ++i) {
             const uint8_t *obsData = renderer->getObservation(i);
 
             cv::Mat mat(h, w, CV_8UC4, (char *) obsData);
@@ -98,11 +117,14 @@ PYBIND11_MODULE(voxel_env, m)
     m.doc() = "voxel env"; // optional module docstring
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int>())
-        .def("numAgents", &VoxelEnvGym::numAgents)
+        .def(py::init<int, int, int>())
+        .def("num_agents", &VoxelEnvGym::numAgents)
+        .def("seed", &VoxelEnvGym::seed)
         .def("reset", &VoxelEnvGym::reset)
-        .def("setAction", &VoxelEnvGym::setAction)
+        .def("set_action", &VoxelEnvGym::setAction)
+        .def("set_action_mask", &VoxelEnvGym::setActionMask)
         .def("step", &VoxelEnvGym::step)
-        .def("getObservation", &VoxelEnvGym::getObservation)
+        .def("get_observation", &VoxelEnvGym::getObservation)
+        .def("get_last_reward", &VoxelEnvGym::getLastReward)
         .def("close", &VoxelEnvGym::close);
 }

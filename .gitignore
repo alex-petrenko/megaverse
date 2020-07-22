@@ -33,6 +33,7 @@
 
 # IDE
 .idea/**
+src/.idea/**
 
 # CMake build
 cmake-build*

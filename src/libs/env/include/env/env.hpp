@@ -15,12 +15,16 @@
 enum class Action
 {
     Idle = 0,
+
     Left = 1 << 1,
     Right = 1 << 2,
+
     Forward = 1 << 3,
     Backward = 1 << 4,
+
     LookLeft = 1 << 5,
     LookRight = 1 << 6,
+
     LookDown = 1 << 7,
     LookUp = 1 << 8,
 
@@ -43,7 +47,9 @@ typedef Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D> Sc
 class Env
 {
 public:
-    explicit Env(int seed = -1);
+    explicit Env(int numAgents = 2);
+
+    int getNumAgents() const { return numAgents; }
 
     void reset();
 
@@ -60,13 +66,16 @@ public:
      */
     bool step();
 
+    /**
+     * Seed the rng with specific seed value.
+     */
+    void seed(int seedValue);
+
     Rng & getRng() { return rng; }
 
 private:
 
 public:
-    static constexpr int numAgents = 2;
-
     std::unique_ptr<Scene3D> scene;
 
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
@@ -77,12 +86,14 @@ public:
     std::vector<Agent *> agents;
 
 private:
+    int numAgents;
+
     const int horizon = 1000;
     int episodeDuration = 0;
 
     Rng rng{std::random_device{}()};
 
-    std::array<Action, numAgents> currAction;
+    std::vector<Action> currAction;
 
     LayoutGenerator layoutGenerator{rng};
 };

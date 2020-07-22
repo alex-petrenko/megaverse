@@ -198,7 +198,7 @@ Viewer::Viewer(const Arguments& arguments):
     agentEyeMesh = MeshTools::compile(Primitives::cubeSolid());
 
     const auto &startingPositions = env.agentStartingPositions;
-    for (int i = 0; i < env.numAgents; ++i) {
+    for (int i = 0; i < env.getNumAgents(); ++i) {
         auto &agentObj = env.agents[i];
         auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
         agentObj->rotateY(frand(env.getRng()) * 360.0_degf);

@@ -163,7 +163,7 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h)
 
     CORRADE_INTERNAL_ASSERT(framebuffer.checkStatus(GL::FramebufferTarget::Draw) == GL::Framebuffer::Status::Complete);
 
-    for (int i = 0; i < env.numAgents; ++i) {
+    for (int i = 0; i < env.getNumAgents(); ++i) {
         agentFrames.emplace_back(size_t(framebufferSize.x() * framebufferSize.y() * 4));
         agentImageViews.emplace_back(std::make_unique<MutableImageView2D>(PixelFormat::RGBA8Unorm, framebufferSize, agentFrames[i]));
     }
@@ -189,8 +189,6 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h)
             Shaders::Phong::Color3{}
         );
     }
-
-    reset(env);
 }
 
 MagnumEnvRenderer::Impl::~Impl()
@@ -212,7 +210,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
     // agents
     {
         const auto &startingPositions = env.agentStartingPositions;
-        for (int i = 0; i < env.numAgents; ++i) {
+        for (int i = 0; i < env.getNumAgents(); ++i) {
             auto agentPtr = env.agents[i];
             auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
             agentPtr->rotateY(frand(env.getRng()) * 360.0_degf);
@@ -270,7 +268,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
 
 void MagnumEnvRenderer::Impl::draw(Env &env)
 {
-    for (int i = 0; i < env.numAgents; ++i) {
+    for (int i = 0; i < env.getNumAgents(); ++i) {
         framebuffer
             .clearColor(0, Color3{0.125f})
             .clearDepth(1.0f)
