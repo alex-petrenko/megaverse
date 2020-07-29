@@ -9,6 +9,7 @@
 #include <util/util.hpp>
 
 #include <env/agent.hpp>
+#include <env/physics.hpp>
 #include <env/layout_generator.hpp>
 
 
@@ -94,6 +95,15 @@ public:
     std::vector<VoxelCoords> agentStartingPositions;
     std::vector<Agent *> agents;
 
+    std::vector<Object3D *> layoutObjects;
+
+    // physics stuff
+    btDbvtBroadphase bBroadphase;
+    btSequentialImpulseConstraintSolver bConstraintSolver;
+    btDefaultCollisionConfiguration bCollisionConfiguration;
+    btCollisionDispatcher bCollisionDispatcher{&bCollisionConfiguration};
+    btDiscreteDynamicsWorld bWorld{&bCollisionDispatcher, &bBroadphase, &bConstraintSolver, &bCollisionConfiguration};
+
 private:
     int numAgents;
 
@@ -106,4 +116,6 @@ private:
     std::vector<float> lastReward;
 
     LayoutGenerator layoutGenerator{rng};
+
+    std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
 };

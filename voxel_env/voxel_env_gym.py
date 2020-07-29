@@ -102,7 +102,7 @@ class VoxelEnv(gym.Env):
         obs = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
 
         aspect_ratio = self.img_w / self.img_h
-        render_w = 600
+        render_w = 800
         obs = cv2.resize(obs, (render_w, int(render_w / aspect_ratio)))
         return obs
 

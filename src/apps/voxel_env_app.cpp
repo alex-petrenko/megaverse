@@ -13,9 +13,11 @@
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
-constexpr bool viz = false;
-constexpr bool hires = false;
-bool randomActions = true;
+constexpr int delayMs = 50;
+
+constexpr bool viz = true;
+constexpr bool hires = true;
+bool randomActions = false;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
@@ -68,7 +70,7 @@ int main_loop(Env &env, EnvRenderer &renderer)
 
             if constexpr (viz) {
                 auto latestAction = Action::Idle;
-                auto key = cv::waitKeyEx(1);
+                auto key = cv::waitKeyEx(delayMs);
 
                 switch (key) {
                     case 'w':

@@ -39,7 +39,7 @@ LayoutGenerator::LayoutGenerator(Rng &rng)
 
 void LayoutGenerator::init()
 {
-    caveHeight = 3;
+    caveHeight = 0;
 
     length = randRange(8, 25, rng);
     width = randRange(5, 20, rng);

@@ -5,8 +5,14 @@ set(WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "" FORCE)
 set(WITH_TGAIMPORTER ON CACHE BOOL "" FORCE)
 add_subdirectory(magnum EXCLUDE_FROM_ALL)
 
+#find_package(Bullet REQUIRED)
+
+set(WITH_BULLET ON CACHE BOOL "" FORCE)
+add_subdirectory(magnum-integration EXCLUDE_FROM_ALL)
+
 find_package(Corrade REQUIRED Main)
 find_package(Magnum REQUIRED GL MeshTools Primitives SceneGraph Shaders Sdl2Application WindowlessEglApplication Trade)
+find_package(MagnumIntegration REQUIRED Bullet)
 
 add_subdirectory(googletest-1.10.0)
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})

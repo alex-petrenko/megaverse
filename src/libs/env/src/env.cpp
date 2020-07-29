@@ -7,6 +7,7 @@
 #include <env/env.hpp>
 
 
+using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
@@ -35,7 +36,7 @@ void Env::reset()
 
     layoutGenerator.init();
     layoutGenerator.generateFloorWalls(grid);
-    layoutGenerator.generateCave(grid);
+//    layoutGenerator.generateCave(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
 
     exitPad = layoutGenerator.levelExit(numAgents);
@@ -51,6 +52,37 @@ void Env::reset()
     for (int i = 0; i < numAgents; ++i) {
         auto &agent = scene->addChild<Agent>(scene.get());
         agents.emplace_back(&agent);
+    }
+
+    // map layout
+    {
+        layoutObjects.clear();
+        collisionShapes.clear();
+
+        TLOG(INFO) << "Env has " << layoutDrawables.size() << " layout drawables";
+
+        for (auto layoutDrawable : layoutDrawables) {
+            const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
+            auto scale = Vector3{
+                float(bboxMax.x() - bboxMin.x() + 1) / 2,
+                float(bboxMax.y() - bboxMin.y() + 1) / 2,
+                float(bboxMax.z() - bboxMin.z() + 1) / 2,
+            };
+
+//            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), scale.y(), scale.z()});
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
+            auto &layoutObject = scene->addChild<RigidBody>(scene.get(), 1.0f, bBoxShape.get(), bWorld);
+
+            layoutObject.scale(scale)
+                        .translate({0.5, 0.5, 0.5})
+                        .translate({float((bboxMin.x() + bboxMax.x())) / 2, float((bboxMin.y() + bboxMax.y())) / 2, float((bboxMin.z() + bboxMax.z())) / 2});
+
+            // update position of the collision shape
+            layoutObject.syncPose();
+
+            layoutObjects.emplace_back(&layoutObject);
+            collisionShapes.emplace_back(std::move(bBoxShape));
+        }
     }
 }
 

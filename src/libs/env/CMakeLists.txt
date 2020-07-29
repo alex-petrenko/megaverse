@@ -6,6 +6,7 @@ set(MAGNUM_DEPENDENCIES
         Magnum::GL
         Magnum::Magnum
         Magnum::SceneGraph
+        MagnumIntegration::Bullet
 )
 
 add_library_default(env)

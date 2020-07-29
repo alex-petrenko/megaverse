@@ -26,6 +26,7 @@
 #include <Magnum/GL/Context.h>
 #include <Magnum/Platform/WindowlessEglApplication.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/BulletIntegration/DebugDraw.h>
 
 #include <util/tiny_logger.hpp>
 
@@ -139,6 +140,9 @@ public:
 
     std::vector<Containers::Array<uint8_t>> agentFrames;
     std::vector<std::unique_ptr<MutableImageView2D>> agentImageViews;
+
+    bool withDebugDraw = true;
+    BulletIntegration::DebugDraw debugDraw{NoCreate};
 };
 
 
@@ -188,6 +192,13 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h)
             Shaders::Phong::NormalMatrix{},
             Shaders::Phong::Color3{}
         );
+    }
+
+    if (withDebugDraw) {
+        debugDraw = BulletIntegration::DebugDraw{};
+        debugDraw.setMode(BulletIntegration::DebugDraw::Mode::DrawWireframe);
+
+        env.bWorld.setDebugDrawer(&debugDraw);
     }
 }
 
@@ -243,25 +254,9 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
 
     // map layout
     {
-        TLOG(INFO) << "Rendering " << env.layoutDrawables.size() << " layout drawables";
-
-        for (auto layoutDrawable : env.layoutDrawables) {
-            auto &voxelObject = env.scene->addChild<Object3D>();
-
-            const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
-            auto scale = Vector3{
-                float(bboxMax.x() - bboxMin.x() + 1) / 2,
-                float(bboxMax.y() - bboxMin.y() + 1) / 2,
-                float(bboxMax.z() - bboxMin.z() + 1) / 2,
-            };
-
-            voxelObject.scale(scale)
-                .translate({0.5, 0.5, 0.5})
-                .translate({float((bboxMin.x() + bboxMax.x())) / 2, float((bboxMin.y() + bboxMax.y())) / 2, float((bboxMin.z() + bboxMax.z())) / 2});
-
+        for (auto layoutObject : env.layoutObjects) {
             auto transformation = Matrix4::scaling(Vector3{1.0f});
-
-            voxelObject.addFeature<CustomDrawable>(voxelInstanceData, 0xa5c9ea_rgbf, transformation, drawables);
+            layoutObject->addFeature<CustomDrawable>(voxelInstanceData, 0xa5c9ea_rgbf, transformation, drawables);
         }
     }
 }
@@ -288,6 +283,15 @@ void MagnumEnvRenderer::Impl::draw(Env &env)
         voxelInstanceBuffer.setData(voxelInstanceData, GL::BufferUsage::DynamicDraw);
         cubeMesh.setInstanceCount(Int(voxelInstanceData.size()));
         shaderInstanced.draw(cubeMesh);
+
+        // Bullet debug draw
+        if (withDebugDraw)
+        {
+            GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
+            debugDraw.setTransformationProjectionMatrix(activeCameraPtr->projectionMatrix()*activeCameraPtr->cameraMatrix());
+            env.bWorld.debugDrawWorld();
+            GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::Less);
+        }
 
         framebuffer
             .mapForRead(GL::Framebuffer::ColorAttachment{0})

@@ -1,3 +1,4 @@
 add_subdirectory(textured_triangle)
 add_subdirectory(picking_objects)
 add_subdirectory(arcball)
+add_subdirectory(bullet_example)
