@@ -10,3 +10,6 @@
 [submodule "src/3rdparty/corrade"]
 	path = src/3rdparty/corrade
 	url = https://github.com/mosra/corrade.git
+[submodule "src/3rdparty/v4r"]
+	path = src/3rdparty/v4r
+	url = https://github.com/shacklettbp/v4r.git

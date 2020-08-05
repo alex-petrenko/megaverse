@@ -1,3 +1,5 @@
+add_subdirectory(v4r)
+
 add_subdirectory(corrade EXCLUDE_FROM_ALL)
 
 set(WITH_SDL2APPLICATION ON CACHE BOOL "" FORCE)

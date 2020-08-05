@@ -20,6 +20,9 @@ target_link_libraries(viewer PRIVATE util env ${MAGNUM_DEPENDENCIES} Magnum::App
 add_app_default(voxel_env_app voxel_env_app.cpp)
 target_link_libraries(voxel_env_app PRIVATE util env magnum_rendering ${MAGNUM_DEPENDENCIES} Magnum::WindowlessEglApplication ${OpenCV_LIBS})
 
+add_app_default(vkvoxel_env_app vkvoxel_env_app.cpp)
+target_link_libraries(vkvoxel_env_app PRIVATE util env v4r_rendering ${MAGNUM_DEPENDENCIES} ${OpenCV_LIBS})
+
 add_app_default(wireframe wireframe.cpp)
 target_link_libraries(wireframe PRIVATE util env ${MAGNUM_DEPENDENCIES} Magnum::Application)
 
