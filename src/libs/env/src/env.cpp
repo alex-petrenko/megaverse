@@ -18,6 +18,8 @@ Env::Env(int numAgents)
 {
     // what is this?
     bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+
+    availableLayouts = {LayoutType::Cave, LayoutType::Walls};  // current default
 }
 
 void Env::seed(int seedValue)
@@ -27,7 +29,7 @@ void Env::seed(int seedValue)
 
 void Env::reset()
 {
-    auto seed = randRange(0, 10000, rng);
+    auto seed = randRange(0, 1 << 30, rng);
     rng.seed((unsigned long)seed);
     TLOG(INFO) << "Using seed " << seed;
 
@@ -36,24 +38,23 @@ void Env::reset()
     // delete the previous layout/state
     grid.clear();
 
-    layoutGenerator.init();
-    layoutGenerator.generateFloorWalls(grid);
-    layoutGenerator.generateCave(grid);
+    const auto layoutTypeIdx = randRange(0, int(availableLayouts.size()), rng);
+    const auto layoutType = availableLayouts[layoutTypeIdx];
+
+    layoutGenerator.init(layoutType);
+    layoutGenerator.generate(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
 
-    exitPad = layoutGenerator.levelExit(numAgents);
+    exitPad = layoutGenerator.levelExit(grid, numAgents);
 
-    auto possibleStartingPositions = layoutGenerator.startingPositions(grid);
-    std::shuffle(possibleStartingPositions.begin(), possibleStartingPositions.end(), rng);
-
-    agentStartingPositions = std::vector<VoxelCoords>{possibleStartingPositions.cbegin(), possibleStartingPositions.cbegin() + numAgents};
+    agentStartingPositions = layoutGenerator.startingPositions(grid, numAgents);
 
     scene = std::make_unique<Scene3D>();
 
     agents.clear();
     for (int i = 0; i < numAgents; ++i) {
         auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
-        auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.5, 0.5}, randomRotation);
+        auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5}, randomRotation);
         agents.emplace_back(&agent);
     }
 

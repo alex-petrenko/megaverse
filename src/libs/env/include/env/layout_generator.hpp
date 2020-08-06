@@ -6,6 +6,15 @@
 #include <env/voxel_state.hpp>
 
 
+enum class LayoutType
+{
+    Empty,
+    Cave,
+    Walls,
+    Pit,
+};
+
+
 struct BoundingBox
 {
     VoxelCoords min, max;
@@ -23,24 +32,24 @@ struct BoundingBox
 class LayoutGenerator
 {
 public:
-    explicit LayoutGenerator(Rng &rng);
+    class LayoutGeneratorImpl;
 
-    void init();
-    void generateFloor(VoxelGrid<VoxelState> &grid);
-    void generateFloorWalls(VoxelGrid<VoxelState> &grid);
-    void generateCave(VoxelGrid<VoxelState> &grid);
+public:
+    explicit LayoutGenerator(Rng &rng);
+    ~LayoutGenerator();
+
+    void init(LayoutType layoutType = LayoutType::Empty);
+
+    void generate(VoxelGrid<VoxelState> &grid);
 
     std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid);
 
-    BoundingBox levelExit(int numAgents);
+    BoundingBox levelExit(const VoxelGrid<VoxelState> &grid, int numAgents);
 
-    std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid);
+    std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid, int numAgents);
 
 private:
     Rng &rng;
 
-    // length = x, height = y, width = z
-    int length, height, width;
-
-    int caveHeight;
+    std::unique_ptr<LayoutGeneratorImpl> generator;
 };

@@ -79,6 +79,11 @@ public:
         return lastReward[agentIdx];
     }
 
+    void setAvailableLayouts(const std::vector<LayoutType> &layouts)
+    {
+        availableLayouts = layouts;
+    }
+
     /**
      * Seed the rng with specific seed value.
      */
@@ -87,7 +92,7 @@ public:
     Rng & getRng() { return rng; }
 
     /**
-     * This is when we're running an actual realtime rendereing loop with human controls.
+     * This is when we're running an actual realtime rendering loop with human controls.
      * Should not be used by Gym env interface.
      * @param sec actual duration of the last frame.
      */
@@ -122,12 +127,15 @@ private:
 
     Rng rng{std::random_device{}()};
 
+    std::vector<LayoutType> availableLayouts;
+
     std::vector<Action> currAction;
     std::vector<float> lastReward;
 
     LayoutGenerator layoutGenerator{rng};
 
     std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
+
 
     float simulationStepSeconds = 1.0f / 15.0f;
     float lastFrameDurationSec = simulationStepSeconds;

@@ -66,6 +66,8 @@ private:
     int activeAgent = 0;
     Action currAction = Action::Idle;
 
+    bool forceReset = false;
+
     Timeline timeline;
 };
 
@@ -76,7 +78,7 @@ Viewer::Viewer(const Arguments& arguments):
     {
         const Vector2 dpiScaling = this->dpiScaling({});
         Configuration conf;
-        conf.setTitle("VoxelEnvViewer").setSize(conf.size(), dpiScaling);
+        conf.setTitle("VoxelEnvViewer").setSize({1280, 720}, dpiScaling);
         GLConfiguration glConf;
         glConf.setSampleCount(dpiScaling.max() < 2.0f ? 8 : 2);
         if(!tryCreate(conf, glConf)) {
@@ -89,7 +91,9 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
     env = std::make_unique<Env>();
-    env->seed(42);
+    // env->setAvailableLayouts({LayoutType::Walls});
+
+    // env->seed(42);
     env->reset();
 
     ctx = std::make_unique<WindowRenderingContext>();
@@ -132,12 +136,13 @@ void Viewer::tickEvent() {
     env->setAction(activeAgent, currAction);
     const auto done = env->step();
 
-//    TLOG(INFO) << "Passed seconds " << timeline.previousFrameDuration();
+    if (done || forceReset) {
+        if (done)
+            TLOG(INFO) << "Done!";
 
-    if (done) {
-        TLOG(INFO) << "Done!";
         env->reset();
         renderer->reset(*env);
+        forceReset = false;
     }
 
     redraw();
@@ -210,6 +215,9 @@ void Viewer::keyPressEvent(KeyEvent& event)
             break;
         case KeyEvent::Key::Three:
             activeAgent = 2;
+            break;
+        case KeyEvent::Key::R:
+            forceReset = true;
             break;
         case KeyEvent::Key::Esc:
             exit(0);

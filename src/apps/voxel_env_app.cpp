@@ -20,7 +20,7 @@ constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
-constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
+constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
 constexpr int maxNumFrames = performanceTest ? 30'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 

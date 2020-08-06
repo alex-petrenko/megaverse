@@ -18,22 +18,22 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
 {
     auto &cameraObject = addChild<Object3D>();
     // cameraObject.rotateY(0.0_degf);
-    cameraObject.translate(Magnum::Vector3{0, 0.25f, 0});
+    cameraObject.translate(Magnum::Vector3{0, 0.41f, 0});
 
     camera = &(cameraObject.addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-        .setProjectionMatrix(Matrix4::perspectiveProjection(75.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
+        .setProjectionMatrix(Matrix4::perspectiveProjection(105.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
     btTransform startTransform;
-    startTransform.setIdentity ();
+    startTransform.setIdentity();
     startTransform.setRotation(btQuaternion(btVector3(0, 1, 0), rotationRad));
     startTransform.setOrigin (btVector3(startingPosition.x(), startingPosition.y(), startingPosition.z()));
     ghostObject.setWorldTransform(startTransform);
 
     auto scaleAgents = 1.6f;
-    btScalar characterHeight = 0.55f * scaleAgents;
+    btScalar characterHeight = 0.65f * scaleAgents;
     btScalar characterRadius = 0.22f * scaleAgents;
 
     capsuleShape = std::make_unique<btCapsuleShape>(characterRadius, characterHeight);

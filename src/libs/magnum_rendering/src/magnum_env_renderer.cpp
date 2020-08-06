@@ -246,10 +246,10 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
             auto scaleAgents = 1.6f;
 
             auto & agentDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentMesh, 0xf9d71c_rgbf, agentPtr);
-            agentDrawable.scale({0.22f, 0.25f * 0.9f, 0.22f}).scale({scaleAgents, scaleAgents, scaleAgents});
+            agentDrawable.scale({0.22f, 0.25f * 0.9f, 0.22f}).scale({scaleAgents, scaleAgents, scaleAgents}).translate({0, 0.09f, 0});
 
             auto & agentEyeDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentEyeMesh, 0x222222_rgbf, agentPtr);
-            agentEyeDrawable.scale({0.16, 0.075, 0.16}).translate({0.0f, 0.2f, -0.07f}).scale({scaleAgents, scaleAgents, scaleAgents});
+            agentEyeDrawable.scale({0.16, 0.075, 0.16}).translate({0.0f, 0.23f, -0.07f}).scale({scaleAgents, scaleAgents, scaleAgents});
         }
     }
 
