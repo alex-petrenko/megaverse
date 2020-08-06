@@ -36,13 +36,17 @@ class VoxelEnv(gym.Env):
         LookLeft = 1 << 5,
         LookRight = 1 << 6,
 
-        LookDown = 1 << 7,
-        LookUp = 1 << 8,
+        Jump = 1 << 7,
+        Interact = 1 << 8,
+
+        LookDown = 1 << 9,
+        LookUp = 1 << 10,
         """
         space = gym.spaces.Tuple((
             Discrete(3),  # noop, go left, go right
             Discrete(3),  # noop, forward, backward
             Discrete(3),  # noop, look left, look right
+            Discrete(2),  # noop, jump
 
             # TODO: use other actions
         ))

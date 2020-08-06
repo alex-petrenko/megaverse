@@ -39,11 +39,11 @@ LayoutGenerator::LayoutGenerator(Rng &rng)
 
 void LayoutGenerator::init()
 {
-    caveHeight = 0;
+    caveHeight = randRange(2, 5, rng);
 
-    length = randRange(8, 25, rng);
-    width = randRange(5, 20, rng);
-    height = randRange(3, 6, rng) + caveHeight;
+    length = randRange(8, 30, rng);
+    width = randRange(5, 25, rng);
+    height = randRange(3, 5, rng) + caveHeight;
 
 }
 
@@ -75,18 +75,21 @@ void LayoutGenerator::generateFloorWalls(VoxelGrid<VoxelState> &grid)
 
 void LayoutGenerator::generateCave(VoxelGrid<VoxelState> &grid)
 {
-    auto growthProb = 0.39f;
-
-    auto seedX = randRange(2, length - 2, rng);
-    auto seedZ = randRange(2, width - 2, rng);
-
-    std::unordered_set<VoxelCoords> cave;
-
-    auto initial = VoxelCoords {seedX, caveHeight, seedZ};
-    cave.emplace(initial);
+    auto growthProb = 0.8f;
 
     std::queue<VoxelCoords> q;
-    q.emplace(initial);
+    std::unordered_set<VoxelCoords> cave;
+
+    auto numSeeds = std::max(1, std::max(length, width) / 7 + 1);
+
+    for (auto seed = 0; seed < numSeeds; ++seed) {
+        auto seedX = randRange(2, length - 2, rng);
+        auto seedZ = randRange(2, width - 2, rng);
+
+        auto initial = VoxelCoords {seedX, caveHeight, seedZ};
+        cave.emplace(initial);
+        q.emplace(initial);
+    }
 
     while (!q.empty()) {
         auto curr = q.front();
@@ -107,14 +110,15 @@ void LayoutGenerator::generateCave(VoxelGrid<VoxelState> &grid)
                 if (newCoords.y() > caveHeight || newCoords.y() < 1)
                     continue;
 
-                if (newCoords.x() > length - 2 || newCoords.x() < 2)
+                if (newCoords.x() >= length - 2 || newCoords.x() < 2)
                     continue;
 
-                if (newCoords.z() > width - 2 || newCoords.z() < 2)
+                if (newCoords.z() > width - 1 || newCoords.z() < 1)
                     continue;
 
                 q.emplace(newCoords);
                 cave.emplace(newCoords);
+                growthProb *= 0.995f;
             }
     }
 
@@ -220,22 +224,26 @@ BoundingBox LayoutGenerator::levelExit(int numAgents)
     // make sure exit pad will fit
     assert(width - 2 >= numAgents);
 
-    const int xCoord = randRange(1, length - 1, rng);
+    const int xCoord = randRange(length - 2, length - 1, rng);
     const int zCoord = randRange(1, width - numAgents, rng);
 
     const VoxelCoords minCoord{xCoord, caveHeight + 1, zCoord}, maxCoord{xCoord + 1, caveHeight + 2, zCoord + numAgents};
 
-    TLOG(INFO) << minCoord << " " << maxCoord;
+    // TLOG(INFO) << minCoord << " " << maxCoord;
     return {minCoord, maxCoord};
 }
 
-std::vector<VoxelCoords> LayoutGenerator::startingPositions()
+std::vector<VoxelCoords> LayoutGenerator::startingPositions(const VoxelGrid<VoxelState> &grid)
 {
     std::vector<VoxelCoords> positions;
 
-    for (int x = 1; x < length - 1; ++x)
-        for (int z = 1; z < width - 1; ++z)
-            positions.emplace_back(x, 1, z);
+    for (int x = 1; x < length - 3; ++x)
+        for (int z = 1; z < width - 1; ++z) {
+            const VoxelCoords coords{x, caveHeight, z};
+            const auto v = grid.get(coords);
+            if (v && v->solid)
+                positions.emplace_back(x, 1 + caveHeight, z);
+        }
 
     return positions;
 }

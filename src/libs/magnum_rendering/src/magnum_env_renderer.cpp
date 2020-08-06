@@ -106,9 +106,11 @@ private:
 struct MagnumEnvRenderer::Impl
 {
 public:
-    explicit Impl(Env &env, int w, int h);
+    explicit Impl(Env &env, int w, int h, bool withDebugDraw = false, RenderingContext *ctx = nullptr);
 
     ~Impl();
+
+    RenderingContext * initContext(RenderingContext *ctx);
 
     /**
      * Reset the state of the renderer between episodes.
@@ -117,11 +119,15 @@ public:
     void reset(Env &env);
 
     void draw(Env &env);
+    void drawAgent(Env &env, int agentIdx, bool readToBuffer);
 
     const uint8_t * getObservation(int agentIdx) const;
 
+    GL::Framebuffer * getFramebuffer() { return &framebuffer; }
+
 public:
-    WindowlessContext ctx;
+    std::unique_ptr<WindowlessContext> windowlessContextPtr{nullptr};
+    RenderingContext *ctx = nullptr;
 
     Vector2i framebufferSize;
 
@@ -141,15 +147,16 @@ public:
     std::vector<Containers::Array<uint8_t>> agentFrames;
     std::vector<std::unique_ptr<MutableImageView2D>> agentImageViews;
 
-    bool withDebugDraw = true;
+    bool withDebugDraw;
     BulletIntegration::DebugDraw debugDraw{NoCreate};
 };
 
 
-MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h)
-    : ctx{}
+MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h, bool withDebugDraw, RenderingContext *ctx)
+    : ctx{initContext(ctx)}
     , framebufferSize{w, h}
     , framebuffer{Magnum::Range2Di{{}, framebufferSize}}
+    , withDebugDraw{withDebugDraw}
 {
     MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL330);
 
@@ -205,12 +212,26 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h)
 MagnumEnvRenderer::Impl::~Impl()
 {
     TLOG(INFO) << __PRETTY_FUNCTION__;
-    ctx.makeCurrent();
+    ctx->makeCurrent();
+}
+
+RenderingContext * MagnumEnvRenderer::Impl::initContext(RenderingContext *ctx)
+{
+    if (ctx) {
+        // we're given a rendering context
+    } else {
+        // don't have an active rendering context, let's create one
+        TLOG(INFO) << windowlessContextPtr.get();
+        windowlessContextPtr = std::make_unique<WindowlessContext>();
+        ctx = windowlessContextPtr.get();
+    }
+
+    return ctx;
 }
 
 void MagnumEnvRenderer::Impl::reset(Env &env)
 {
-    ctx.makeCurrent();
+    ctx->makeCurrent();
 
     // reset renderer data structures
     {
@@ -220,18 +241,15 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
 
     // agents
     {
-        const auto &startingPositions = env.agentStartingPositions;
         for (int i = 0; i < env.getNumAgents(); ++i) {
             auto agentPtr = env.agents[i];
-            auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
-            agentPtr->rotateY(frand(env.getRng()) * 360.0_degf);
-            agentPtr->translate(pos);
+            auto scaleAgents = 1.6f;
 
             auto & agentDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentMesh, 0xf9d71c_rgbf, agentPtr);
-            agentDrawable.scale({0.25f, 0.25f * 0.9f, 0.25f});
+            agentDrawable.scale({0.22f, 0.25f * 0.9f, 0.22f}).scale({scaleAgents, scaleAgents, scaleAgents});
 
             auto & agentEyeDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentEyeMesh, 0x222222_rgbf, agentPtr);
-            agentEyeDrawable.scale({0.17, 0.075, 0.17}).translate({0.0f, 0.2f, -0.08f});
+            agentEyeDrawable.scale({0.16, 0.075, 0.16}).translate({0.0f, 0.2f, -0.07f}).scale({scaleAgents, scaleAgents, scaleAgents});
         }
     }
 
@@ -261,42 +279,50 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
     }
 }
 
+void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffer)
+{
+    framebuffer
+        .clearColor(0, Color3{0.125f})
+        .clearDepth(1.0f)
+        .bind();
+
+    arrayResize(voxelInstanceData, 0);
+
+    auto activeCameraPtr = env.agents[agentIdx]->camera;
+
+    // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
+    activeCameraPtr->draw(drawables);
+
+    shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());
+
+    /* Upload instance data to the GPU (orphaning the previous buffer
+       contents) and draw all cubes in one call  */
+    voxelInstanceBuffer.setData(voxelInstanceData, GL::BufferUsage::DynamicDraw);
+    cubeMesh.setInstanceCount(Int(voxelInstanceData.size()));
+    shaderInstanced.draw(cubeMesh);
+
+    // Bullet debug draw
+    if (withDebugDraw)
+    {
+        GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
+        debugDraw.setTransformationProjectionMatrix(activeCameraPtr->projectionMatrix()*activeCameraPtr->cameraMatrix());
+        env.bWorld.debugDrawWorld();
+        GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::Less);
+    }
+
+
+    if (readToBuffer) {
+        framebuffer.mapForRead(GL::Framebuffer::ColorAttachment{0});
+        framebuffer.read(framebuffer.viewport(), *agentImageViews[agentIdx]);
+    }
+}
+
 void MagnumEnvRenderer::Impl::draw(Env &env)
 {
-    for (int i = 0; i < env.getNumAgents(); ++i) {
-        framebuffer
-            .clearColor(0, Color3{0.125f})
-            .clearDepth(1.0f)
-            .bind();
+    ctx->makeCurrent();
 
-        arrayResize(voxelInstanceData, 0);
-
-        auto activeCameraPtr = env.agents[i]->camera;
-
-        // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
-        activeCameraPtr->draw(drawables);
-
-        shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());
-
-        /* Upload instance data to the GPU (orphaning the previous buffer
-           contents) and draw all cubes in one call  */
-        voxelInstanceBuffer.setData(voxelInstanceData, GL::BufferUsage::DynamicDraw);
-        cubeMesh.setInstanceCount(Int(voxelInstanceData.size()));
-        shaderInstanced.draw(cubeMesh);
-
-        // Bullet debug draw
-        if (withDebugDraw)
-        {
-            GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
-            debugDraw.setTransformationProjectionMatrix(activeCameraPtr->projectionMatrix()*activeCameraPtr->cameraMatrix());
-            env.bWorld.debugDrawWorld();
-            GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::Less);
-        }
-
-        framebuffer
-            .mapForRead(GL::Framebuffer::ColorAttachment{0})
-            .read(framebuffer.viewport(), *agentImageViews[i]);
-    }
+    for (int i = 0; i < env.getNumAgents(); ++i)
+        drawAgent(env, i, true);
 }
 
 const uint8_t * MagnumEnvRenderer::Impl::getObservation(int agentIdx) const
@@ -304,9 +330,9 @@ const uint8_t * MagnumEnvRenderer::Impl::getObservation(int agentIdx) const
     return agentFrames[agentIdx].data();
 }
 
-MagnumEnvRenderer::MagnumEnvRenderer(Env &env, int w, int h)
+MagnumEnvRenderer::MagnumEnvRenderer(Env &env, int w, int h, bool withDebugDraw, RenderingContext *ctx)
 {
-    pimpl = std::make_unique<Impl>(env, w, h);
+    pimpl = std::make_unique<Impl>(env, w, h, withDebugDraw, ctx);
 }
 
 MagnumEnvRenderer::~MagnumEnvRenderer() = default;
@@ -322,7 +348,17 @@ void MagnumEnvRenderer::draw(Env &env)
     pimpl->draw(env);
 }
 
+void MagnumEnvRenderer::drawAgent(Env &env, int agentIndex, bool readToBuffer)
+{
+    pimpl->drawAgent(env, agentIndex, readToBuffer);
+}
+
 const uint8_t * MagnumEnvRenderer::getObservation(int agentIdx) const
 {
     return pimpl->getObservation(agentIdx);
+}
+
+Magnum::GL::Framebuffer *MagnumEnvRenderer::getFramebuffer()
+{
+    return pimpl->getFramebuffer();
 }

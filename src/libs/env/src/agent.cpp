@@ -13,7 +13,8 @@ using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
-Agent::Agent(Object3D *parent) : Object(parent)
+Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition, float rotationRad)
+: Object(parent), bWorld(bWorld)
 {
     auto &cameraObject = addChild<Object3D>();
     // cameraObject.rotateY(0.0_degf);
@@ -25,123 +26,102 @@ Agent::Agent(Object3D *parent) : Object(parent)
         .setProjectionMatrix(Matrix4::perspectiveProjection(75.0_degf, 4.0f/3.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
+    btTransform startTransform;
+    startTransform.setIdentity ();
+    startTransform.setRotation(btQuaternion(btVector3(0, 1, 0), rotationRad));
+    startTransform.setOrigin (btVector3(startingPosition.x(), startingPosition.y(), startingPosition.z()));
+    ghostObject.setWorldTransform(startTransform);
+
+    auto scaleAgents = 1.6f;
+    btScalar characterHeight = 0.55f * scaleAgents;
+    btScalar characterRadius = 0.22f * scaleAgents;
+
+    capsuleShape = std::make_unique<btCapsuleShape>(characterRadius, characterHeight);
+
+    ghostObject.setCollisionShape(capsuleShape.get());
+    ghostObject.setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+
+    auto stepHeight = btScalar(0.2f);
+    bCharacter = std::make_unique<KinematicCharacterController>(&ghostObject, capsuleShape.get(), stepHeight, btVector3(0.0, 1.0, 0.0));
+
+    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter);
+    bWorld.addAction(bCharacter.get());
 }
 
-Agent::~Agent() = default;
-
-
-void Agent::ensureAgentNotOnVoxelBoundary(const VoxelCoords &v)
+Agent::~Agent()
 {
-    // make sure we're well within the current voxel and not right on the boundary
-    auto at = transformation().translation();
-    auto minX = v.x() + 0.01f, maxX = v.x() + 0.99f;
-    auto minZ = v.z() + 0.01f, maxZ = v.z() + 0.99f;
-
-    if (at.x() < minX)
-        translate(Vector3{minX - at.x(), 0, 0});
-    else if (at.x() > maxX)
-        translate(Vector3{maxX - at.x(), 0, 0});
-
-    if (at.z() < minZ)
-        translate(Vector3{0, 0, minZ - at.z()});
-    else if (at.z() > maxZ)
-        translate(Vector3{0, 0, maxZ - at.z()});
+    bWorld.removeCollisionObject(&ghostObject);
+    bWorld.removeAction(bCharacter.get());
 }
 
-void Agent::move(const Magnum::Vector3 &delta, const VoxelGrid<VoxelState> &vg, int depth)
+void Agent::updateTransform()
 {
-    constexpr auto eps = 1e-5f;
-    if (delta.length() < eps)
+    auto worldTrans = ghostObject.getWorldTransform();
+
+    Vector3 position = Vector3{worldTrans.getOrigin()};
+    const Vector3 axis = Vector3{worldTrans.getRotation().getAxis()};
+    const Float rotation = worldTrans.getRotation().getAngle();
+
+    /* Bullet sometimes reports NaNs for all the parameters and nobody is sure
+       why: https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12080. The body
+       gets stuck in that state, so print the warning just once. */
+    if(Math::isNan(position).any() || Math::isNan(axis).any() || Math::isNan(rotation)) {
+        Warning{} << "BulletIntegration::MotionState: Bullet reported NaN transform for" << this << Debug::nospace << ", ignoring";
         return;
-
-    // handle falling into a pit
-//    const auto yCoord = a.transformation().translation().y();
-//    TLOG(INFO) << yCoord;
-
-    // check for collisions with solid voxels
-    // we can intersect a voxel in xy or yz plane
-
-    auto at = transformation().translation();
-    auto voxelCoords = VoxelCoords(Magnum::Math::floor(at));
-
-    // how much of the "delta" we need to step in x/z direction to intersect a voxel boundary
-    // if either of those is <1 then we're about to cross to a different voxel
-    float xDelta = 1e9, zDelta = 1e9;
-
-    if (fabs(delta.x()) > eps) {
-        // change in x-direction is non-zero
-        if (delta.x() > 0)
-            xDelta = (ceilf(at.x()) - at.x()) / delta.x();
-        else
-            xDelta = (floorf(at.x()) - at.x()) / delta.x();
     }
 
-    if (fabs(delta.z()) > eps) {
-        // change in z-direction is non-zero
-        if (delta.z() > 0)
-            zDelta = (ceilf(at.z()) - at.z()) / delta.z();
-        else
-            zDelta = (floorf(at.z()) - at.z()) / delta.z();
-    }
+    position += Vector3{0, 0.05f, 0.0f};
 
-    auto adjustedDelta = delta;
+    this->resetTransformation().rotate(Rad{rotation}, axis.normalized()).translate(position);
+}
 
-    if (xDelta > 1.0f && zDelta > 1.0f) {
-        // moving along the direction we're not crossing the voxel boundary
-        translate(adjustedDelta);
-        ensureAgentNotOnVoxelBoundary(voxelCoords);
+void Agent::lookLeft(float dt)
+{
+    rotateYAxis(rotateRadians * dt);
+}
 
-    } else {
-        if (xDelta == zDelta) {
-            // rare situation, we're hitting a corner of the voxel
-            // to handle it, just make sure that we hit the xy plane slightly earlier
-            adjustedDelta.z() *= 1.0f - eps;
-        }
+void Agent::lookRight(float dt)
+{
+    rotateYAxis(-rotateRadians * dt);
+}
 
-        Vector3 remainingDelta;
-        VoxelCoords nextVoxelCoords = voxelCoords;
+void Agent::rotateYAxis(float radians)
+{
+    btMatrix3x3 orn = ghostObject.getWorldTransform().getBasis();
+    orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), radians));
+    ghostObject.getWorldTransform ().setBasis(orn);
 
-        if (xDelta <= zDelta && xDelta > eps && xDelta < 1e9) {
-            nextVoxelCoords.x() += sgn(adjustedDelta.x());
-            const auto voxelState = vg.get(nextVoxelCoords);
-            if (voxelState && voxelState->solid) {
-                // we hit the wall in xy plane
-                // make sure we do not cross into the occupied voxel
-                auto moveAmount = xDelta * adjustedDelta;
-                translate(moveAmount);
-                ensureAgentNotOnVoxelBoundary(voxelCoords);
+}
 
-                remainingDelta = adjustedDelta - moveAmount;
-                remainingDelta.x() = 0.0f;  // can't move further in x direction
-            } else {
-                // make sure we do cross into the next voxel
-                auto moveAmount = xDelta * adjustedDelta;
-                translate(moveAmount);
-                ensureAgentNotOnVoxelBoundary(nextVoxelCoords);
-                remainingDelta = adjustedDelta - moveAmount;
-            }
-        } else if (zDelta > eps && zDelta < 1e9) {
-            nextVoxelCoords.z() += sgn(adjustedDelta.z());
-            const auto voxelState = vg.get(nextVoxelCoords);
-            if (voxelState && voxelState->solid) {
-                // we hit the wall in yz plane
-                // make sure we do not cross into the occupied voxel
-                auto moveAmount = zDelta * adjustedDelta;
-                translate(moveAmount);
-                ensureAgentNotOnVoxelBoundary(voxelCoords);
+btVector3 Agent::forwardDirection() const
+{
+    auto xform = ghostObject.getWorldTransform ();
+    btVector3 forwardDir = xform.getBasis()[2];
+    forwardDir.setZ(-forwardDir.z());
+//    TLOG(INFO) << "forwardDir: " << forwardDir.x() << " " << forwardDir.y() << " " << forwardDir.z();
+    return forwardDir.normalize();
+}
 
-                remainingDelta = adjustedDelta - moveAmount;
-                remainingDelta.z() = 0.0f;  // can't move further in z direction
-            } else {
-                // make sure we do cross into the next voxel
-                auto moveAmount = zDelta * adjustedDelta;
-                translate(moveAmount);
-                ensureAgentNotOnVoxelBoundary(nextVoxelCoords);
+btVector3 Agent::strafeLeftDirection() const
+{
+    auto xform = ghostObject.getWorldTransform ();
+    btVector3 sidewaysDir = xform.getBasis()[0];
+    sidewaysDir.setX(-sidewaysDir.x());
+    return sidewaysDir.normalize();
+}
 
-                remainingDelta = adjustedDelta - moveAmount;
-            }
-        }
+void Agent::accelerate(const btVector3 &acc, btScalar frameDuration)
+{
+    bCharacter->setAcceleration(acc, frameDuration);
+}
 
-        move(remainingDelta, vg, depth + 1);
-    }
+void Agent::jump()
+{
+    if (onGround())
+        bCharacter->jump(btVector3(0, 6.5, 0));
+}
+
+bool Agent::onGround() const
+{
+    return bCharacter->onGround();
 }

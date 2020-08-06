@@ -34,7 +34,7 @@ public:
 
     BoundingBox levelExit(int numAgents);
 
-    std::vector<VoxelCoords> startingPositions();
+    std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid);
 
 private:
     Rng &rng;

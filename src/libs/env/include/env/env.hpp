@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 
+#include <Magnum/Timeline.h>  // TODO: remove
 #include <Magnum/SceneGraph/Scene.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
@@ -26,12 +27,13 @@ enum class Action
     LookLeft = 1 << 5,
     LookRight = 1 << 6,
 
-    LookDown = 1 << 7,
-    LookUp = 1 << 8,
+    Jump = 1 << 7,
+    Interact = 1 << 8,
 
-    Interact = 1 << 9,
+    LookDown = 1 << 9,
+    LookUp = 1 << 10,
 
-    NumActions = 10,
+    NumActions = 11,
 };
 
 
@@ -39,6 +41,7 @@ inline Action operator|(Action a, Action b) { return Action(int(a) | int(b)); }
 inline Action & operator|=(Action &a, Action b) { return (Action &)((int &)a |= int(b)); }
 inline Action operator&(Action a, Action b) { return Action(int(a) & int(b)); }
 inline Action & operator&=(Action &a, Action b) { return (Action &)((int &)a &= int(b)); }
+inline Action operator~(Action a) { return Action(~int(a)); }
 inline bool operator!(Action a) {return a == Action::Idle; }
 
 
@@ -83,9 +86,23 @@ public:
 
     Rng & getRng() { return rng; }
 
-private:
+    /**
+     * This is when we're running an actual realtime rendereing loop with human controls.
+     * Should not be used by Gym env interface.
+     * @param sec actual duration of the last frame.
+     */
+    void setFrameDuration(float sec) { lastFrameDurationSec = sec; }
+
+    void setSimulationResolution(float sec) { simulationStepSeconds = sec; }
 
 public:
+    // physics stuff
+    btDbvtBroadphase bBroadphase;
+    btSequentialImpulseConstraintSolver bConstraintSolver;
+    btDefaultCollisionConfiguration bCollisionConfiguration;
+    btCollisionDispatcher bCollisionDispatcher{&bCollisionConfiguration};
+    btDiscreteDynamicsWorld bWorld{&bCollisionDispatcher, &bBroadphase, &bConstraintSolver, &bCollisionConfiguration};
+
     std::unique_ptr<Scene3D> scene;
 
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
@@ -97,18 +114,11 @@ public:
 
     std::vector<Object3D *> layoutObjects;
 
-    // physics stuff
-    btDbvtBroadphase bBroadphase;
-    btSequentialImpulseConstraintSolver bConstraintSolver;
-    btDefaultCollisionConfiguration bCollisionConfiguration;
-    btCollisionDispatcher bCollisionDispatcher{&bCollisionConfiguration};
-    btDiscreteDynamicsWorld bWorld{&bCollisionDispatcher, &bBroadphase, &bConstraintSolver, &bCollisionConfiguration};
-
 private:
     int numAgents;
 
-    const int horizon = 1000;
-    int episodeDuration = 0;
+    const float horizonSec = 30;
+    float episodeDurationSec = 0;
 
     Rng rng{std::random_device{}()};
 
@@ -118,4 +128,7 @@ private:
     LayoutGenerator layoutGenerator{rng};
 
     std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
+
+    float simulationStepSeconds = 1.0f / 15.0f;
+    float lastFrameDurationSec = simulationStepSeconds;
 };

@@ -13,11 +13,11 @@
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
-constexpr int delayMs = 50;
+constexpr int delayMs = 1; // 1000 / 15;
 
-constexpr bool viz = true;
-constexpr bool hires = true;
-bool randomActions = false;
+constexpr bool viz = false;
+constexpr bool hires = false;
+bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
@@ -85,6 +85,9 @@ int main_loop(Env &env, EnvRenderer &renderer)
                     case 'd':
                         latestAction |= Action::Right;
                         break;
+                    case ' ':
+                        latestAction |= Action::Jump;
+                        break;
 
                     case keyLeft:
                         latestAction |= Action::LookLeft;
@@ -143,7 +146,9 @@ int main(int argc, char** argv)
     Env env;
     env.seed(42);
     env.reset();
-    MagnumEnvRenderer renderer{env, W, H};
+
+    const auto debugDraw = viz;
+    MagnumEnvRenderer renderer{env, W, H, debugDraw};
 
     tprof().startTimer("loop");
     auto nFrames = main_loop(env, renderer);

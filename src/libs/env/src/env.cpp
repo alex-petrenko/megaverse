@@ -16,6 +16,8 @@ Env::Env(int numAgents)
     , currAction(size_t(numAgents), Action::Idle)
     , lastReward(size_t(numAgents), 0.0f)
 {
+    // what is this?
+    bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 }
 
 void Env::seed(int seedValue)
@@ -29,19 +31,19 @@ void Env::reset()
     rng.seed((unsigned long)seed);
     TLOG(INFO) << "Using seed " << seed;
 
-    episodeDuration = 0;
+    episodeDurationSec = 0;
 
     // delete the previous layout/state
     grid.clear();
 
     layoutGenerator.init();
     layoutGenerator.generateFloorWalls(grid);
-//    layoutGenerator.generateCave(grid);
+    layoutGenerator.generateCave(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
 
     exitPad = layoutGenerator.levelExit(numAgents);
 
-    auto possibleStartingPositions = layoutGenerator.startingPositions();
+    auto possibleStartingPositions = layoutGenerator.startingPositions(grid);
     std::shuffle(possibleStartingPositions.begin(), possibleStartingPositions.end(), rng);
 
     agentStartingPositions = std::vector<VoxelCoords>{possibleStartingPositions.cbegin(), possibleStartingPositions.cbegin() + numAgents};
@@ -50,7 +52,8 @@ void Env::reset()
 
     agents.clear();
     for (int i = 0; i < numAgents; ++i) {
-        auto &agent = scene->addChild<Agent>(scene.get());
+        auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
+        auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.5, 0.5}, randomRotation);
         agents.emplace_back(&agent);
     }
 
@@ -69,20 +72,26 @@ void Env::reset()
                 float(bboxMax.z() - bboxMin.z() + 1) / 2,
             };
 
-//            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), scale.y(), scale.z()});
-            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
-            auto &layoutObject = scene->addChild<RigidBody>(scene.get(), 1.0f, bBoxShape.get(), bWorld);
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), scale.y(), scale.z()});
+            // auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
+            auto &layoutObject = scene->addChild<RigidBody>(scene.get(), 0.0f, bBoxShape.get(), bWorld);
 
-            layoutObject.scale(scale)
-                        .translate({0.5, 0.5, 0.5})
-                        .translate({float((bboxMin.x() + bboxMax.x())) / 2, float((bboxMin.y() + bboxMax.y())) / 2, float((bboxMin.z() + bboxMax.z())) / 2});
+            auto translation = Magnum::Vector3{float((bboxMin.x() + bboxMax.x())) / 2 + 0.5f, float((bboxMin.y() + bboxMax.y())) / 2 + 0.5f, float((bboxMin.z() + bboxMax.z())) / 2 + 0.5f};
+            layoutObject.translate(translation);
+            layoutObject.syncPose();
+
+            layoutObject.translate(-translation).scale(scale).translate(translation);
 
             // update position of the collision shape
-            layoutObject.syncPose();
+            // layoutObject.syncPose();
 
             layoutObjects.emplace_back(&layoutObject);
             collisionShapes.emplace_back(std::move(bBoxShape));
         }
+
+//        btCollisionShape* groundShape = new btBoxShape(btVector3(5,3.5,5));
+//        auto groundRigidBody = new btRigidBody(0, nullptr, groundShape);
+//        bWorld.addRigidBody(groundRigidBody);
     }
 }
 
@@ -93,41 +102,42 @@ void Env::setAction(int agentIdx, Action action)
 
 bool Env::step()
 {
-    static constexpr auto walkSpeed = 0.66f, strafeSpeed = 0.5f;
-    static constexpr auto turnSpeed = 7.0_degf;
-
     std::fill(lastReward.begin(), lastReward.end(), 0.0f);
 
     for (int i = 0; i < numAgents; ++i) {
-        Magnum::Vector3 delta;
-
         const auto a = currAction[i];
         const auto &agent = agents[i];
 
+        auto acceleration = btVector3{0, 0, 0};
+
         if (!!(a & Action::Forward))
-            delta = -walkSpeed * agent->transformation().backward();
+            acceleration += agent->forwardDirection();
         else if (!!(a & Action::Backward))
-            delta = walkSpeed * agent->transformation().backward();
+            acceleration -= agent->forwardDirection();
 
         if (!!(a & Action::Left))
-            delta = -strafeSpeed * agent->transformation().right();
+            acceleration += agent->strafeLeftDirection();
         else if (!!(a & Action::Right))
-            delta = strafeSpeed * agent->transformation().right();
+            acceleration -= agent->strafeLeftDirection();
 
         if (!!(a & Action::LookLeft))
-            agent->rotateYLocal(turnSpeed);
+            agent->lookLeft(lastFrameDurationSec);
         else if (!!(a & Action::LookRight))
-            agent->rotateYLocal(-turnSpeed);
+            agent->lookRight(lastFrameDurationSec);
 
-        if (agent->allowLookUp) {
-            if (!!(a & Action::LookUp))
-                agent->rotateXLocal(turnSpeed);
-            else if (!!(a & Action::LookDown))
-                agent->rotateXLocal(-turnSpeed);
-        }
+        // if (acceleration.length() > 0)
+        //    TLOG(INFO) << "acc direction: " << acceleration.x() << " " << acceleration.y() << " " << acceleration.z();
 
-        agent->move(delta, grid);
+        agent->accelerate(acceleration, lastFrameDurationSec);
+
+        if (!!(a & Action::Jump))
+            agent->jump();
     }
+
+    bWorld.stepSimulation(lastFrameDurationSec, 1, simulationStepSeconds);
+
+    for (auto agent : agents)
+        agent->updateTransform();
 
     bool done = false;
     int numAgentsAtExit = 0;
@@ -137,7 +147,7 @@ bool Env::step()
         const auto t = agent->transformation().translation();
 
         if (t.x() >= exitPad.min.x() && t.x() <= exitPad.max.x()
-            && t.y() >= exitPad.min.y() && t.y() <= exitPad.max.y()
+            && t.y() >= exitPad.min.y() && t.y() <= exitPad.max.y() + 2  // TODO: hack
             && t.z() >= exitPad.min.z() && t.z() <= exitPad.max.z()) {
             ++numAgentsAtExit;
             lastReward[i] += 0.05f;
@@ -150,12 +160,9 @@ bool Env::step()
             lastReward[i] += 5.0f;
     }
 
-    ++episodeDuration;
-    if (episodeDuration >= horizon)
+    episodeDurationSec += lastFrameDurationSec;
+    if (episodeDurationSec >= horizonSec)
         done = true;
-
-    if (episodeDuration % 1000 == 0)
-        TLOG(INFO) << "Episode frames " << episodeDuration << "/" << horizon;
 
     // clear the actions
     for (int i = 0; i < numAgents; ++i)

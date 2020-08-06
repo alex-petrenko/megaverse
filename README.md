@@ -24,6 +24,7 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release 
 -DOpenCV_DIR=/home/user/all/lib/opencv/build \
 -DPYTHON_EXECUTABLE:FILEPATH=/home/user/miniconda3/envs/envname/bin/python3.7 \
+-DBULLET_ROOT=/home/alex/all/lib/bullet3-2.89/install \
 ../src
 
 # Build all targets
