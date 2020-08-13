@@ -13,10 +13,10 @@
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
-constexpr int delayMs = 1; // 1000 / 15;
+constexpr int delayMs = 1; //1000 / 15;
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool viz = true;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;

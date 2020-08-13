@@ -26,11 +26,13 @@ public:
         bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{mass, &motionState->btMotionState(), bShape, bInertia});
         bRigidBody->forceActivationState(DISABLE_DEACTIVATION);  // do we need this?
         bWorld.addRigidBody(bRigidBody.get());
+        colliding = true;
     }
 
     ~RigidBody() override
     {
-        bWorld.removeRigidBody(bRigidBody.get());
+        if (colliding)
+            bWorld.removeRigidBody(bRigidBody.get());
     }
 
     btRigidBody &rigidBody() { return *bRigidBody; }
@@ -38,10 +40,33 @@ public:
     /* needed after changing the pose from Magnum side */
     void syncPose()
     {
-        bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
+        //bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
+
+        const auto m = transformationMatrix();
+        const auto s = m.scaling();
+        const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
+
+        auto t = Magnum::Matrix4::translation(m.translation()) * invS * Magnum::Matrix4::translation(-m.translation()) * m;
+
+        bRigidBody->setWorldTransform(btTransform(t));
+    }
+
+    void toggleCollision()
+    {
+//        bRigidBody->setCollisionFlags(bRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+//        bRigidBody->setActivationState(DISABLE_SIMULATION);
+
+        if (colliding) {
+            bWorld.removeRigidBody(bRigidBody.get());
+            colliding = false;
+        } else {
+            bWorld.addRigidBody(bRigidBody.get());
+            colliding = true;
+        }
     }
 
 private:
     btDynamicsWorld& bWorld;
     Magnum::Containers::Pointer<btRigidBody> bRigidBody;
+    bool colliding = false;
 };

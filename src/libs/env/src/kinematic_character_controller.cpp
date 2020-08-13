@@ -685,8 +685,7 @@ void KinematicCharacterController::playerStep(btCollisionWorld* collisionWorld, 
     // integrate for angular velocity
     if (m_AngVel.length2() > 0.0f)
     {
-        btTransform xform;
-        xform = m_ghostObject->getWorldTransform();
+        btTransform xform = m_ghostObject->getWorldTransform();
 
         btQuaternion rot(m_AngVel.normalized(), m_AngVel.length() * dt);
 

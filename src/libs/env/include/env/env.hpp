@@ -100,6 +100,10 @@ public:
 
     void setSimulationResolution(float sec) { simulationStepSeconds = sec; }
 
+private:
+
+    void objectInteract(Agent *agent);
+
 public:
     // physics stuff
     btDbvtBroadphase bBroadphase;
@@ -115,14 +119,16 @@ public:
     BoundingBox exitPad;
 
     std::vector<VoxelCoords> agentStartingPositions;
+    std::vector<VoxelCoords> objectSpawnPositions;
     std::vector<Agent *> agents;
 
     std::vector<Object3D *> layoutObjects;
+    std::vector<Object3D *> movableObjects;
 
 private:
     int numAgents;
 
-    const float horizonSec = 30;
+    const float horizonSec = 70;
     float episodeDurationSec = 0;
 
     Rng rng{std::random_device{}()};
@@ -136,7 +142,6 @@ private:
 
     std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
 
-
-    float simulationStepSeconds = 1.0f / 15.0f;
+    float simulationStepSeconds = 1.0f / 15.0f;  // 15 FPS is default
     float lastFrameDurationSec = simulationStepSeconds;
 };

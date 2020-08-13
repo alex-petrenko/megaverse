@@ -37,7 +37,7 @@ private:
     void rotateYAxis(float radians);
 
 public:
-    static constexpr auto rotateRadians = 3.0f;
+    static constexpr auto rotateRadians = 3.5f;
 
     bool allowLookUp = false;  // TODO?
 
@@ -48,6 +48,8 @@ public:
     std::unique_ptr<btCapsuleShape> capsuleShape;
     btPairCachingGhostObject ghostObject;
     std::unique_ptr<KinematicCharacterController> bCharacter;
+
+    RigidBody *carryingObject = nullptr;
 };
 
 

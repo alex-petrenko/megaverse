@@ -19,7 +19,8 @@ Env::Env(int numAgents)
     // what is this?
     bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
-    availableLayouts = {LayoutType::Cave, LayoutType::Walls};  // current default
+//    availableLayouts = {LayoutType::Cave, LayoutType::Walls};  // current default
+    availableLayouts = {LayoutType::Walls};  // current default
 }
 
 void Env::seed(int seedValue)
@@ -41,13 +42,14 @@ void Env::reset()
     const auto layoutTypeIdx = randRange(0, int(availableLayouts.size()), rng);
     const auto layoutType = availableLayouts[layoutTypeIdx];
 
-    layoutGenerator.init(layoutType);
+    layoutGenerator.init(numAgents, layoutType);
     layoutGenerator.generate(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
 
-    exitPad = layoutGenerator.levelExit(grid, numAgents);
+    exitPad = layoutGenerator.levelExit(grid);
 
-    agentStartingPositions = layoutGenerator.startingPositions(grid, numAgents);
+    agentStartingPositions = layoutGenerator.startingPositions(grid);
+    objectSpawnPositions = layoutGenerator.objectSpawnPositions(grid);
 
     scene = std::make_unique<Scene3D>();
 
@@ -60,7 +62,9 @@ void Env::reset()
 
     // map layout
     {
+        // remove dangling pointers from the previous episode
         layoutObjects.clear();
+        movableObjects.clear();
         collisionShapes.clear();
 
         TLOG(INFO) << "Env has " << layoutDrawables.size() << " layout drawables";
@@ -80,19 +84,32 @@ void Env::reset()
             auto translation = Magnum::Vector3{float((bboxMin.x() + bboxMax.x())) / 2 + 0.5f, float((bboxMin.y() + bboxMax.y())) / 2 + 0.5f, float((bboxMin.z() + bboxMax.z())) / 2 + 0.5f};
             layoutObject.translate(translation);
             layoutObject.syncPose();
-
             layoutObject.translate(-translation).scale(scale).translate(translation);
-
-            // update position of the collision shape
-            // layoutObject.syncPose();
 
             layoutObjects.emplace_back(&layoutObject);
             collisionShapes.emplace_back(std::move(bBoxShape));
         }
 
-//        btCollisionShape* groundShape = new btBoxShape(btVector3(5,3.5,5));
-//        auto groundRigidBody = new btRigidBody(0, nullptr, groundShape);
-//        bWorld.addRigidBody(groundRigidBody);
+        const auto objSize = 0.39f;
+        auto objScale = Vector3{objSize, objSize, objSize};
+
+        for (const auto &movableObject : objectSpawnPositions) {
+            const auto pos = movableObject;
+            auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f};
+
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{objSize, objSize, objSize});
+
+            auto &object = scene->addChild<RigidBody>(scene.get(), 0.0f, bBoxShape.get(), bWorld);
+            object.scale(objScale).translate(translation);
+            object.syncPose();
+
+            movableObjects.emplace_back(&object);
+            collisionShapes.emplace_back(std::move(bBoxShape));
+
+            VoxelState voxelState{false};
+            voxelState.obj = &object;
+            grid.set(pos, voxelState);
+        }
     }
 }
 
@@ -133,6 +150,9 @@ bool Env::step()
 
         if (!!(a & Action::Jump))
             agent->jump();
+
+        if (!!(a & Action::Interact))
+            objectInteract(agent);
     }
 
     bWorld.stepSimulation(lastFrameDurationSec, 1, simulationStepSeconds);
@@ -157,8 +177,11 @@ bool Env::step()
 
     if (numAgentsAtExit == numAgents) {
         done = true;
-        for (int i = 0; i < int(agents.size()); ++i)
+        for (int i = 0; i < int(agents.size()); ++i) {
             lastReward[i] += 5.0f;
+            if (agents[i]->carryingObject)
+                lastReward[i] += 2.0f;  // TODO: this is just experimental - encourage agents to carry their cubes to the exit
+        }
     }
 
     episodeDurationSec += lastFrameDurationSec;
@@ -170,4 +193,62 @@ bool Env::step()
         currAction[i] = Action::Idle;
 
     return done;
+}
+
+void Env::objectInteract(Agent *agent)
+{
+    auto agentTransform = agent->ghostObject.getWorldTransform();
+    const auto carryingScale = 0.8f, carryingScaleInverse = 1.0f / carryingScale;
+
+    if (agent->carryingObject) {
+        auto obj = agent->carryingObject;
+        auto t = obj->absoluteTransformation().translation();
+
+        VoxelCoords voxel{t};
+        auto voxelPtr = grid.get(voxel);
+
+        if (!voxelPtr) {
+            VoxelState voxelState{false};
+            voxelState.obj = obj;
+            grid.set(voxel, voxelState);
+
+            obj->setParent(scene.get());
+
+            auto scaling = obj->transformation().scaling();
+            obj->resetTransformation();
+            obj->scale({scaling.x() * carryingScaleInverse, scaling.y() * carryingScaleInverse, scaling.z() * carryingScaleInverse});
+            obj->translate({float(voxel.x()) + 0.5f, float(voxel.y()) + 0.5f, float(voxel.z()) + 0.5f});
+            obj->syncPose();
+
+            agent->carryingObject = nullptr;
+            obj->toggleCollision();
+        }
+
+    } else {
+        auto forwardDirection = agent->forwardDirection();
+
+        auto interactPos = agentTransform.getOrigin() + forwardDirection.normalized();
+
+        VoxelCoords voxel{int(interactPos.x()), int(interactPos.y()), int(interactPos.z())};
+
+//        TLOG(INFO) << "interacting with voxel " << interactPos.x() << " " << interactPos.y() << " " << interactPos.z()
+//                   << " Voxel: " << voxel;
+
+        auto voxelPtr = grid.get(voxel);
+        if (voxelPtr && voxelPtr->obj) {
+            auto obj = voxelPtr->obj;
+            obj->toggleCollision();
+
+            obj->setParent(agent);
+            auto scaling = obj->transformation().scaling();
+            obj->resetTransformation();
+
+            obj->scale({scaling.x() * carryingScale, scaling.y() * carryingScale, scaling.z() * carryingScale});
+            obj->translate({0.0f, -0.29f, -0.9f});
+
+            agent->carryingObject = obj;
+
+            grid.remove(voxel);
+        }
+    }
 }

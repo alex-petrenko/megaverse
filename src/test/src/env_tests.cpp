@@ -12,7 +12,7 @@ TEST(env, layout)
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
     LayoutGenerator lg{rng};
 
-    lg.init(LayoutType::Empty);
+    lg.init(1, LayoutType::Empty);
     lg.generate(grid);
 
     const auto ptr = grid.get({0, 0, 0});

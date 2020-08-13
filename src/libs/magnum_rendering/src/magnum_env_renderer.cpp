@@ -179,7 +179,7 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h, bool withDebugDraw, Render
         agentImageViews.emplace_back(std::make_unique<MutableImageView2D>(PixelFormat::RGBA8Unorm, framebufferSize, agentFrames[i]));
     }
 
-    shaderInstanced = Shaders::Phong{Shaders::Phong::Flag::InstancedTransformation};
+    shaderInstanced = Shaders::Phong{Shaders::Phong::Flag::VertexColor | Shaders::Phong::Flag::InstancedTransformation};
     shaderInstanced.setAmbientColor(0x555555_rgbf).setDiffuseColor(0xbbbbbb_rgbf).setShininess(300).setLightPosition({0,4,2}).setLightColor(0xaaaaaa_rgbf);
 
     shader = Shaders::Phong{};
@@ -272,10 +272,16 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
 
     // map layout
     {
-        for (auto layoutObject : env.layoutObjects) {
-            auto transformation = Matrix4::scaling(Vector3{1.0f});
-            layoutObject->addFeature<CustomDrawable>(voxelInstanceData, 0xa5c9ea_rgbf, transformation, drawables);
-        }
+        auto transformation = Matrix4::scaling(Vector3{1.0f});
+        for (auto layoutObject : env.layoutObjects)
+            layoutObject->addFeature<CustomDrawable>(voxelInstanceData, 0xffffff_rgbf, transformation, drawables);
+    }
+
+    // movable objects
+    {
+        auto transformation = Matrix4::scaling(Vector3{1.0f});
+        for (auto movableObject : env.movableObjects)
+            movableObject->addFeature<CustomDrawable>(voxelInstanceData, 0xadd8e6_rgbf, transformation, drawables);
     }
 }
 
@@ -309,7 +315,6 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffe
         env.bWorld.debugDrawWorld();
         GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::Less);
     }
-
 
     if (readToBuffer) {
         framebuffer.mapForRead(GL::Framebuffer::ColorAttachment{0});

@@ -38,15 +38,17 @@ public:
     explicit LayoutGenerator(Rng &rng);
     ~LayoutGenerator();
 
-    void init(LayoutType layoutType = LayoutType::Empty);
+    void init(int numAgents, LayoutType layoutType = LayoutType::Empty);
 
     void generate(VoxelGrid<VoxelState> &grid);
 
     std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid);
 
-    BoundingBox levelExit(const VoxelGrid<VoxelState> &grid, int numAgents);
+    BoundingBox levelExit(const VoxelGrid<VoxelState> &grid);
 
-    std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid, int numAgents);
+    std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid);
+
+    std::vector<VoxelCoords> objectSpawnPositions(const VoxelGrid<VoxelState> &grid);
 
 private:
     Rng &rng;

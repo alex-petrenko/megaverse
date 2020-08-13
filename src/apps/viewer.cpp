@@ -91,7 +91,7 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
     env = std::make_unique<Env>();
-    // env->setAvailableLayouts({LayoutType::Walls});
+    env->setAvailableLayouts({LayoutType::Walls});
 
     // env->seed(42);
     env->reset();
@@ -104,7 +104,7 @@ Viewer::Viewer(const Arguments& arguments):
 
     timeline.start();
 
-    const int desiredFps = 120;
+    const int desiredFps = 15;
     const unsigned int delayMs = 1000 / desiredFps;
     setMinimalLoopPeriod(delayMs);
 
@@ -134,6 +134,8 @@ void Viewer::drawEvent()
 void Viewer::tickEvent() {
     env->setFrameDuration(timeline.previousFrameDuration());
     env->setAction(activeAgent, currAction);
+    currAction &= ~Action::Interact;
+
     const auto done = env->step();
 
     if (done || forceReset) {
@@ -164,6 +166,8 @@ void Viewer::handleActions(const KeyEvent::Key &key, bool addAction)
         case KeyEvent::Key::Down: a = Action::LookDown; break;
 
         case KeyEvent::Key::Space: a = Action::Jump; break;
+
+        case KeyEvent::Key::E: a = Action::Interact; break;
 
         default: break;
     }

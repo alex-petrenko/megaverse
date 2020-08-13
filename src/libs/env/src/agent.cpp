@@ -90,7 +90,6 @@ void Agent::rotateYAxis(float radians)
     btMatrix3x3 orn = ghostObject.getWorldTransform().getBasis();
     orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), radians));
     ghostObject.getWorldTransform ().setBasis(orn);
-
 }
 
 btVector3 Agent::forwardDirection() const
