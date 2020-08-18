@@ -70,7 +70,7 @@ public:
     virtual void init()
     {
         length = randRange(8, 30, rng);
-        width = randRange(5, 25, rng);
+        width = randRange(7, 25, rng);
     }
 
     virtual void generate(VoxelGrid<VoxelState> &grid) = 0;
@@ -256,7 +256,7 @@ public:
         const auto numWalls = randRange(0, maxNumWalls + 1, rng);
         const auto minLength = numWalls * 2 + 4 + 3;  // at least 2 voxels per wall + some space on either end
 
-        length = randRange(minLength, 30, rng);
+        length = randRange(minLength, 35, rng);
 
         if (numWalls <= 0) {
 
@@ -354,7 +354,7 @@ public:
 
 private:
     int maxWallHeight{}, maxWallX{}, firstWallX = 3;
-    const int tallestWall = 3, maxNumWalls = 3;  // parameters (TODO curriculum)
+    const int tallestWall = 3, maxNumWalls = 4;  // parameters (TODO curriculum)
     std::vector<std::pair<int, int>> walls;
 
     std::vector<VoxelCoords> agentSpawnCoords;

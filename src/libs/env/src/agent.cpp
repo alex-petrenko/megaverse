@@ -46,6 +46,8 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
 
     bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter);
     bWorld.addAction(bCharacter.get());
+
+    this->updateTransform();
 }
 
 Agent::~Agent()

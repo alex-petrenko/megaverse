@@ -50,6 +50,13 @@ typedef Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D> Sc
 
 class Env
 {
+private:
+    struct AgentState
+    {
+        bool visitedExit = false;
+        float minDistToGoal = -1.0f;  // to be calculated on the first frame
+    };
+
 public:
     explicit Env(int numAgents = 2);
 
@@ -117,6 +124,7 @@ public:
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
     std::vector<BoundingBox> layoutDrawables;
     BoundingBox exitPad;
+    Magnum::Vector3 exitPadCenter;
 
     std::vector<VoxelCoords> agentStartingPositions;
     std::vector<VoxelCoords> objectSpawnPositions;
@@ -137,6 +145,7 @@ private:
 
     std::vector<Action> currAction;
     std::vector<float> lastReward;
+    std::vector<AgentState> agentStates;
 
     LayoutGenerator layoutGenerator{rng};
 

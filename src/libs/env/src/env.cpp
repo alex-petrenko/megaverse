@@ -47,6 +47,8 @@ void Env::reset()
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
 
     exitPad = layoutGenerator.levelExit(grid);
+    exitPadCenter = 0.5f * Vector3(exitPad.max + exitPad.min);
+    exitPadCenter.y() = exitPad.min.y();
 
     agentStartingPositions = layoutGenerator.startingPositions(grid);
     objectSpawnPositions = layoutGenerator.objectSpawnPositions(grid);
@@ -54,11 +56,18 @@ void Env::reset()
     scene = std::make_unique<Scene3D>();
 
     agents.clear();
+    agentStates.clear();
+
     for (int i = 0; i < numAgents; ++i) {
         auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
         auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5}, randomRotation);
         agents.emplace_back(&agent);
+
+        agentStates.emplace_back(AgentState());
+        agentStates[i].minDistToGoal = (agent.transformation().translation() - exitPadCenter).length();
     }
+
+    assert(agents.size() == agentStates.size());
 
     // map layout
     {
@@ -167,11 +176,22 @@ bool Env::step()
         const auto &agent = agents[i];
         const auto t = agent->transformation().translation();
 
+        const auto distToGoal = (t - exitPadCenter).length();
+        const auto distIncrement = 0.5f;
+        if (agentStates[i].minDistToGoal - distToGoal > distIncrement) {
+            agentStates[i].minDistToGoal -= distIncrement;
+            lastReward[i] += 0.1f;
+        }
+
         if (t.x() >= exitPad.min.x() && t.x() <= exitPad.max.x()
             && t.y() >= exitPad.min.y() && t.y() <= exitPad.max.y() + 2  // TODO: hack
             && t.z() >= exitPad.min.z() && t.z() <= exitPad.max.z()) {
             ++numAgentsAtExit;
-            lastReward[i] += 0.05f;
+
+            if (!agentStates[i].visitedExit) {
+                lastReward[i] += 1.0f;
+                agentStates[i].visitedExit = true;
+            }
         }
     }
 
@@ -191,6 +211,9 @@ bool Env::step()
     // clear the actions
     for (int i = 0; i < numAgents; ++i)
         currAction[i] = Action::Idle;
+
+    if (lastReward[0] > 0 || lastReward[1] > 0)
+        TLOG(INFO) << lastReward[0] << " " << lastReward[1];
 
     return done;
 }
