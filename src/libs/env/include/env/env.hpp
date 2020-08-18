@@ -86,6 +86,11 @@ public:
         return lastReward[agentIdx];
     }
 
+    bool isLevelCompleted() const
+    {
+        return completed;
+    }
+
     void setAvailableLayouts(const std::vector<LayoutType> &layouts)
     {
         availableLayouts = layouts;
@@ -146,6 +151,8 @@ private:
     std::vector<Action> currAction;
     std::vector<float> lastReward;
     std::vector<AgentState> agentStates;
+
+    bool completed = false;
 
     LayoutGenerator layoutGenerator{rng};
 

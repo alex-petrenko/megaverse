@@ -30,6 +30,8 @@ void Env::seed(int seedValue)
 
 void Env::reset()
 {
+    completed = false;
+
     auto seed = randRange(0, 1 << 30, rng);
     rng.seed((unsigned long)seed);
     TLOG(INFO) << "Using seed " << seed;
@@ -197,6 +199,8 @@ bool Env::step()
 
     if (numAgentsAtExit == numAgents) {
         done = true;
+        completed = true;
+
         for (int i = 0; i < int(agents.size()); ++i) {
             lastReward[i] += 5.0f;
             if (agents[i]->carryingObject)

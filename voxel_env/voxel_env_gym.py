@@ -96,11 +96,14 @@ class VoxelEnv(gym.Env):
         rewards = [self.env.get_last_reward(i) for i in range(self.num_agents)]
 
         if done:
+            is_completed = self.env.is_level_completed()
+            infos = [dict(true_reward=float(is_completed)) for _ in range(self.num_agents)]
             obs = self.reset()
         else:
             obs = self.observations()
+            infos = self.empty_infos
 
-        return obs, rewards, dones, self.empty_infos
+        return obs, rewards, dones, infos
 
     def convert_obs(self, obs):
         obs = cv2.flip(obs, 0)

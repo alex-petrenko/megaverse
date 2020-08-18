@@ -101,6 +101,11 @@ public:
         cv::waitKey(1);
     }
 
+    bool isLevelCompleted() const
+    {
+        return env->isLevelCompleted();
+    }
+
     /**
      * Explicitly destroy the env and the renderer to avoid doing this when the Python object goes out-of-scope.
      */
@@ -136,5 +141,6 @@ PYBIND11_MODULE(voxel_env, m)
         .def("step", &VoxelEnvGym::step)
         .def("get_observation", &VoxelEnvGym::getObservation)
         .def("get_last_reward", &VoxelEnvGym::getLastReward)
+        .def("is_level_completed", &VoxelEnvGym::isLevelCompleted)
         .def("close", &VoxelEnvGym::close);
 }
