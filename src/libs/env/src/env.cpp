@@ -154,6 +154,11 @@ bool Env::step()
         else if (!!(a & Action::LookRight))
             agent->lookRight(lastFrameDurationSec);
 
+        if (!!(a & Action::LookUp))
+            agent->lookUp(lastFrameDurationSec);
+        else if (!!(a & Action::LookDown))
+            agent->lookDown(lastFrameDurationSec);
+
         // if (acceleration.length() > 0)
         //    TLOG(INFO) << "acc direction: " << acceleration.x() << " " << acceleration.y() << " " << acceleration.z();
 
@@ -180,9 +185,11 @@ bool Env::step()
 
         const auto distToGoal = (t - exitPadCenter).length();
         const auto distIncrement = 0.5f;
+        const auto rewardForGettingCloserToGoal = 0.0f;
+
         if (agentStates[i].minDistToGoal - distToGoal > distIncrement) {
             agentStates[i].minDistToGoal -= distIncrement;
-            lastReward[i] += 0.1f;
+            lastReward[i] += rewardForGettingCloserToGoal;
         }
 
         if (t.x() >= exitPad.min.x() && t.x() <= exitPad.max.x()
@@ -191,7 +198,7 @@ bool Env::step()
             ++numAgentsAtExit;
 
             if (!agentStates[i].visitedExit) {
-                lastReward[i] += 1.0f;
+                lastReward[i] += 3.0f;
                 agentStates[i].visitedExit = true;
             }
         }
@@ -215,9 +222,6 @@ bool Env::step()
     // clear the actions
     for (int i = 0; i < numAgents; ++i)
         currAction[i] = Action::Idle;
-
-    if (lastReward[0] > 0 || lastReward[1] > 0)
-        TLOG(INFO) << lastReward[0] << " " << lastReward[1];
 
     return done;
 }

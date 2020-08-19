@@ -16,11 +16,11 @@ using namespace Magnum::Math::Literals;
 Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition, float rotationRad)
 : Object(parent), bWorld(bWorld)
 {
-    auto &cameraObject = addChild<Object3D>();
+    cameraObject = &(addChild<Object3D>());
     // cameraObject.rotateY(0.0_degf);
-    cameraObject.translate(Magnum::Vector3{0, 0.41f, 0});
+    cameraObject->translate(Magnum::Vector3{0, 0.41f, 0});
 
-    camera = &(cameraObject.addFeature<SceneGraph::Camera3D>());
+    camera = &(cameraObject->addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
         .setProjectionMatrix(Matrix4::perspectiveProjection(105.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
@@ -85,6 +85,22 @@ void Agent::lookLeft(float dt)
 void Agent::lookRight(float dt)
 {
     rotateYAxis(-rotateRadians * dt);
+}
+
+void Agent::lookUp(float dt)
+{
+    cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
+    currXRotation += rotateXRadians * dt;
+    currXRotation = std::min(maxXRotation, currXRotation);
+    cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
+}
+
+void Agent::lookDown(float dt)
+{
+    cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
+    currXRotation -= rotateXRadians * dt;
+    currXRotation = std::max(-maxXRotation, currXRotation);
+    cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
 }
 
 void Agent::rotateYAxis(float radians)

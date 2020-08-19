@@ -24,6 +24,8 @@ public:
 
     void lookLeft(float dt);
     void lookRight(float dt);
+    void lookUp(float dt);
+    void lookDown(float dt);
 
     btVector3 forwardDirection() const;
     btVector3 strafeLeftDirection() const;
@@ -37,11 +39,12 @@ private:
     void rotateYAxis(float radians);
 
 public:
-    static constexpr auto rotateRadians = 3.5f;
+    static constexpr auto rotateRadians = 3.5f, rotateXRadians = 1.5f, maxXRotation = 0.8f;
 
-    bool allowLookUp = false;  // TODO?
+    float currXRotation = 0.0f;
 
     Magnum::SceneGraph::Camera3D *camera;
+    Object3D *cameraObject;
 
     btDynamicsWorld &bWorld;
 

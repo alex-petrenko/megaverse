@@ -48,6 +48,7 @@ class VoxelEnv(gym.Env):
             Discrete(3),  # noop, look left, look right
             Discrete(2),  # noop, jump
             Discrete(2),  # noop, interact
+            Discrete(3),  # noop, look down, look up
 
             # TODO: use other actions
         ))
