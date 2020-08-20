@@ -2,6 +2,8 @@ add_subdirectory(corrade EXCLUDE_FROM_ALL)
 
 if (BUILD_GUI_APPS)
     set(WITH_SDL2APPLICATION ON CACHE BOOL "" FORCE)
+else()
+    message(STATUS "Build without GUI apps!")
 endif()
 
 set(WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "" FORCE)
