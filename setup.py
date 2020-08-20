@@ -44,7 +44,7 @@ class CMakeBuild(build_ext):
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
-        cmake_args += [f'-DCMAKE_BUILD_TYPE={cfg}']
+        cmake_args += [f'-DCMAKE_BUILD_TYPE={cfg}', '-DBUILD_GUI_APPS=OFF']
         build_args += ['--', f'-j{multiprocessing.cpu_count()}']
 
         env = os.environ.copy()

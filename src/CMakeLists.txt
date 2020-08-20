@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(sapphire-rl)
 
+option(BUILD_GUI_APPS "Whether to build apps that require GUI (things like SDL2)" ON)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
