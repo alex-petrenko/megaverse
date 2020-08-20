@@ -16,7 +16,7 @@ set(WITH_BULLET ON CACHE BOOL "" FORCE)
 add_subdirectory(magnum-integration EXCLUDE_FROM_ALL)
 
 find_package(Corrade REQUIRED Main)
-find_package(Magnum REQUIRED GL MeshTools Primitives SceneGraph Shaders Sdl2Application WindowlessEglApplication Trade)
+find_package(Magnum REQUIRED GL MeshTools Primitives SceneGraph Shaders WindowlessEglApplication Trade)
 if (BUILD_GUI_APPS)
     find_package(Magnum REQUIRED Sdl2Application)
 endif()
