@@ -51,7 +51,7 @@ class TestEnv(TestCase):
         e1.render()
         e2.render()
 
-        for i in range(100):
+        for i in range(200):
             e1.step(sample_actions(e1))
             e1.render()
             e2.step(sample_actions(e2))

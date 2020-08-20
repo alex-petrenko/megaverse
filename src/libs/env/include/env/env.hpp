@@ -58,7 +58,7 @@ private:
     };
 
 public:
-    explicit Env(int numAgents = 2);
+    explicit Env(int numAgents = 2, float verticalLookLimitRad = 0.0f);
 
     int getNumAgents() const { return numAgents; }
 
@@ -140,6 +140,7 @@ public:
 
 private:
     int numAgents;
+    float verticalLookLimitRad;
 
     const float horizonSec = 70;
     float episodeDurationSec = 0;

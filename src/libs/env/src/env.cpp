@@ -11,8 +11,9 @@ using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
-Env::Env(int numAgents)
+Env::Env(int numAgents, float verticalLookLimitRad)
     : numAgents{numAgents}
+    , verticalLookLimitRad{verticalLookLimitRad}
     , currAction(size_t(numAgents), Action::Idle)
     , lastReward(size_t(numAgents), 0.0f)
 {
@@ -62,7 +63,7 @@ void Env::reset()
 
     for (int i = 0; i < numAgents; ++i) {
         auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
-        auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5}, randomRotation);
+        auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5}, randomRotation, verticalLookLimitRad);
         agents.emplace_back(&agent);
 
         agentStates.emplace_back(AgentState());

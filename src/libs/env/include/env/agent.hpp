@@ -17,7 +17,7 @@
 class Agent : public Object3D
 {
 public:
-    explicit Agent(Object3D *parent, btDynamicsWorld &bWorld, const Magnum::Vector3 &startingPosition, float rotationRad);
+    explicit Agent(Object3D *parent, btDynamicsWorld &bWorld, const Magnum::Vector3 &startingPosition, float rotationRad, float verticalLookLimitRad);
     ~Agent() override;
 
     void updateTransform();
@@ -39,9 +39,10 @@ private:
     void rotateYAxis(float radians);
 
 public:
-    static constexpr auto rotateRadians = 3.5f, rotateXRadians = 1.5f, maxXRotation = 0.8f;
+    static constexpr auto rotateRadians = 3.5f, rotateXRadians = 1.5f;
 
     float currXRotation = 0.0f;
+    float verticalLookLimitRad = 0.0f;
 
     Magnum::SceneGraph::Camera3D *camera;
     Object3D *cameraObject;

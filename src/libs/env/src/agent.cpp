@@ -13,8 +13,10 @@ using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
-Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition, float rotationRad)
-: Object(parent), bWorld(bWorld)
+Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition, float rotationRad, float verticalLookLimitRad)
+: Object(parent)
+, verticalLookLimitRad{verticalLookLimitRad}
+, bWorld(bWorld)
 {
     cameraObject = &(addChild<Object3D>());
     // cameraObject.rotateY(0.0_degf);
@@ -91,7 +93,7 @@ void Agent::lookUp(float dt)
 {
     cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
     currXRotation += rotateXRadians * dt;
-    currXRotation = std::min(maxXRotation, currXRotation);
+    currXRotation = std::min(verticalLookLimitRad, currXRotation);
     cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
 }
 
@@ -99,7 +101,7 @@ void Agent::lookDown(float dt)
 {
     cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
     currXRotation -= rotateXRadians * dt;
-    currXRotation = std::max(-maxXRotation, currXRotation);
+    currXRotation = std::max(-verticalLookLimitRad, currXRotation);
     cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
 }
 

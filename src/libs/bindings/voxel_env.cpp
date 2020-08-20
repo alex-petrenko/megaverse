@@ -22,10 +22,10 @@ void setVoxelEnvLogLevel(int level)
 class VoxelEnvGym
 {
 public:
-    VoxelEnvGym(int w, int h, int numAgents)
+    VoxelEnvGym(int w, int h, int numAgents, float verticalLookLimit)
     : w{w}, h{h}
     {
-        env = std::make_unique<Env>(numAgents);
+        env = std::make_unique<Env>(numAgents, verticalLookLimit);
     }
 
     void seed(int seedValue)
@@ -132,7 +132,7 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int, int>())
+        .def(py::init<int, int, int, float>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("seed", &VoxelEnvGym::seed)
         .def("reset", &VoxelEnvGym::reset)

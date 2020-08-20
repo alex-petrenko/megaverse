@@ -9,7 +9,7 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(self, num_agents=2):
+    def __init__(self, num_agents=2, vertical_look_limit_rad=0.1):
         set_voxel_env_log_level(2)
 
         self.img_w = 128
@@ -17,7 +17,7 @@ class VoxelEnv(gym.Env):
         self.channels = 3
 
         self.num_agents = num_agents
-        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents)
+        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents, vertical_look_limit_rad)
 
         self.empty_infos = [{} for _ in range(self.num_agents)]
 
@@ -42,17 +42,16 @@ class VoxelEnv(gym.Env):
         LookDown = 1 << 9,
         LookUp = 1 << 10,
         """
-        space = gym.spaces.Tuple((
+        spaces = [
             Discrete(3),  # noop, go left, go right
             Discrete(3),  # noop, forward, backward
             Discrete(3),  # noop, look left, look right
             Discrete(2),  # noop, jump
             Discrete(2),  # noop, interact
             Discrete(3),  # noop, look down, look up
+        ]
 
-            # TODO: use other actions
-        ))
-
+        space = gym.spaces.Tuple(spaces)
         return space
 
     def seed(self, seed=None):
