@@ -109,13 +109,14 @@ class VoxelEnv(gym.Env):
         obs = cv2.flip(obs, 0)
         obs = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
 
-        aspect_ratio = self.img_w / self.img_h
-        render_w = 800
-        obs = cv2.resize(obs, (render_w, int(render_w / aspect_ratio)))
+        # aspect_ratio = self.img_w / self.img_h
+        # render_w = 800
+        # obs = cv2.resize(obs, (render_w, int(render_w / aspect_ratio)))
         return obs
 
     def render(self, mode='human'):
-        obs = [self.convert_obs(self.env.get_observation(i)) for i in range(self.num_agents)]
+        self.env.draw_hires()
+        obs = [self.convert_obs(self.env.get_hires_observation(i)) for i in range(self.num_agents)]
         obs_concat = np.concatenate(obs, axis=1)
         cv2.imshow(f'agent_{0}_{id(self)}', obs_concat)
         cv2.waitKey(1)

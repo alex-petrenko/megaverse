@@ -46,6 +46,9 @@ public:
             renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
         renderer->reset(*env);
         renderer->draw(*env);
+
+        if (hiresRenderer)
+            hiresRenderer->reset(*env);
     }
 
     void setAction(int agentIdx, int actionIdx)
@@ -76,29 +79,29 @@ public:
         return py::array_t<uint8_t>({h, w, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
-    void render()
+    /**
+     * Call this before the first call to render()
+     */
+    void setRenderResolution(int hiresW, int hiresH)
     {
-        // TODO: remove
+        renderW = hiresW;
+        renderH = hiresH;
+    }
 
-        if (!windowsInitialized) {
-            for (int i = 0; i < env->getNumAgents(); ++i) {
-                const auto wname = std::to_string(i);
-                cv::namedWindow(wname);
-                cv::moveWindow(wname, int(w * i * 1.1), 0);
-            }
-            windowsInitialized = true;
+    void drawHires()
+    {
+        if (!hiresRenderer) {
+            hiresRenderer = std::make_unique<MagnumEnvRenderer>(*env, renderW, renderH);
+            hiresRenderer->reset(*env);
         }
 
-        for (int i = 0; i < env->getNumAgents(); ++i) {
-            const uint8_t *obsData = renderer->getObservation(i);
+        hiresRenderer->draw(*env);
+    }
 
-            cv::Mat mat(h, w, CV_8UC4, (char *) obsData);
-            cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-            cv::flip(mat, mat, 0);
-            cv::imshow(std::to_string(i), mat);
-        }
-
-        cv::waitKey(1);
+    py::array_t<uint8_t> getHiresObservation(int agentIdx)
+    {
+        const uint8_t *obsData = hiresRenderer->getObservation(agentIdx);
+        return py::array_t<uint8_t>({renderH, renderW, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
     bool isLevelCompleted() const
@@ -111,6 +114,7 @@ public:
      */
     void close()
     {
+        hiresRenderer.reset();
         renderer.reset();
         env.reset();
     }
@@ -118,9 +122,10 @@ public:
 private:
     std::unique_ptr<Env> env;
     std::unique_ptr<MagnumEnvRenderer> renderer;
+    std::unique_ptr<MagnumEnvRenderer> hiresRenderer;
 
     int w, h;
-    bool windowsInitialized = false;
+    int renderW = 768, renderH = 432;
 };
 
 
@@ -142,5 +147,8 @@ PYBIND11_MODULE(voxel_env, m)
         .def("get_observation", &VoxelEnvGym::getObservation)
         .def("get_last_reward", &VoxelEnvGym::getLastReward)
         .def("is_level_completed", &VoxelEnvGym::isLevelCompleted)
+        .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
+        .def("draw_hires", &VoxelEnvGym::drawHires)
+        .def("get_hires_observation", &VoxelEnvGym::getHiresObservation)
         .def("close", &VoxelEnvGym::close);
 }
