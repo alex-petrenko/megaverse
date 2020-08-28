@@ -9,7 +9,7 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(self, num_agents=2, vertical_look_limit_rad=0.1):
+    def __init__(self, num_agents=2, vertical_look_limit_rad=0.0):
         set_voxel_env_log_level(2)
 
         self.img_w = 128
@@ -116,9 +116,18 @@ class VoxelEnv(gym.Env):
 
     def render(self, mode='human'):
         self.env.draw_hires()
-        obs = [self.convert_obs(self.env.get_hires_observation(i)) for i in range(self.num_agents)]
-        obs_concat = np.concatenate(obs, axis=1)
-        cv2.imshow(f'agent_{0}_{id(self)}', obs_concat)
+        max_num_rows = 2
+        num_rows = min(max_num_rows, self.num_agents // 2)
+        num_cols = self.num_agents // num_rows
+
+        rows = []
+        for row in range(num_rows):
+            obs = [self.convert_obs(self.env.get_hires_observation(i + row * num_cols)) for i in range(num_cols)]
+            obs_concat = np.concatenate(obs, axis=1)
+            rows.append(obs_concat)
+
+        obs_final = np.concatenate(rows, axis=0)
+        cv2.imshow(f'agent_{0}_{id(self)}', obs_final)
         cv2.waitKey(1)
 
     def close(self):
