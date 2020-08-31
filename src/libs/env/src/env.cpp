@@ -11,6 +11,15 @@ using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
+Color3 agentColors[] = {
+    0xffdd3c_rgbf,
+    0x3bb372_rgbf,
+    0x2eb5d0_rgbf,
+    0xffa351_rgbf,
+};
+const int numAgentColors = ARR_LENGTH(agentColors);
+
+
 Env::Env(int numAgents, float verticalLookLimitRad)
     : numAgents{numAgents}
     , verticalLookLimitRad{verticalLookLimitRad}
@@ -21,7 +30,8 @@ Env::Env(int numAgents, float verticalLookLimitRad)
     bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
 //    availableLayouts = {LayoutType::Cave, LayoutType::Walls};  // current default
-    availableLayouts = {LayoutType::Walls};  // current default
+//    availableLayouts = {LayoutType::Walls};  // current default
+    availableLayouts = {LayoutType::Towers};  // current default
 
     // empty list of drawables for each supported drawable type
     for (int drawableType = int(DrawableType::First); drawableType < int(DrawableType::NumTypes); ++drawableType)
@@ -47,9 +57,9 @@ void Env::reset()
     grid.clear();
 
     const auto layoutTypeIdx = randRange(0, int(availableLayouts.size()), rng);
-    const auto layoutType = availableLayouts[layoutTypeIdx];
+    currLayoutType = availableLayouts[layoutTypeIdx];
 
-    layoutGenerator.init(numAgents, layoutType);
+    layoutGenerator.init(numAgents, currLayoutType);
     layoutGenerator.generate(grid);
     layoutDrawables = layoutGenerator.extractPrimitives(grid);
 
@@ -58,6 +68,7 @@ void Env::reset()
     exitPadCenter.y() = exitPad.min.y();
 
     buildingZone = layoutGenerator.buildingZone(grid);
+    highestTower = 0;
 
     agentStartingPositions = layoutGenerator.startingPositions(grid);
     objectSpawnPositions = layoutGenerator.objectSpawnPositions(grid);
@@ -86,7 +97,7 @@ void Env::reset()
 
             auto &agentBody = agent.addChild<Object3D>(&agent);
             agentBody.scale({0.35f, 0.36f, 0.35f}).translate({0, 0.09f, 0});
-            addStandardDrawable(DrawableType::Capsule, agentBody, 0xffdd3c_rgbf);
+            addStandardDrawable(DrawableType::Capsule, agentBody, agentColors[i % numAgentColors]);
 
             addStandardDrawable(DrawableType::Box, *agent.eyesObject, 0x222222_rgbf);
 
@@ -280,7 +291,7 @@ bool Env::step()
         for (int i = 0; i < int(agents.size()); ++i) {
             lastReward[i] += 5.0f;
             if (agents[i]->carryingObject)
-                lastReward[i] += 2.0f;  // TODO: this is just experimental - encourage agents to carry their cubes to the exit
+                lastReward[i] += 2.0f;  // TODO: this is experimental - encourage agents to carry their cubes to the exit
         }
     }
 
@@ -298,6 +309,8 @@ bool Env::step()
 void Env::objectInteract(Agent *agent)
 {
     const auto carryingScale = 0.78f, carryingScaleInverse = 1.0f / carryingScale;
+
+    float rewardDelta = 0.0f;
 
     // putting object on the ground
     if (agent->carryingObject) {
@@ -340,12 +353,17 @@ void Env::objectInteract(Agent *agent)
 
             agent->carryingObject = nullptr;
             obj->toggleCollision();
+
+            if (isInBuildingZone(voxel)) {
+                rewardDelta += buildingReward(voxel);
+                highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
+            }
         }
 
     } else {
         // picking up an object
 
-        auto &pickup = agent->pickupSpot->absoluteTransformation().translation();
+        const auto &pickup = agent->pickupSpot->absoluteTransformation().translation();
         VoxelCoords voxel{int(pickup.x()), int(pickup.y()), int(pickup.z())};
         VoxelCoords voxelAbove{voxel.x(), voxel.y() + 1, voxel.z()};
 
@@ -361,12 +379,33 @@ void Env::objectInteract(Agent *agent)
             obj->resetTransformation();
 
             obj->scale({scaling.x() * carryingScale, scaling.y() * carryingScale, scaling.z() * carryingScale});
-            obj->translate({0.0f, -0.31f, -0.01f});
+            obj->translate({0.0f, -0.3f, 0.0f});
             obj->setParent(agent->pickupSpot);
 
             agent->carryingObject = obj;
 
             grid.remove(voxel);
+
+            if (isInBuildingZone(voxel))
+                rewardDelta -= buildingReward(voxel);
         }
     }
+
+    for (int i = 0; i < numAgents; ++i)
+        lastReward[i] += rewardDelta;
+}
+
+bool Env::isInBuildingZone(const VoxelCoords &c) const
+{
+    return c.x() >= buildingZone.min.x() && c.x() <= buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() <= buildingZone.max.z();
+}
+
+float Env::buildingReward(const VoxelCoords &c) const
+{
+    const auto elevation = c.y() - buildingZone.min.y();
+    const auto exponentialComponent = std::min(0.1f * pow(1.5f, float(elevation)), 10.0f);
+    const auto linearComponent = 0.1f * elevation;
+    // TLOG(INFO) << "Building reward: " << elevation << " " << exponentialComponent << " " << linearComponent;
+
+    return exponentialComponent + linearComponent;
 }

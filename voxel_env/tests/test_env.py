@@ -42,8 +42,8 @@ class TestEnv(TestCase):
         # after this we have randomness due to physics?
 
     def test_render(self):
-        e1 = VoxelEnv()
-        e2 = VoxelEnv()
+        e1 = VoxelEnv(num_agents=4)
+        e2 = VoxelEnv(num_agents=4)
 
         e1.reset()
         e2.reset()

@@ -112,6 +112,17 @@ public:
         return completed;
     }
 
+    /**
+     * Unshaped reward that we're actually trying to maximize.
+     */
+    float trueObjective() const
+    {
+        if (currLayoutType == LayoutType::Towers)
+            return float(highestTower);
+        else
+            return float(completed);
+    }
+
     void setAvailableLayouts(const std::vector<LayoutType> &layouts)
     {
         availableLayouts = layouts;
@@ -136,6 +147,8 @@ public:
 private:
 
     void objectInteract(Agent *agent);
+    bool isInBuildingZone(const VoxelCoords &c) const;
+    float buildingReward(const VoxelCoords &c) const;
 
     void addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color);
 
@@ -170,12 +183,14 @@ private:
     Rng rng{std::random_device{}()};
 
     std::vector<LayoutType> availableLayouts;
+    LayoutType currLayoutType;
 
     std::vector<Action> currAction;
     std::vector<float> lastReward;
     std::vector<AgentState> agentStates;
 
     bool completed = false;
+    int highestTower = 0;
 
     LayoutGenerator layoutGenerator{rng};
 

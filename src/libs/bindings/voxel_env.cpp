@@ -109,6 +109,11 @@ public:
         return env->isLevelCompleted();
     }
 
+    float trueObjective() const
+    {
+        return env->trueObjective();
+    }
+
     /**
      * Explicitly destroy the env and the renderer to avoid doing this when the Python object goes out-of-scope.
      */
@@ -147,6 +152,7 @@ PYBIND11_MODULE(voxel_env, m)
         .def("get_observation", &VoxelEnvGym::getObservation)
         .def("get_last_reward", &VoxelEnvGym::getLastReward)
         .def("is_level_completed", &VoxelEnvGym::isLevelCompleted)
+        .def("true_objective", &VoxelEnvGym::trueObjective)
         .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
         .def("draw_hires", &VoxelEnvGym::drawHires)
         .def("get_hires_observation", &VoxelEnvGym::getHiresObservation)
