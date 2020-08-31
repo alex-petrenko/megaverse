@@ -79,6 +79,8 @@ public:
 
     virtual BoundingBox levelExit(const VoxelGrid<VoxelState> &grid) = 0;
 
+    virtual BoundingBox buildingZone(const VoxelGrid<VoxelState> &grid) = 0;
+
     virtual std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid) = 0;
 
     virtual std::vector<VoxelCoords> objectSpawnPositions(const VoxelGrid<VoxelState> &grid) = 0;
@@ -213,6 +215,12 @@ public:
 
         const VoxelCoords minCoord{xCoord, 1, zCoord}, maxCoord{xCoord + 1, 2, zCoord + exitPadWidth};
 
+        return {minCoord, maxCoord};
+    }
+
+    BoundingBox buildingZone(const VoxelGrid<VoxelState> &) override
+    {
+        const VoxelCoords minCoord{0, 0, 0}, maxCoord{0, 0, 0};
         return {minCoord, maxCoord};
     }
 
@@ -354,7 +362,7 @@ public:
 
 private:
     int maxWallHeight{}, maxWallX{}, firstWallX = 3;
-    const int tallestWall = 4, maxNumWalls = 4;  // parameters (TODO curriculum)
+    const int tallestWall = 3, maxNumWalls = 4;  // parameters (TODO curriculum)
     std::vector<std::pair<int, int>> walls;
 
     std::vector<VoxelCoords> agentSpawnCoords;
@@ -509,6 +517,123 @@ private:
 };
 
 
+class LayoutGeneratorTower : public LayoutGeneratorBasic
+{
+public:
+    explicit LayoutGeneratorTower(int numAgents, Rng &rng)
+        : LayoutGeneratorBasic(numAgents, rng)
+    {
+    }
+
+    void init() override
+    {
+        height = randRange(5, 7, rng);
+        length = randRange(12, 30, rng);
+        width = randRange(12, 25, rng);
+
+        // determine the size and the position of the building zone
+        buildZoneLength = randRange(2, 6, rng);
+        buildZoneWidth = randRange(2, 6, rng);
+
+        materialsLength = randRange(2, 6, rng);
+        materialsWidth = randRange(2, 6, rng);
+
+        length = std::max(buildZoneLength + materialsLength + 3, length);
+        width = std::max(buildZoneWidth + materialsWidth + 3, width);
+
+        buildZoneXOffset = randRange(1, length - buildZoneLength - 1, rng);
+        buildZoneZOffset = randRange(1, width - buildZoneWidth - 1, rng);
+
+        for (int attempt = 0; attempt < 20; ++attempt) {
+            materialsXOffset = randRange(1, length - materialsLength - 1, rng);
+            materialsZOffset = randRange(1, width - materialsWidth - 1, rng);
+            TLOG(DEBUG) << "attempt" << attempt;
+
+            // rough checks that the zones don't overlap
+            if (materialsXOffset >= buildZoneXOffset && materialsXOffset < buildZoneXOffset + buildZoneLength)
+                continue;
+            if (materialsXOffset + materialsLength >= buildZoneXOffset && materialsXOffset + materialsLength < buildZoneXOffset + buildZoneLength)
+                continue;
+
+            if (materialsZOffset >= buildZoneZOffset && materialsZOffset < buildZoneZOffset + buildZoneWidth)
+                continue;
+            if (materialsZOffset + materialsWidth >= buildZoneZOffset && materialsZOffset + materialsWidth < buildZoneZOffset + buildZoneWidth)
+                continue;
+
+            break;
+        }
+
+        std::vector<VoxelCoords> spawnCandidates;
+        for (int x = 1; x < length - 1; ++x)
+            for (int z = 1; z < width - 1; ++z) {
+                if (x >= materialsXOffset && x < materialsXOffset + materialsLength)
+                    continue;
+                if (z >= materialsZOffset && z < materialsZOffset + materialsWidth)
+                    continue;
+
+                spawnCandidates.emplace_back(x, 1, z);
+            }
+
+        std::shuffle(spawnCandidates.begin(), spawnCandidates.end(), rng);
+
+        agentSpawnCoords = std::vector<VoxelCoords>(
+            spawnCandidates.begin(), spawnCandidates.begin() + std::min(numAgents, int(spawnCandidates.size()))
+        );
+        auto spawnIdx = int(agentSpawnCoords.size());
+
+        const auto maxRandomObjects = std::min(int(spawnCandidates.size()) - numAgents, 15);
+        const auto spawnObjects = randRange(0, std::max(1, maxRandomObjects), rng);
+
+        objectSpawnCoords = std::vector<VoxelCoords>(
+            spawnCandidates.begin() + spawnIdx, spawnCandidates.begin() + spawnIdx + spawnObjects
+        );
+
+        for (int x = materialsXOffset; x < materialsXOffset + materialsLength; ++x)
+            for (int y = 1; y <= 2; ++y)
+                for (int z = materialsZOffset; z < materialsZOffset + materialsWidth; ++z)
+                    objectSpawnCoords.emplace_back(x, y, z);
+
+        while (int(agentSpawnCoords.size()) < numAgents)
+            agentSpawnCoords.emplace_back(agentSpawnCoords[0]);
+    }
+
+    void generate(VoxelGrid<VoxelState> &grid) override
+    {
+        LayoutGeneratorBasic::generate(grid);
+    }
+
+    std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &) override
+    {
+        return agentSpawnCoords;
+    }
+
+    std::vector<VoxelCoords> objectSpawnPositions(const VoxelGrid<VoxelState> &) override
+    {
+        return objectSpawnCoords;
+    }
+
+    BoundingBox levelExit(const VoxelGrid<VoxelState> &) override
+    {
+        VoxelCoords minCoord{0, 0, 0}, maxCoord{0, 0, 0};
+        return {minCoord, maxCoord};
+    }
+
+    BoundingBox buildingZone(const VoxelGrid<VoxelState> &) override
+    {
+        const VoxelCoords minCoord{buildZoneXOffset, 1, buildZoneZOffset},
+                          maxCoord{buildZoneXOffset + buildZoneLength, 1, buildZoneZOffset + buildZoneWidth};
+        return {minCoord, maxCoord};
+    }
+
+private:
+    std::vector<VoxelCoords> agentSpawnCoords;
+    std::vector<VoxelCoords> objectSpawnCoords;
+
+    int buildZoneLength, buildZoneWidth, materialsLength, materialsWidth;
+    int buildZoneXOffset, buildZoneZOffset, materialsXOffset, materialsZOffset;
+};
+
+
 // Wrapper class
 
 LayoutGenerator::LayoutGenerator(Rng &rng)
@@ -533,6 +658,9 @@ void LayoutGenerator::init(int numAgents, LayoutType layoutType)
         case LayoutType::Cave:
             generator = std::make_unique<LayoutGeneratorCave>(numAgents, rng);
             break;
+        case LayoutType::Towers:
+            generator = std::make_unique<LayoutGeneratorTower>(numAgents, rng);
+            break;
         default:
             TLOG(ERROR) << "Layout type not supported " << int(layoutType);
             break;
@@ -555,6 +683,11 @@ std::vector<BoundingBox> LayoutGenerator::extractPrimitives(VoxelGrid<VoxelState
 BoundingBox LayoutGenerator::levelExit(const VoxelGrid<VoxelState> &grid)
 {
     return generator->levelExit(grid);
+}
+
+BoundingBox LayoutGenerator::buildingZone(const VoxelGrid<VoxelState> &grid)
+{
+    return generator->buildingZone(grid);
 }
 
 std::vector<VoxelCoords> LayoutGenerator::startingPositions(const VoxelGrid<VoxelState> &grid)

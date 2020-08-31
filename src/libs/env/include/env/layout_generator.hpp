@@ -12,6 +12,7 @@ enum class LayoutType
     Cave,
     Walls,
     Pit,
+    Towers,
 };
 
 
@@ -45,6 +46,8 @@ public:
     std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid);
 
     BoundingBox levelExit(const VoxelGrid<VoxelState> &grid);
+
+    BoundingBox buildingZone(const VoxelGrid<VoxelState> &grid);
 
     std::vector<VoxelCoords> startingPositions(const VoxelGrid<VoxelState> &grid);
 

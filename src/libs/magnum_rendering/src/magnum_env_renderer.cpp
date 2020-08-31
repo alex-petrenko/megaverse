@@ -133,8 +133,8 @@ public:
 
     SceneGraph::DrawableGroup3D drawables;
 
-    GL::Buffer voxelInstanceBuffer{NoCreate};
-    Containers::Array<InstanceData> voxelInstanceData;
+    GL::Buffer boxInstanceBuffer{NoCreate}, capsuleInstanceBuffer{NoCreate};
+    Containers::Array<InstanceData> boxInstanceData, capsuleInstanceData;
 
     Shaders::Phong shader{NoCreate};
     Shaders::Phong shaderInstanced{NoCreate};
@@ -142,7 +142,7 @@ public:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh cubeMesh, exitPadMesh, agentMesh, agentEyeMesh;
+    GL::Mesh boxMesh, exitPadMesh, capsuleMesh;
 
     std::vector<Containers::Array<uint8_t>> agentFrames;
     std::vector<std::unique_ptr<MutableImageView2D>> agentImageViews;
@@ -186,15 +186,21 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h, bool withDebugDraw, Render
 
     // meshes
     {
-        agentMesh = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
-        agentEyeMesh = MeshTools::compile(Primitives::cubeSolid());
-
         exitPadMesh = MeshTools::compile(Primitives::cubeSolid());
 
-        cubeMesh = MeshTools::compile(Primitives::cubeSolid());
-        voxelInstanceBuffer = GL::Buffer{};
-        cubeMesh.addVertexBufferInstanced(
-            voxelInstanceBuffer, 1, 0,
+        boxMesh = MeshTools::compile(Primitives::cubeSolid());
+        boxInstanceBuffer = GL::Buffer{};
+        boxMesh.addVertexBufferInstanced(
+            boxInstanceBuffer, 1, 0,
+            Shaders::Phong::TransformationMatrix{},
+            Shaders::Phong::NormalMatrix{},
+            Shaders::Phong::Color3{}
+        );
+
+        capsuleMesh = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
+        capsuleInstanceBuffer = GL::Buffer{};
+        capsuleMesh.addVertexBufferInstanced(
+            capsuleInstanceBuffer, 1, 0,
             Shaders::Phong::TransformationMatrix{},
             Shaders::Phong::NormalMatrix{},
             Shaders::Phong::Color3{}
@@ -236,21 +242,8 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
     // reset renderer data structures
     {
         drawables = SceneGraph::DrawableGroup3D{};
-        arrayResize(voxelInstanceData, 0);
-    }
-
-    // agents
-    {
-        for (int i = 0; i < env.getNumAgents(); ++i) {
-            auto agentPtr = env.agents[i];
-            auto scaleAgents = 1.6f;
-
-            auto & agentDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentMesh, 0xf9d71c_rgbf, agentPtr);
-            agentDrawable.scale({0.22f, 0.25f * 0.9f, 0.22f}).scale({scaleAgents, scaleAgents, scaleAgents}).translate({0, 0.09f, 0});
-
-            auto & agentEyeDrawable = agentPtr->addChild<SimpleDrawable3D>(drawables, shader, agentEyeMesh, 0x222222_rgbf, agentPtr);
-            agentEyeDrawable.scale({0.16, 0.075, 0.16}).translate({0.0f, 0.23f, -0.07f}).scale({scaleAgents, scaleAgents, scaleAgents});
-        }
+        arrayResize(boxInstanceData, 0);
+        arrayResize(capsuleInstanceData, 0);
     }
 
     // exit pad
@@ -270,18 +263,18 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
         exitPadDrawable.translate(exitPadPos);
     }
 
-    // map layout
+    // drawables
     {
         auto transformation = Matrix4::scaling(Vector3{1.0f});
-        for (auto layoutObject : env.layoutObjects)
-            layoutObject->addFeature<CustomDrawable>(voxelInstanceData, 0xffffff_rgbf, transformation, drawables);
-    }
+        for (const auto &sceneObjectInfo : env.drawables[DrawableType::Box]) {
+            const auto &color = sceneObjectInfo.color;
+            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(boxInstanceData, color, transformation, drawables);
+        }
 
-    // movable objects
-    {
-        auto transformation = Matrix4::scaling(Vector3{1.0f});
-        for (auto movableObject : env.movableObjects)
-            movableObject->addFeature<CustomDrawable>(voxelInstanceData, 0xadd8e6_rgbf, transformation, drawables);
+        for (const auto &sceneObjectInfo : env.drawables[DrawableType::Capsule]) {
+            const auto &color = sceneObjectInfo.color;
+            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, transformation, drawables);
+        }
     }
 }
 
@@ -292,7 +285,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffe
         .clearDepth(1.0f)
         .bind();
 
-    arrayResize(voxelInstanceData, 0);
+    arrayResize(boxInstanceData, 0);
+    arrayResize(capsuleInstanceData, 0);
 
     auto activeCameraPtr = env.agents[agentIdx]->camera;
 
@@ -303,9 +297,13 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffe
 
     /* Upload instance data to the GPU (orphaning the previous buffer
        contents) and draw all cubes in one call  */
-    voxelInstanceBuffer.setData(voxelInstanceData, GL::BufferUsage::DynamicDraw);
-    cubeMesh.setInstanceCount(Int(voxelInstanceData.size()));
-    shaderInstanced.draw(cubeMesh);
+    boxInstanceBuffer.setData(boxInstanceData, GL::BufferUsage::DynamicDraw);
+    boxMesh.setInstanceCount(Int(boxInstanceData.size()));
+    shaderInstanced.draw(boxMesh);
+
+    capsuleInstanceBuffer.setData(capsuleInstanceData, GL::BufferUsage::DynamicDraw);
+    capsuleMesh.setInstanceCount(Int(capsuleInstanceData.size()));
+    shaderInstanced.draw(capsuleMesh);
 
     // Bullet debug draw
     if (withDebugDraw)

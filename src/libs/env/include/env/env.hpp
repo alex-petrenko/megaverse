@@ -1,9 +1,9 @@
 #pragma once
 
+#include <map>
 #include <random>
 #include <vector>
 
-#include <Magnum/Timeline.h>  // TODO: remove
 #include <Magnum/SceneGraph/Scene.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
@@ -45,7 +45,28 @@ inline Action operator~(Action a) { return Action(~int(a)); }
 inline bool operator!(Action a) {return a == Action::Idle; }
 
 
-typedef Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D> Scene3D;
+enum class DrawableType
+{
+    First = 0,
+
+    Box = 0,
+    Capsule = 1,
+
+    NumTypes,
+};
+
+
+struct SceneObjectInfo
+{
+    SceneObjectInfo(Object3D *objectPtr, const Magnum::Color3 &color)
+    : objectPtr{objectPtr}
+    , color{color}
+    {
+    }
+
+    Object3D *objectPtr;
+    Magnum::Color3 color;
+};
 
 
 class Env
@@ -116,6 +137,8 @@ private:
 
     void objectInteract(Agent *agent);
 
+    void addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color);
+
 public:
     // physics stuff
     btDbvtBroadphase bBroadphase;
@@ -128,15 +151,14 @@ public:
 
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
     std::vector<BoundingBox> layoutDrawables;
-    BoundingBox exitPad;
+    BoundingBox exitPad, buildingZone;
     Magnum::Vector3 exitPadCenter;
 
     std::vector<VoxelCoords> agentStartingPositions;
     std::vector<VoxelCoords> objectSpawnPositions;
     std::vector<Agent *> agents;
 
-    std::vector<Object3D *> layoutObjects;
-    std::vector<Object3D *> movableObjects;
+    std::map<DrawableType, std::vector<SceneObjectInfo>> drawables;
 
 private:
     int numAgents;

@@ -90,8 +90,10 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
-    env = std::make_unique<Env>();
-    env->setAvailableLayouts({LayoutType::Walls});
+    const int numAgents = 2;
+    const float verticalLookLimitRad = 0.25f;
+    env = std::make_unique<Env>(numAgents, verticalLookLimitRad);
+    env->setAvailableLayouts({LayoutType::Towers});
 
     // env->seed(42);
     env->reset();

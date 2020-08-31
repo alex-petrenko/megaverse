@@ -22,6 +22,10 @@ Env::Env(int numAgents, float verticalLookLimitRad)
 
 //    availableLayouts = {LayoutType::Cave, LayoutType::Walls};  // current default
     availableLayouts = {LayoutType::Walls};  // current default
+
+    // empty list of drawables for each supported drawable type
+    for (int drawableType = int(DrawableType::First); drawableType < int(DrawableType::NumTypes); ++drawableType)
+        drawables[DrawableType(drawableType)] = std::vector<SceneObjectInfo>{};
 }
 
 void Env::seed(int seedValue)
@@ -53,30 +57,47 @@ void Env::reset()
     exitPadCenter = 0.5f * Vector3(exitPad.max + exitPad.min);
     exitPadCenter.y() = exitPad.min.y();
 
+    buildingZone = layoutGenerator.buildingZone(grid);
+
     agentStartingPositions = layoutGenerator.startingPositions(grid);
     objectSpawnPositions = layoutGenerator.objectSpawnPositions(grid);
 
     scene = std::make_unique<Scene3D>();
 
-    agents.clear();
-    agentStates.clear();
+    // remove dangling pointers from the previous episode
+    for (int drawableType = int(DrawableType::First); drawableType < int(DrawableType::NumTypes); ++drawableType)
+        drawables[DrawableType(drawableType)].clear();
 
-    for (int i = 0; i < numAgents; ++i) {
-        auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
-        auto &agent = scene->addChild<Agent>(scene.get(), bWorld, Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5}, randomRotation, verticalLookLimitRad);
-        agents.emplace_back(&agent);
+    // agents
+    {
+        agents.clear();
+        agentStates.clear();
 
-        agentStates.emplace_back(AgentState());
-        agentStates[i].minDistToGoal = (agent.transformation().translation() - exitPadCenter).length();
+        for (int i = 0; i < numAgents; ++i) {
+            auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
+            auto &agent = scene->addChild<Agent>(scene.get(), bWorld,
+                                                 Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5},
+                                                 randomRotation, verticalLookLimitRad);
+
+            agents.emplace_back(&agent);
+
+            agentStates.emplace_back(AgentState());
+            agentStates[i].minDistToGoal = (agent.transformation().translation() - exitPadCenter).length();
+
+            auto &agentBody = agent.addChild<Object3D>(&agent);
+            agentBody.scale({0.35f, 0.36f, 0.35f}).translate({0, 0.09f, 0});
+            addStandardDrawable(DrawableType::Capsule, agentBody, 0xffdd3c_rgbf);
+
+            auto &agentEyes = agent.addChild<Object3D>(&agent);
+            agentEyes.scale({0.25, 0.12, 0.25}).translate({0.0f, 0.4f, -0.13f});
+            addStandardDrawable(DrawableType::Box, agentEyes, 0x222222_rgbf);
+        }
+
+        assert(agents.size() == agentStates.size());
     }
-
-    assert(agents.size() == agentStates.size());
 
     // map layout
     {
-        // remove dangling pointers from the previous episode
-        layoutObjects.clear();
-        movableObjects.clear();
         collisionShapes.clear();
 
         TLOG(INFO) << "Env has " << layoutDrawables.size() << " layout drawables";
@@ -94,11 +115,10 @@ void Env::reset()
             auto &layoutObject = scene->addChild<RigidBody>(scene.get(), 0.0f, bBoxShape.get(), bWorld);
 
             auto translation = Magnum::Vector3{float((bboxMin.x() + bboxMax.x())) / 2 + 0.5f, float((bboxMin.y() + bboxMax.y())) / 2 + 0.5f, float((bboxMin.z() + bboxMax.z())) / 2 + 0.5f};
-            layoutObject.translate(translation);
+            layoutObject.scale(scale).translate(translation);
             layoutObject.syncPose();
-            layoutObject.translate(-translation).scale(scale).translate(translation);
 
-            layoutObjects.emplace_back(&layoutObject);
+            addStandardDrawable(DrawableType::Box, layoutObject, 0xffffff_rgbf);
             collisionShapes.emplace_back(std::move(bBoxShape));
         }
 
@@ -115,14 +135,60 @@ void Env::reset()
             object.scale(objScale).translate(translation);
             object.syncPose();
 
-            movableObjects.emplace_back(&object);
+            addStandardDrawable(DrawableType::Box, object, 0xadd8e6_rgbf);
+
             collisionShapes.emplace_back(std::move(bBoxShape));
 
             VoxelState voxelState{false};
             voxelState.obj = &object;
             grid.set(pos, voxelState);
         }
+
+        // exit pad
+        {
+            const auto exitPadCoords = exitPad;
+            const auto exitPadScale = Vector3(
+                exitPadCoords.max.x() - exitPadCoords.min.x(),
+                1.0,
+                exitPadCoords.max.z() - exitPadCoords.min.z()
+            );
+
+            if (exitPadScale.x() > 0) {
+                // otherwise we don't need the exit pad
+                const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(),
+                                                exitPadCoords.min.z() + exitPadScale.z() / 2);
+
+                auto &exitPadObject = scene->addChild<Object3D>(scene.get());
+                exitPadObject.scale({0.5, 0.025, 0.5}).scale(exitPadScale);
+                exitPadObject.translate({0.0, 0.025, 0.0});
+                exitPadObject.translate(exitPadPos);
+
+                addStandardDrawable(DrawableType::Box, exitPadObject, 0x50c878_rgbf);
+            }
+        }
+
+        // building zone
+        {
+            const auto zoneScale = Vector3(buildingZone.max.x() - buildingZone.min.x(), 1.0, buildingZone.max.z() - buildingZone.min.z());
+
+            if (zoneScale.x() > 0) {
+                // otherwise we don't need the zone
+                const auto zonePos = Vector3(buildingZone.min.x() + zoneScale.x() / 2, buildingZone.min.y(), buildingZone.min.z() + zoneScale.z() / 2);
+
+                auto &zoneObject = scene->addChild<Object3D>(scene.get());
+                zoneObject.scale({0.55, 0.075, 0.55}).scale(zoneScale);
+                zoneObject.translate({0.0, 0.055, 0.0});
+                zoneObject.translate(zonePos);
+
+                addStandardDrawable(DrawableType::Box, zoneObject, 0x555555_rgbf);
+            }
+        }
     }
+}
+
+void Env::addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color)
+{
+    drawables[type].emplace_back(&object, color);
 }
 
 void Env::setAction(int agentIdx, Action action)
