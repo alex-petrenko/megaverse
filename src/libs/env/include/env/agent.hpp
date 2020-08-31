@@ -46,6 +46,8 @@ public:
 
     Magnum::SceneGraph::Camera3D *camera;
     Object3D *cameraObject;
+    Object3D *eyesObject;
+    Object3D *pickupSpot;
 
     btDynamicsWorld &bWorld;
 

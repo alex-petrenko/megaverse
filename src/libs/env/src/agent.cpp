@@ -28,6 +28,12 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
         .setProjectionMatrix(Matrix4::perspectiveProjection(105.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
+    eyesObject = &(cameraObject->addChild<Object3D>());
+    eyesObject->scale({0.25f, 0.12f, 0.2f}).translate({0.0f, 0.0f, -0.19f});
+
+    pickupSpot = &(cameraObject->addChild<Object3D>());
+    pickupSpot->translate({0.0f, -0.44f, -1.0f});
+
     btTransform startTransform;
     startTransform.setIdentity();
     startTransform.setRotation(btQuaternion(btVector3(0, 1, 0), rotationRad));

@@ -88,9 +88,11 @@ void Env::reset()
             agentBody.scale({0.35f, 0.36f, 0.35f}).translate({0, 0.09f, 0});
             addStandardDrawable(DrawableType::Capsule, agentBody, 0xffdd3c_rgbf);
 
-            auto &agentEyes = agent.addChild<Object3D>(&agent);
-            agentEyes.scale({0.25, 0.12, 0.25}).translate({0.0f, 0.4f, -0.13f});
-            addStandardDrawable(DrawableType::Box, agentEyes, 0x222222_rgbf);
+            addStandardDrawable(DrawableType::Box, *agent.eyesObject, 0x222222_rgbf);
+
+            // auto &pickupSpot = agent.pickupSpot->addChild<Object3D>();
+            // pickupSpot.scale({0.03f, 0.03f, 0.03f});
+            // addStandardDrawable(DrawableType::Box, pickupSpot, 0x222222_rgbf);
         }
 
         assert(agents.size() == agentStates.size());
@@ -295,17 +297,35 @@ bool Env::step()
 
 void Env::objectInteract(Agent *agent)
 {
-    auto agentTransform = agent->ghostObject.getWorldTransform();
-    const auto carryingScale = 0.8f, carryingScaleInverse = 1.0f / carryingScale;
+    const auto carryingScale = 0.78f, carryingScaleInverse = 1.0f / carryingScale;
 
+    // putting object on the ground
     if (agent->carryingObject) {
         auto obj = agent->carryingObject;
         auto t = obj->absoluteTransformation().translation();
 
         VoxelCoords voxel{t};
         auto voxelPtr = grid.get(voxel);
-
         if (!voxelPtr) {
+            // voxel in front of us is empty, can place the object
+            // the object should be on the ground or on top of another object
+            // descend on y axis until we find ground
+
+            while (true) {
+                VoxelCoords voxelBelow{voxel.x(), voxel.y() - 1, voxel.z()};
+                if (voxelBelow.y() < 0) {
+                    // this is the lowest level we support
+                    break;
+                }
+
+                auto voxelBelowPtr = grid.get(voxelBelow);
+                if (voxelBelowPtr)
+                    break;
+                else
+                    voxel = voxelBelow;
+            }
+
+            // placing object on the ground (or another object)
             VoxelState voxelState{false};
             voxelState.obj = obj;
             grid.set(voxel, voxelState);
@@ -323,17 +343,16 @@ void Env::objectInteract(Agent *agent)
         }
 
     } else {
-        auto forwardDirection = agent->forwardDirection();
+        // picking up an object
 
-        auto interactPos = agentTransform.getOrigin() + forwardDirection.normalized();
+        auto &pickup = agent->pickupSpot->absoluteTransformation().translation();
+        VoxelCoords voxel{int(pickup.x()), int(pickup.y()), int(pickup.z())};
+        VoxelCoords voxelAbove{voxel.x(), voxel.y() + 1, voxel.z()};
 
-        VoxelCoords voxel{int(interactPos.x()), int(interactPos.y()), int(interactPos.z())};
+        auto voxelPtr = grid.get(voxel), voxelAbovePtr = grid.get(voxelAbove);
+        bool hasObjectAbove = voxelAbovePtr && voxelAbovePtr->obj;
 
-//        TLOG(INFO) << "interacting with voxel " << interactPos.x() << " " << interactPos.y() << " " << interactPos.z()
-//                   << " Voxel: " << voxel;
-
-        auto voxelPtr = grid.get(voxel);
-        if (voxelPtr && voxelPtr->obj) {
+        if (voxelPtr && voxelPtr->obj && !hasObjectAbove) {
             auto obj = voxelPtr->obj;
             obj->toggleCollision();
 
@@ -342,7 +361,8 @@ void Env::objectInteract(Agent *agent)
             obj->resetTransformation();
 
             obj->scale({scaling.x() * carryingScale, scaling.y() * carryingScale, scaling.z() * carryingScale});
-            obj->translate({0.0f, -0.29f, -0.9f});
+            obj->translate({0.0f, -0.31f, -0.01f});
+            obj->setParent(agent->pickupSpot);
 
             agent->carryingObject = obj;
 
