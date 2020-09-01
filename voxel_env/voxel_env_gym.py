@@ -105,13 +105,10 @@ class VoxelEnv(gym.Env):
 
         return obs, rewards, dones, infos
 
-    def convert_obs(self, obs):
+    @staticmethod
+    def convert_obs(obs):
         obs = cv2.flip(obs, 0)
         obs = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
-
-        # aspect_ratio = self.img_w / self.img_h
-        # render_w = 800
-        # obs = cv2.resize(obs, (render_w, int(render_w / aspect_ratio)))
         return obs
 
     def render(self, mode='human'):

@@ -123,6 +123,11 @@ public:
             return float(completed);
     }
 
+    float remainingTimeFraction() const
+    {
+        return (horizonSec - episodeDurationSec) / horizonSec;
+    }
+
     void setAvailableLayouts(const std::vector<LayoutType> &layouts)
     {
         availableLayouts = layouts;

@@ -532,8 +532,8 @@ public:
         width = randRange(12, 25, rng);
 
         // determine the size and the position of the building zone
-        buildZoneLength = randRange(2, 6, rng);
-        buildZoneWidth = randRange(2, 6, rng);
+        buildZoneLength = randRange(3, 8, rng);
+        buildZoneWidth = randRange(3, 8, rng);
 
         materialsLength = randRange(2, 8, rng);
         materialsWidth = randRange(2, 8, rng);

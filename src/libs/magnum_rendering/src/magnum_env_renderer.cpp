@@ -317,6 +317,16 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffe
     if (readToBuffer) {
         framebuffer.mapForRead(GL::Framebuffer::ColorAttachment{0});
         framebuffer.read(framebuffer.viewport(), *agentImageViews[agentIdx]);
+
+        const auto remainingTimeBarThickness = 2;
+        const auto numPixelsInOneRow = framebuffer.viewport().size().x() * 4;
+        const auto pixelsToFill = env.remainingTimeFraction() * numPixelsInOneRow;
+
+        for (int i = 0; i < remainingTimeBarThickness; ++i) {
+            // viewport is flipped upside-down
+            const auto rowStart = agentFrames[agentIdx].size() - numPixelsInOneRow * (i + 1);
+            memset(agentFrames[agentIdx].data() + rowStart, 255, size_t(pixelsToFill));
+        }
     }
 }
 

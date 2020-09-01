@@ -147,7 +147,7 @@ int main(int argc, char** argv)
     env.seed(42);
     env.reset();
 
-    const auto debugDraw = viz;
+    const auto debugDraw = false;
     MagnumEnvRenderer renderer{env, W, H, debugDraw};
 
     tprof().startTimer("loop");

@@ -106,7 +106,9 @@ void Agent::lookUp(float dt)
 void Agent::lookDown(float dt)
 {
     cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
-    currXRotation -= rotateXRadians * dt;
+    // this is a hack, in the beginning of training the agents really love to look at the sky and can't learn anything
+    // by making looking down easier than up I hope to prevent this
+    currXRotation -= rotateXRadians * dt * 1.1f;
     currXRotation = std::max(-verticalLookLimitRad, currXRotation);
     cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
 }

@@ -366,7 +366,6 @@ void Env::objectInteract(Agent *agent, int agentIdx)
             if (isInBuildingZone(voxel)) {
                 rewardDelta += buildingReward(voxel);
                 highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
-                TLOG(INFO) << "Highest tower:" << highestTower;
             }
         }
 
