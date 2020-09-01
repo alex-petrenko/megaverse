@@ -9,6 +9,8 @@
 
 #include <util/magnum.hpp>
 
+#include <util/tiny_logger.hpp>
+
 
 class RigidBody: public Object3D
 {
@@ -24,8 +26,9 @@ public:
         // Bullet rigid body setup
         auto* motionState = new Magnum::BulletIntegration::MotionState{*this};  // motion state will update the Object3D transformation
         bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{mass, &motionState->btMotionState(), bShape, bInertia});
-        bRigidBody->forceActivationState(DISABLE_DEACTIVATION);  // do we need this?
+//        bRigidBody->forceActivationState(DISABLE_DEACTIVATION);  // do we need this?
         bWorld.addRigidBody(bRigidBody.get());
+//        auto mask = bRigidBody->getBroadphaseHandle()->m_collisionFilterMask;
         colliding = true;
     }
 

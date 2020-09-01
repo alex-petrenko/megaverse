@@ -103,10 +103,10 @@ protected:
     btVector3 parallelComponent(const btVector3& direction, const btVector3& normal);
     btVector3 perpindicularComponent(const btVector3& direction, const btVector3& normal);
 
-    bool recoverFromPenetration(btCollisionWorld * collisionWorld);
+    bool recoverFromPenetration(btCollisionWorld * collisionWorld, int iteration);
     void stepUp(btCollisionWorld * collisionWorld);
-    void updateTargetPositionBasedOnCollision(const btVector3& hit_normal, btScalar tangentMag = btScalar(0.0), btScalar normalMag = btScalar(1.0));
-    void stepForwardAndStrafe(btCollisionWorld * collisionWorld, const btVector3& walkMove, btScalar dt);
+    void updateTargetPositionBasedOnCollision(const btVector3& hit_normal, btScalar closestHitFraction);
+    void stepForwardAndStrafe(btCollisionWorld * collisionWorld, const btVector3& horizontalVelocity, btScalar dt);
     void stepDown(btCollisionWorld * collisionWorld, btScalar dt);
 
     virtual bool needsCollision(const btCollisionObject* body0, const btCollisionObject* body1);
@@ -121,7 +121,7 @@ protected:
     btPairCachingGhostObject* m_ghostObject;
     btConvexShape* m_convexShape;  //is also in m_ghostObject, but it needs to be convex, so we store it here to avoid upcast
 
-    btScalar m_maxPenetrationDepth;
+    btScalar m_maxPenetrationDepth = 0.041f;
     btScalar m_verticalVelocity;
     btScalar m_verticalOffset;
     btScalar m_fallSpeed;
@@ -135,8 +135,6 @@ protected:
 
     btScalar m_stepHeight;
 
-    btScalar m_addedMargin;  //@todo: remove this and fix the code
-
     btScalar m_gravity = 1.4f * 9.8f;
 
     btVector3 horizontalVelocity;
@@ -147,7 +145,6 @@ protected:
     btScalar maxAcceleration = 35.0f + normalDeceleration, maxAirAcceleration = 3.0f;
     btScalar exceedingSpeedLimitDeceleration = maxAcceleration * 2;
 
-    btVector3 m_normalizedDirection;
     btVector3 m_AngVel;
 
     btVector3 m_jumpPosition;
@@ -175,10 +172,4 @@ protected:
     btVector3 m_jumpAxis;
 
     bool m_interpolateUp;
-    bool full_drop;
-    bool bounce_fix;
-
-    // TODO: get rid of this! Tune everything to just use seconds instead of dt
-    const float defaultFps = 30.0f;
-    const float defaultFrameDuration = 1.0f / defaultFps;
 };

@@ -21,7 +21,8 @@ const int numAgentColors = ARR_LENGTH(agentColors);
 
 
 Env::Env(int numAgents, float verticalLookLimitRad)
-    : numAgents{numAgents}
+    : totalReward(size_t(numAgents), 0.0f)
+    , numAgents{numAgents}
     , verticalLookLimitRad{verticalLookLimitRad}
     , currAction(size_t(numAgents), Action::Idle)
     , lastReward(size_t(numAgents), 0.0f)
@@ -45,6 +46,7 @@ void Env::seed(int seedValue)
 
 void Env::reset()
 {
+    std::fill(totalReward.begin(), totalReward.end(), 0.0f);
     completed = false;
 
     auto seed = randRange(0, 1 << 30, rng);
@@ -87,7 +89,7 @@ void Env::reset()
         for (int i = 0; i < numAgents; ++i) {
             auto randomRotation = frand(rng) * Magnum::Constants::pi() * 2;
             auto &agent = scene->addChild<Agent>(scene.get(), bWorld,
-                                                 Vector3{agentStartingPositions[i]} + Vector3{0.5, 0.55, 0.5},
+                                                 Vector3{agentStartingPositions[i]} + Vector3{0.5, Agent::agentHeight / 2, 0.5},
                                                  randomRotation, verticalLookLimitRad);
 
             agents.emplace_back(&agent);
@@ -248,7 +250,7 @@ bool Env::step()
             agent->jump();
 
         if (!!(a & Action::Interact))
-            objectInteract(agent);
+            objectInteract(agent, i);
     }
 
     bWorld.stepSimulation(lastFrameDurationSec, 1, simulationStepSeconds);
@@ -299,14 +301,21 @@ bool Env::step()
     if (episodeDurationSec >= horizonSec)
         done = true;
 
+    if (done)
+        for (int i = 0; i < int(agents.size()); ++i)
+            lastReward[i] += highestTower;
+
     // clear the actions
     for (int i = 0; i < numAgents; ++i)
         currAction[i] = Action::Idle;
 
+    for (int i = 0; i < int(agents.size()); ++i)
+        totalReward[i] += lastReward[i];
+
     return done;
 }
 
-void Env::objectInteract(Agent *agent)
+void Env::objectInteract(Agent *agent, int agentIdx)
 {
     const auto carryingScale = 0.78f, carryingScaleInverse = 1.0f / carryingScale;
 
@@ -357,6 +366,7 @@ void Env::objectInteract(Agent *agent)
             if (isInBuildingZone(voxel)) {
                 rewardDelta += buildingReward(voxel);
                 highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
+                TLOG(INFO) << "Highest tower:" << highestTower;
             }
         }
 
@@ -367,37 +377,48 @@ void Env::objectInteract(Agent *agent)
         VoxelCoords voxel{int(pickup.x()), int(pickup.y()), int(pickup.z())};
         VoxelCoords voxelAbove{voxel.x(), voxel.y() + 1, voxel.z()};
 
-        auto voxelPtr = grid.get(voxel), voxelAbovePtr = grid.get(voxelAbove);
-        bool hasObjectAbove = voxelAbovePtr && voxelAbovePtr->obj;
+        int pickupHeight = 0, maxPickupHeight = 1;
+        while (pickupHeight <= maxPickupHeight) {
+            auto voxelPtr = grid.get(voxel), voxelAbovePtr = grid.get(voxelAbove);
+            bool hasObjectAbove = voxelAbovePtr && voxelAbovePtr->obj;
 
-        if (voxelPtr && voxelPtr->obj && !hasObjectAbove) {
-            auto obj = voxelPtr->obj;
-            obj->toggleCollision();
+            if (voxelPtr && voxelPtr->obj && !hasObjectAbove) {
+                auto obj = voxelPtr->obj;
+                obj->toggleCollision();
 
-            obj->setParent(agent);
-            auto scaling = obj->transformation().scaling();
-            obj->resetTransformation();
+                obj->setParent(agent);
+                auto scaling = obj->transformation().scaling();
+                obj->resetTransformation();
 
-            obj->scale({scaling.x() * carryingScale, scaling.y() * carryingScale, scaling.z() * carryingScale});
-            obj->translate({0.0f, -0.3f, 0.0f});
-            obj->setParent(agent->pickupSpot);
+                obj->scale({scaling.x() * carryingScale, scaling.y() * carryingScale, scaling.z() * carryingScale});
+                obj->translate({0.0f, -0.3f, 0.0f});
+                obj->setParent(agent->pickupSpot);
 
-            agent->carryingObject = obj;
+                agent->carryingObject = obj;
 
-            grid.remove(voxel);
+                grid.remove(voxel);
 
-            if (isInBuildingZone(voxel))
-                rewardDelta -= buildingReward(voxel);
+                if (isInBuildingZone(voxel))
+                    rewardDelta -= buildingReward(voxel);
+
+                break;
+            } else {
+                voxel = voxelAbove;
+                voxelAbove = VoxelCoords{voxel.x(), voxel.y() + 1, voxel.z()};
+            }
+
+            ++pickupHeight;
         }
     }
 
-    for (int i = 0; i < numAgents; ++i)
-        lastReward[i] += rewardDelta;
+    lastReward[agentIdx] += rewardDelta;
 }
 
 bool Env::isInBuildingZone(const VoxelCoords &c) const
 {
-    return c.x() >= buildingZone.min.x() && c.x() <= buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() <= buildingZone.max.z();
+//    return c.x() >= buildingZone.min.x() && c.x() <= buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() <= buildingZone.max.z();
+
+    return true;  // temporary experiment
 }
 
 float Env::buildingReward(const VoxelCoords &c) const

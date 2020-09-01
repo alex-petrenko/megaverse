@@ -40,6 +40,7 @@ private:
 
 public:
     static constexpr auto rotateRadians = 3.5f, rotateXRadians = 1.5f;
+    static constexpr auto agentHeight = 1.75f;
 
     float currXRotation = 0.0f;
     float verticalLookLimitRad = 0.0f;
@@ -51,7 +52,7 @@ public:
 
     btDynamicsWorld &bWorld;
 
-    std::unique_ptr<btCapsuleShape> capsuleShape;
+    std::unique_ptr<btBoxShape> capsuleShape;
     btPairCachingGhostObject ghostObject;
     std::unique_ptr<KinematicCharacterController> bCharacter;
 

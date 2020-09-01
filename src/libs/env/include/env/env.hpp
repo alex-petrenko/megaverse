@@ -146,7 +146,7 @@ public:
 
 private:
 
-    void objectInteract(Agent *agent);
+    void objectInteract(Agent *agent, int agentIdx);
     bool isInBuildingZone(const VoxelCoords &c) const;
     float buildingReward(const VoxelCoords &c) const;
 
@@ -172,6 +172,8 @@ public:
     std::vector<Agent *> agents;
 
     std::map<DrawableType, std::vector<SceneObjectInfo>> drawables;
+
+    std::vector<float> totalReward;
 
 private:
     int numAgents;

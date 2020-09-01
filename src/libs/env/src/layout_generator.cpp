@@ -535,8 +535,8 @@ public:
         buildZoneLength = randRange(2, 6, rng);
         buildZoneWidth = randRange(2, 6, rng);
 
-        materialsLength = randRange(2, 6, rng);
-        materialsWidth = randRange(2, 6, rng);
+        materialsLength = randRange(2, 8, rng);
+        materialsWidth = randRange(2, 8, rng);
 
         length = std::max(buildZoneLength + materialsLength + 3, length);
         width = std::max(buildZoneWidth + materialsWidth + 3, width);
@@ -547,7 +547,6 @@ public:
         for (int attempt = 0; attempt < 20; ++attempt) {
             materialsXOffset = randRange(1, length - materialsLength - 1, rng);
             materialsZOffset = randRange(1, width - materialsWidth - 1, rng);
-            TLOG(DEBUG) << "attempt" << attempt;
 
             // rough checks that the zones don't overlap
             if (materialsXOffset >= buildZoneXOffset && materialsXOffset < buildZoneXOffset + buildZoneLength)
@@ -589,7 +588,7 @@ public:
         );
 
         for (int x = materialsXOffset; x < materialsXOffset + materialsLength; ++x)
-            for (int y = 1; y <= 2; ++y)
+            for (int y = 1; y <= 1; ++y)
                 for (int z = materialsZOffset; z < materialsZOffset + materialsWidth; ++z)
                     objectSpawnCoords.emplace_back(x, y, z);
 

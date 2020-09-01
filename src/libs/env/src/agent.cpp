@@ -40,11 +40,11 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
     startTransform.setOrigin (btVector3(startingPosition.x(), startingPosition.y(), startingPosition.z()));
     ghostObject.setWorldTransform(startTransform);
 
-    auto scaleAgents = 1.6f;
-    btScalar characterHeight = 0.65f * scaleAgents;
-    btScalar characterRadius = 0.22f * scaleAgents;
+//    btScalar characterHeight = 0.65f * scaleAgents;  //1.6
+    btScalar characterRadius = 0.26f;
 
-    capsuleShape = std::make_unique<btCapsuleShape>(characterRadius, characterHeight);
+//    capsuleShape = std::make_unique<btCapsuleShape>(characterRadius, characterHeight);
+    capsuleShape = std::make_unique<btBoxShape>(btVector3{characterRadius, agentHeight / 2, characterRadius});
 
     ghostObject.setCollisionShape(capsuleShape.get());
     ghostObject.setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
