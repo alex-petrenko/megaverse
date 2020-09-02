@@ -68,6 +68,9 @@ public:
         }
     }
 
+public:
+    int pickedUpHeight = 0;
+
 private:
     btDynamicsWorld& bWorld;
     Magnum::Containers::Pointer<btRigidBody> bRigidBody;

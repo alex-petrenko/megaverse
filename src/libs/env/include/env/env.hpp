@@ -154,7 +154,7 @@ private:
 
     void objectInteract(Agent *agent, int agentIdx);
     bool isInBuildingZone(const VoxelCoords &c) const;
-    float buildingReward(const VoxelCoords &c) const;
+    float buildingReward(float heightDelta) const;
 
     void addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color);
 

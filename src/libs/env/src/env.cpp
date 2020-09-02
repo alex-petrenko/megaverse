@@ -356,11 +356,15 @@ void Env::objectInteract(Agent *agent, int agentIdx)
             obj->translate({float(voxel.x()) + 0.5f, float(voxel.y()) + 0.5f, float(voxel.z()) + 0.5f});
             obj->syncPose();
 
+            int pickedUpHeight = agent->carryingObject->pickedUpHeight;
+            int placedHeight = voxel.y();
+            // TLOG(INFO) << "placed height: " << agent->carryingObject->pickedUpHeight;
+
             agent->carryingObject = nullptr;
             obj->toggleCollision();
 
             if (isInBuildingZone(voxel)) {
-                rewardDelta += buildingReward(voxel);
+                rewardDelta += buildingReward(placedHeight - pickedUpHeight);
                 highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
             }
         }
@@ -390,13 +394,12 @@ void Env::objectInteract(Agent *agent, int agentIdx)
                 obj->setParent(agent->pickupSpot);
 
                 agent->carryingObject = obj;
+                agent->carryingObject->pickedUpHeight = voxel.y();
+                // TLOG(INFO) << "pick up height: " << agent->carryingObject->pickedUpHeight;
 
                 grid.remove(voxel);
-
-                if (isInBuildingZone(voxel))
-                    rewardDelta -= buildingReward(voxel);
-
                 break;
+
             } else {
                 voxel = voxelAbove;
                 voxelAbove = VoxelCoords{voxel.x(), voxel.y() + 1, voxel.z()};
@@ -416,13 +419,14 @@ bool Env::isInBuildingZone(const VoxelCoords &c) const
     return true;  // temporary experiment
 }
 
-float Env::buildingReward(const VoxelCoords &c) const
+float Env::buildingReward(float heightDelta) const
 {
-    const auto elevation = c.y() - buildingZone.min.y();
-    const auto exponentialComponent = std::min(0.1f * pow(2.0f, float(elevation)), 10.0f);
-    return exponentialComponent;
-//    const auto linearComponent = 0.1f * elevation;
-    // TLOG(INFO) << "Building reward: " << elevation << " " << exponentialComponent << " " << linearComponent;
+    const auto elevationChange = std::fabs(heightDelta);
+    if (elevationChange < SIMD_EPSILON)
+        return 0.0f;
 
-//    return exponentialComponent + linearComponent;
+    const auto sign = heightDelta > 0 ? +1 : -1;
+
+    const auto exponentialComponent = std::min(0.1f * pow(2.0f, elevationChange), 10.0f);
+    return sign * exponentialComponent;
 }

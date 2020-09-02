@@ -91,7 +91,7 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
     const int numAgents = 4;
-    const float verticalLookLimitRad = 0.25f;
+    const float verticalLookLimitRad = 0.1f;
     env = std::make_unique<Env>(numAgents, verticalLookLimitRad);
     env->setAvailableLayouts({LayoutType::Towers});
 
