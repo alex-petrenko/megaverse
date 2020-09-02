@@ -301,10 +301,6 @@ bool Env::step()
     if (episodeDurationSec >= horizonSec)
         done = true;
 
-    if (done)
-        for (int i = 0; i < int(agents.size()); ++i)
-            lastReward[i] += highestTower;
-
     // clear the actions
     for (int i = 0; i < numAgents; ++i)
         currAction[i] = Action::Idle;
@@ -423,9 +419,10 @@ bool Env::isInBuildingZone(const VoxelCoords &c) const
 float Env::buildingReward(const VoxelCoords &c) const
 {
     const auto elevation = c.y() - buildingZone.min.y();
-    const auto exponentialComponent = std::min(0.1f * pow(1.5f, float(elevation)), 10.0f);
-    const auto linearComponent = 0.1f * elevation;
+    const auto exponentialComponent = std::min(0.1f * pow(2.0f, float(elevation)), 10.0f);
+    return exponentialComponent;
+//    const auto linearComponent = 0.1f * elevation;
     // TLOG(INFO) << "Building reward: " << elevation << " " << exponentialComponent << " " << linearComponent;
 
-    return exponentialComponent + linearComponent;
+//    return exponentialComponent + linearComponent;
 }

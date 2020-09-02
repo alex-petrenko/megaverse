@@ -3,6 +3,7 @@
 #include <map>
 #include <random>
 #include <vector>
+#include <algorithm>
 
 #include <Magnum/SceneGraph/Scene.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
@@ -118,7 +119,7 @@ public:
     float trueObjective() const
     {
         if (currLayoutType == LayoutType::Towers)
-            return float(highestTower);
+            return std::accumulate(totalReward.begin(), totalReward.end(), 0.0f);
         else
             return float(completed);
     }
@@ -184,7 +185,7 @@ private:
     int numAgents;
     float verticalLookLimitRad;
 
-    const float horizonSec = 70;
+    const float horizonSec = 60;
     float episodeDurationSec = 0;
 
     Rng rng{std::random_device{}()};

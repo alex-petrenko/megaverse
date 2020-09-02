@@ -149,6 +149,7 @@ void Viewer::tickEvent() {
             s << " " << env->totalReward[i];
 
         TLOG(INFO) << "Total reward " << s.str();
+        TLOG(INFO) << "True objective " << env->trueObjective();
         env->reset();
         renderer->reset(*env);
         forceReset = false;
