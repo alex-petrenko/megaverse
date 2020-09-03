@@ -26,6 +26,7 @@ public:
         // Bullet rigid body setup
         auto* motionState = new Magnum::BulletIntegration::MotionState{*this};  // motion state will update the Object3D transformation
         bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{mass, &motionState->btMotionState(), bShape, bInertia});
+        bRigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
 //        bRigidBody->forceActivationState(DISABLE_DEACTIVATION);  // do we need this?
         bWorld.addRigidBody(bRigidBody.get());
 //        auto mask = bRigidBody->getBroadphaseHandle()->m_collisionFilterMask;
@@ -40,6 +41,11 @@ public:
 
     btRigidBody &rigidBody() { return *bRigidBody; }
 
+    void setCollisionOffset(const Magnum::Vector3 &collisionOffsetVec)
+    {
+        collisionOffset = Magnum::Matrix4::translation(collisionOffsetVec);
+    }
+
     /* needed after changing the pose from Magnum side */
     void syncPose()
     {
@@ -49,7 +55,7 @@ public:
         const auto s = m.scaling();
         const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
 
-        auto t = Magnum::Matrix4::translation(m.translation()) * invS * Magnum::Matrix4::translation(-m.translation()) * m;
+        auto t = collisionOffset * Magnum::Matrix4::translation(m.translation()) * invS * Magnum::Matrix4::translation(-m.translation()) * m;
 
         bRigidBody->setWorldTransform(btTransform(t));
     }
@@ -70,9 +76,11 @@ public:
 
 public:
     int pickedUpHeight = 0;
+    bool pickedUpBuildingZone = false;
 
 private:
     btDynamicsWorld& bWorld;
     Magnum::Containers::Pointer<btRigidBody> bRigidBody;
+    Magnum::Matrix4 collisionOffset;
     bool colliding = false;
 };

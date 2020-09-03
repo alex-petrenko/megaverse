@@ -125,6 +125,8 @@ public:
 
     GL::Framebuffer * getFramebuffer() { return &framebuffer; }
 
+    void toggleOverviewMode() { overviewMode = !overviewMode; }
+
 public:
     std::unique_ptr<WindowlessContext> windowlessContextPtr{nullptr};
     RenderingContext *ctx = nullptr;
@@ -149,6 +151,11 @@ public:
 
     bool withDebugDraw;
     BulletIntegration::DebugDraw debugDraw{NoCreate};
+
+    bool withOverviewCamera = false;
+    bool overviewMode = false;
+    Magnum::SceneGraph::Camera3D *overviewCamera;
+    Object3D *overviewCameraObject;
 };
 
 
@@ -276,6 +283,19 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
             sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, transformation, drawables);
         }
     }
+
+    if (withOverviewCamera) {
+        overviewCameraObject = &(env.scene->addChild<Object3D>());
+        overviewCameraObject->rotateX(-40.0_degf);
+        overviewCameraObject->rotateY(225.0_degf);
+        overviewCameraObject->translate(Magnum::Vector3{0.8f, 10.0f, 0.8f});
+
+        overviewCamera = &(overviewCameraObject->addFeature<SceneGraph::Camera3D>());
+
+        overviewCamera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
+                      .setProjectionMatrix(Matrix4::perspectiveProjection(105.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
+                      .setViewport(GL::defaultFramebuffer.viewport().size());
+    }
 }
 
 void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffer)
@@ -289,6 +309,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffe
     arrayResize(capsuleInstanceData, 0);
 
     auto activeCameraPtr = env.agents[agentIdx]->camera;
+    if (withOverviewCamera && overviewMode)
+        activeCameraPtr = overviewCamera;
 
     // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
     activeCameraPtr->draw(drawables);
@@ -374,4 +396,9 @@ const uint8_t * MagnumEnvRenderer::getObservation(int agentIdx) const
 Magnum::GL::Framebuffer *MagnumEnvRenderer::getFramebuffer()
 {
     return pimpl->getFramebuffer();
+}
+
+void MagnumEnvRenderer::toggleOverviewMode()
+{
+    pimpl->toggleOverviewMode();
 }

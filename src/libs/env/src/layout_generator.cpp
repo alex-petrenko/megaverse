@@ -362,7 +362,7 @@ public:
 
 private:
     int maxWallHeight{}, maxWallX{}, firstWallX = 3;
-    const int tallestWall = 3, maxNumWalls = 4;  // parameters (TODO curriculum)
+    const int tallestWall = 4, maxNumWalls = 4;  // parameters (TODO curriculum)
     std::vector<std::pair<int, int>> walls;
 
     std::vector<VoxelCoords> agentSpawnCoords;

@@ -52,7 +52,7 @@ public:
 
     btDynamicsWorld &bWorld;
 
-    std::unique_ptr<btBoxShape> capsuleShape;
+    std::unique_ptr<btCapsuleShape> capsuleShape;
     btPairCachingGhostObject ghostObject;
     std::unique_ptr<KinematicCharacterController> bCharacter;
 

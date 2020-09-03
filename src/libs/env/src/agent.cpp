@@ -25,7 +25,7 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
     camera = &(cameraObject->addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-        .setProjectionMatrix(Matrix4::perspectiveProjection(105.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
+        .setProjectionMatrix(Matrix4::perspectiveProjection(115.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
     eyesObject = &(cameraObject->addChild<Object3D>());
@@ -40,11 +40,13 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
     startTransform.setOrigin (btVector3(startingPosition.x(), startingPosition.y(), startingPosition.z()));
     ghostObject.setWorldTransform(startTransform);
 
-//    btScalar characterHeight = 0.65f * scaleAgents;  //1.6
-    btScalar characterRadius = 0.26f;
+    // btScalar characterHeight = 1.0f;  //1.6
+    // btScalar characterRadius = 0.25f;
+    // capsuleShape = std::make_unique<btBoxShape>(btVector3{characterRadius, agentHeight / 2, characterRadius});
 
-//    capsuleShape = std::make_unique<btCapsuleShape>(characterRadius, characterHeight);
-    capsuleShape = std::make_unique<btBoxShape>(btVector3{characterRadius, agentHeight / 2, characterRadius});
+    btScalar characterHeight = 1.05f;  //1.6
+    btScalar characterRadius = 0.33f;
+    capsuleShape = std::make_unique<btCapsuleShape>(characterRadius, characterHeight);
 
     ghostObject.setCollisionShape(capsuleShape.get());
     ghostObject.setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
@@ -52,7 +54,7 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
     auto stepHeight = btScalar(0.2f);
     bCharacter = std::make_unique<KinematicCharacterController>(&ghostObject, capsuleShape.get(), stepHeight, btVector3(0.0, 1.0, 0.0));
 
-    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter|btBroadphaseProxy::DefaultFilter);
+    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter);
     bWorld.addAction(bCharacter.get());
 
     this->updateTransform();

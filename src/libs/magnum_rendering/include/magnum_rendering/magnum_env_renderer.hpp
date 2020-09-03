@@ -26,6 +26,8 @@ public:
 
     Magnum::GL::Framebuffer * getFramebuffer();
 
+    void toggleOverviewMode();
+
 private:
     struct Impl;
     std::unique_ptr<Impl> pimpl;

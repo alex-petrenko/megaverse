@@ -231,6 +231,9 @@ void Viewer::keyPressEvent(KeyEvent& event)
         case KeyEvent::Key::R:
             forceReset = true;
             break;
+        case KeyEvent::Key::O:
+            renderer->toggleOverviewMode();
+            break;
         case KeyEvent::Key::Esc:
             exit(0);
         default:

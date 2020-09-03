@@ -144,10 +144,11 @@ void Env::reset()
             const auto pos = movableObject;
             auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f};
 
-            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{objSize, objSize, objSize});
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{0.45f, 0.5f, 0.45f});
 
             auto &object = scene->addChild<RigidBody>(scene.get(), 0.0f, bBoxShape.get(), bWorld);
             object.scale(objScale).translate(translation);
+            object.setCollisionOffset({0.0f, -0.1f, 0.0f});
             object.syncPose();
 
             addStandardDrawable(DrawableType::Box, object, 0xadd8e6_rgbf);
@@ -308,6 +309,9 @@ bool Env::step()
     for (int i = 0; i < int(agents.size()); ++i)
         totalReward[i] += lastReward[i];
 
+//    if (fabs(lastReward[0]) > SIMD_EPSILON)
+//        TLOG(INFO) << "Last reward: " << lastReward[0];
+
     return done;
 }
 
@@ -357,16 +361,19 @@ void Env::objectInteract(Agent *agent, int agentIdx)
             obj->syncPose();
 
             int pickedUpHeight = agent->carryingObject->pickedUpHeight;
+            bool pickedUpInBuildingZone = agent->carryingObject->pickedUpBuildingZone;
             int placedHeight = voxel.y();
+            bool placedInBuildingZone = isInBuildingZone(voxel);
             // TLOG(INFO) << "placed height: " << agent->carryingObject->pickedUpHeight;
 
             agent->carryingObject = nullptr;
             obj->toggleCollision();
 
-            if (isInBuildingZone(voxel)) {
-                rewardDelta += buildingReward(placedHeight - pickedUpHeight);
+            rewardDelta -= pickedUpInBuildingZone ? buildingReward(pickedUpHeight) : 0;
+            rewardDelta += placedInBuildingZone ? buildingReward(placedHeight) : 0;
+
+            if (placedInBuildingZone)
                 highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
-            }
         }
 
     } else {
@@ -395,6 +402,7 @@ void Env::objectInteract(Agent *agent, int agentIdx)
 
                 agent->carryingObject = obj;
                 agent->carryingObject->pickedUpHeight = voxel.y();
+                agent->carryingObject->pickedUpBuildingZone = isInBuildingZone(voxel);
                 // TLOG(INFO) << "pick up height: " << agent->carryingObject->pickedUpHeight;
 
                 grid.remove(voxel);
@@ -414,19 +422,12 @@ void Env::objectInteract(Agent *agent, int agentIdx)
 
 bool Env::isInBuildingZone(const VoxelCoords &c) const
 {
-//    return c.x() >= buildingZone.min.x() && c.x() <= buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() <= buildingZone.max.z();
+    return c.x() >= buildingZone.min.x() && c.x() <= buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() <= buildingZone.max.z();
 
-    return true;  // temporary experiment
+//    return true;  // temporary experiment
 }
 
-float Env::buildingReward(float heightDelta) const
+float Env::buildingReward(float height) const
 {
-    const auto elevationChange = std::fabs(heightDelta);
-    if (elevationChange < SIMD_EPSILON)
-        return 0.0f;
-
-    const auto sign = heightDelta > 0 ? +1 : -1;
-
-    const auto exponentialComponent = std::min(0.1f * pow(2.0f, elevationChange), 10.0f);
-    return sign * exponentialComponent;
+    return std::min(0.1f * pow(2.0f, height), 10.0f);
 }
