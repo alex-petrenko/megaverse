@@ -22,10 +22,10 @@ void setVoxelEnvLogLevel(int level)
 class VoxelEnvGym
 {
 public:
-    VoxelEnvGym(int w, int h, int numAgents)
+    VoxelEnvGym(int w, int h, int numAgents, float verticalLookLimit)
     : w{w}, h{h}
     {
-        env = std::make_unique<Env>(numAgents);
+        env = std::make_unique<Env>(numAgents, verticalLookLimit);
     }
 
     void seed(int seedValue)
@@ -46,6 +46,9 @@ public:
             renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
         renderer->reset(*env);
         renderer->draw(*env);
+
+        if (hiresRenderer)
+            hiresRenderer->reset(*env);
     }
 
     void setAction(int agentIdx, int actionIdx)
@@ -76,29 +79,39 @@ public:
         return py::array_t<uint8_t>({h, w, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
-    void render()
+    /**
+     * Call this before the first call to render()
+     */
+    void setRenderResolution(int hiresW, int hiresH)
     {
-        // TODO: remove
+        renderW = hiresW;
+        renderH = hiresH;
+    }
 
-        if (!windowsInitialized) {
-            for (int i = 0; i < env->getNumAgents(); ++i) {
-                const auto wname = std::to_string(i);
-                cv::namedWindow(wname);
-                cv::moveWindow(wname, int(w * i * 1.1), 0);
-            }
-            windowsInitialized = true;
+    void drawHires()
+    {
+        if (!hiresRenderer) {
+            hiresRenderer = std::make_unique<MagnumEnvRenderer>(*env, renderW, renderH);
+            hiresRenderer->reset(*env);
         }
 
-        for (int i = 0; i < env->getNumAgents(); ++i) {
-            const uint8_t *obsData = renderer->getObservation(i);
+        hiresRenderer->draw(*env);
+    }
 
-            cv::Mat mat(h, w, CV_8UC4, (char *) obsData);
-            cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-            cv::flip(mat, mat, 0);
-            cv::imshow(std::to_string(i), mat);
-        }
+    py::array_t<uint8_t> getHiresObservation(int agentIdx)
+    {
+        const uint8_t *obsData = hiresRenderer->getObservation(agentIdx);
+        return py::array_t<uint8_t>({renderH, renderW, 4}, obsData, py::none{});  // numpy object does not own memory
+    }
 
-        cv::waitKey(1);
+    bool isLevelCompleted() const
+    {
+        return env->isLevelCompleted();
+    }
+
+    float trueObjective() const
+    {
+        return env->trueObjective();
     }
 
     /**
@@ -106,6 +119,7 @@ public:
      */
     void close()
     {
+        hiresRenderer.reset();
         renderer.reset();
         env.reset();
     }
@@ -113,9 +127,10 @@ public:
 private:
     std::unique_ptr<Env> env;
     std::unique_ptr<MagnumEnvRenderer> renderer;
+    std::unique_ptr<MagnumEnvRenderer> hiresRenderer;
 
     int w, h;
-    bool windowsInitialized = false;
+    int renderW = 768, renderH = 432;
 };
 
 
@@ -127,7 +142,7 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int, int>())
+        .def(py::init<int, int, int, float>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("seed", &VoxelEnvGym::seed)
         .def("reset", &VoxelEnvGym::reset)
@@ -136,5 +151,10 @@ PYBIND11_MODULE(voxel_env, m)
         .def("step", &VoxelEnvGym::step)
         .def("get_observation", &VoxelEnvGym::getObservation)
         .def("get_last_reward", &VoxelEnvGym::getLastReward)
+        .def("is_level_completed", &VoxelEnvGym::isLevelCompleted)
+        .def("true_objective", &VoxelEnvGym::trueObjective)
+        .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
+        .def("draw_hires", &VoxelEnvGym::drawHires)
+        .def("get_hires_observation", &VoxelEnvGym::getHiresObservation)
         .def("close", &VoxelEnvGym::close);
 }

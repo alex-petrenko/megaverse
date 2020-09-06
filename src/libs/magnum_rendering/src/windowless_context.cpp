@@ -144,8 +144,6 @@ struct ContextEGL
 
     bool isValid() { return isValid_; };
 
-    int gpuDevice() const { return gpuDevice_; }
-
     ~ContextEGL()
     {
         eglDestroyContext(display_, context_);
@@ -174,8 +172,6 @@ struct WindowlessContext::Impl
 
     void makeCurrent() { glContext->makeCurrent(); }
 
-    int gpuDevice() const { return glContext->gpuDevice(); }
-
     std::unique_ptr<ContextEGL> glContext{nullptr};
 };
 
@@ -190,9 +186,4 @@ WindowlessContext::~WindowlessContext() = default;
 void WindowlessContext::makeCurrent()
 {
     pimpl->makeCurrent();
-}
-
-int WindowlessContext::gpuDevice() const
-{
-    return pimpl->gpuDevice();
 }

@@ -194,7 +194,7 @@ WindowlessTestApp::WindowlessTestApp(const Arguments& arguments)
             voxelObjects.push_back(std::move(voxelObject));
             instancedVoxels.push_back(std::move(voxel));
 
-//            std::unique_ptr<VoxelCube> voxel{new VoxelCube{uint(100 * x + z), _shader, 0xa5c9ea_rgbf, cubeMesh, _scene, drawables}};
+//            std::unique_ptr<VoxelCube> voxel{new VoxelCube{uint(100 * x + z), _shader, 0xa5c9ea_rgbf, boxMesh, _scene, drawables}};
 
 //            voxels.push_back(std::move(voxel));
         }

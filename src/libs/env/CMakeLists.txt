@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10)
 project(libenv VERSION 0.1 LANGUAGES CXX)
 
 set(MAGNUM_DEPENDENCIES
@@ -6,6 +6,7 @@ set(MAGNUM_DEPENDENCIES
         Magnum::GL
         Magnum::Magnum
         Magnum::SceneGraph
+        MagnumIntegration::Bullet
 )
 
 add_library_default(env)

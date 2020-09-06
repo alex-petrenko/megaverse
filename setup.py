@@ -41,10 +41,15 @@ class CMakeBuild(build_ext):
             # f'-DOpenCV_DIR =/home/alex/all/lib/opencv/build',  # TODO!!!
         ]
 
+        # that's a hacky way to do it but the best idea I have at the moment
+        bullet_root = os.environ.get('BULLET_ROOT', None)
+        if bullet_root is not None:
+            cmake_args.append(f'-DBULLET_ROOT={bullet_root}')
+
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
-        cmake_args += [f'-DCMAKE_BUILD_TYPE={cfg}']
+        cmake_args += [f'-DCMAKE_BUILD_TYPE={cfg}', '-DBUILD_GUI_APPS=OFF']
         build_args += ['--', f'-j{multiprocessing.cpu_count()}']
 
         env = os.environ.copy()

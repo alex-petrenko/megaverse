@@ -13,12 +13,14 @@
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
+constexpr int delayMs = 1; //1000 / 15;
+
 constexpr bool viz = false;
 constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
-constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
+constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
 constexpr int maxNumFrames = performanceTest ? 30'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
@@ -68,7 +70,7 @@ int main_loop(Env &env, EnvRenderer &renderer)
 
             if constexpr (viz) {
                 auto latestAction = Action::Idle;
-                auto key = cv::waitKeyEx(1);
+                auto key = cv::waitKeyEx(delayMs);
 
                 switch (key) {
                     case 'w':
@@ -82,6 +84,9 @@ int main_loop(Env &env, EnvRenderer &renderer)
                         break;
                     case 'd':
                         latestAction |= Action::Right;
+                        break;
+                    case ' ':
+                        latestAction |= Action::Jump;
                         break;
 
                     case keyLeft:
@@ -141,7 +146,9 @@ int main(int argc, char** argv)
     Env env;
     env.seed(42);
     env.reset();
-    MagnumEnvRenderer renderer{env, W, H};
+
+    const auto debugDraw = false;
+    MagnumEnvRenderer renderer{env, W, H, debugDraw};
 
     tprof().startTimer("loop");
     auto nFrames = main_loop(env, renderer);

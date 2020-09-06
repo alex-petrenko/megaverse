@@ -12,8 +12,8 @@ TEST(env, layout)
     VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
     LayoutGenerator lg{rng};
 
-    lg.init();
-    lg.generateFloorWalls(grid);
+    lg.init(1, LayoutType::Empty);
+    lg.generate(grid);
 
     const auto ptr = grid.get({0, 0, 0});
     EXPECT_NE(ptr, nullptr);
@@ -21,6 +21,7 @@ TEST(env, layout)
 
     auto parallelepipeds = lg.extractPrimitives(grid);
     EXPECT_FALSE(parallelepipeds.empty());
+    EXPECT_EQ(parallelepipeds.size(), 5);
 }
 
 TEST(env, env)

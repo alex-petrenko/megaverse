@@ -99,6 +99,11 @@ public:
         grid[coords] = state;
     }
 
+    void remove(const VoxelCoords &coords)
+    {
+        grid.erase(coords);
+    }
+
     /**
      * Convert floating point coordinates of a point in space to voxel coordinates.
      * @param v point (vector) in 3D space.

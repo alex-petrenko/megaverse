@@ -9,7 +9,7 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(self, num_agents=2):
+    def __init__(self, num_agents=2, vertical_look_limit_rad=0.0):
         set_voxel_env_log_level(2)
 
         self.img_w = 128
@@ -17,7 +17,7 @@ class VoxelEnv(gym.Env):
         self.channels = 3
 
         self.num_agents = num_agents
-        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents)
+        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents, vertical_look_limit_rad)
 
         self.empty_infos = [{} for _ in range(self.num_agents)]
 
@@ -36,17 +36,22 @@ class VoxelEnv(gym.Env):
         LookLeft = 1 << 5,
         LookRight = 1 << 6,
 
-        LookDown = 1 << 7,
-        LookUp = 1 << 8,
+        Jump = 1 << 7,
+        Interact = 1 << 8,
+
+        LookDown = 1 << 9,
+        LookUp = 1 << 10,
         """
-        space = gym.spaces.Tuple((
+        spaces = [
             Discrete(3),  # noop, go left, go right
             Discrete(3),  # noop, forward, backward
             Discrete(3),  # noop, look left, look right
+            Discrete(2),  # noop, jump
+            Discrete(2),  # noop, interact
+            Discrete(3),  # noop, look down, look up
+        ]
 
-            # TODO: use other actions
-        ))
-
+        space = gym.spaces.Tuple(spaces)
         return space
 
     def seed(self, seed=None):
@@ -91,25 +96,35 @@ class VoxelEnv(gym.Env):
         rewards = [self.env.get_last_reward(i) for i in range(self.num_agents)]
 
         if done:
+            true_objective = self.env.true_objective()
+            infos = [dict(true_reward=float(true_objective)) for _ in range(self.num_agents)]
             obs = self.reset()
         else:
             obs = self.observations()
+            infos = self.empty_infos
 
-        return obs, rewards, dones, self.empty_infos
+        return obs, rewards, dones, infos
 
-    def convert_obs(self, obs):
+    @staticmethod
+    def convert_obs(obs):
         obs = cv2.flip(obs, 0)
         obs = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
-
-        aspect_ratio = self.img_w / self.img_h
-        render_w = 600
-        obs = cv2.resize(obs, (render_w, int(render_w / aspect_ratio)))
         return obs
 
     def render(self, mode='human'):
-        obs = [self.convert_obs(self.env.get_observation(i)) for i in range(self.num_agents)]
-        obs_concat = np.concatenate(obs, axis=1)
-        cv2.imshow(f'agent_{0}_{id(self)}', obs_concat)
+        self.env.draw_hires()
+        max_num_rows = 2
+        num_rows = min(max_num_rows, self.num_agents // 2)
+        num_cols = self.num_agents // num_rows
+
+        rows = []
+        for row in range(num_rows):
+            obs = [self.convert_obs(self.env.get_hires_observation(i + row * num_cols)) for i in range(num_cols)]
+            obs_concat = np.concatenate(obs, axis=1)
+            rows.append(obs_concat)
+
+        obs_final = np.concatenate(rows, axis=0)
+        cv2.imshow(f'agent_{0}_{id(self)}', obs_final)
         cv2.waitKey(1)
 
     def close(self):

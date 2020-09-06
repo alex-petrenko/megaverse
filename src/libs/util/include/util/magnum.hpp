@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Magnum/Math/Color.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
