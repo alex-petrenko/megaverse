@@ -1,4 +1,4 @@
-add_subdirectory(v4r)
+add_subdirectory(v4r EXCLUDE_FROM_ALL)
 
 add_subdirectory(corrade EXCLUDE_FROM_ALL)
 
