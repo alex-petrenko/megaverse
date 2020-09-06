@@ -89,7 +89,6 @@ public:
     // Fake camera for only object transformations
     SceneGraph::Camera3D *fakeCamera;
 
-    uint8_t *devicePtr;
     cudaStream_t cudaStream;
 
     v4r::RenderDoc rdoc;
@@ -116,7 +115,6 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
       cpuFrames(),
       drawables(),
       fakeCamera(),
-      devicePtr(cmdStream.getColorDevPtr()),
       cudaStream(),
       rdoc()
 {
@@ -351,18 +349,12 @@ void V4REnvRenderer::Impl::draw(Env &env)
     fakeCamera->draw(drawables);
 
     rdoc.startFrame();
-
-    auto sync = cmdStream.render(envs);
-    sync.gpuWait(0);
-
+    cmdStream.render(envs);
+    cmdStream.waitForFrame();
     rdoc.endFrame();
 
-    for (int i = 0; i < env.getNumAgents(); i++) {
-        cudaMemcpyAsync(cpuFrames[i].data(),
-                   devicePtr + i * framebufferSize.x * framebufferSize.y * 4,
-                   framebufferSize.x * framebufferSize.y * 4,
-                   cudaMemcpyDeviceToHost, cudaStream);
-    }
+    // for (int i = 0; i < env.getNumAgents(); i++)
+    //    memcpy(cpuFrames[i].data(), cmdStream.getRGB() + i * framebufferSize.x * framebufferSize.y * 4, framebufferSize.x * framebufferSize.y * 4);
 
     cudaError_t cuda_res = cudaStreamSynchronize(cudaStream);
     if (cuda_res != cudaSuccess) {
@@ -372,7 +364,7 @@ void V4REnvRenderer::Impl::draw(Env &env)
 
 const uint8_t * V4REnvRenderer::Impl::getObservation(int agentIdx) const
 {
-    return cpuFrames[agentIdx].data();
+    return cmdStream.getRGB() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
 V4REnvRenderer::V4REnvRenderer(Env &env, int w, int h)
