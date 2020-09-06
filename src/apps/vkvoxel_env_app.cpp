@@ -13,13 +13,13 @@
 #include <v4r_rendering/v4r_env_renderer.hpp>
 
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool viz = true;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 600 : 72;
-constexpr int maxNumFrames = performanceTest ? 30'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 10'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -61,7 +61,7 @@ int main_loop(Env &env, EnvRenderer &renderer)
                 if constexpr (viz) {
                     cv::Mat mat(H, W, CV_8UC4, (char *) obsData);
                     cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-                    cv::flip(mat, mat, 0);
+                    // cv::flip(mat, mat, 0);  vulkan does not flip the frame
                     cv::imshow(std::to_string(i), mat);
                 }
             }
