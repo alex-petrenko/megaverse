@@ -10,18 +10,22 @@
 
 #include <env/env.hpp>
 
+#include <v4r_rendering/v4r_env_renderer.hpp>
+
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
 constexpr int delayMs = 1; //1000 / 15;
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool useVulkan = true;
+
+constexpr bool viz = true;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 30'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 20'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -63,7 +67,10 @@ int main_loop(Env &env, EnvRenderer &renderer)
                 if constexpr (viz) {
                     cv::Mat mat(H, W, CV_8UC4, (char *) obsData);
                     cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-                    cv::flip(mat, mat, 0);
+
+                    if constexpr (!useVulkan)
+                        cv::flip(mat, mat, 0);
+
                     cv::imshow(std::to_string(i), mat);
                 }
             }
@@ -143,15 +150,22 @@ int main(int argc, char** argv)
 {
     (void)argc, void(argv);  // annoying warnings
 
-    Env env;
+    const int numAgents = 4;
+
+    Env env(numAgents);
     env.seed(42);
     env.reset();
 
-    const auto debugDraw = false;
-    MagnumEnvRenderer renderer{env, W, H, debugDraw};
+    std::unique_ptr<EnvRenderer> renderer;
+    if constexpr (useVulkan)
+        renderer = std::make_unique<V4REnvRenderer>(env, W, H);
+    else {
+        const auto debugDraw = false;
+        renderer = std::make_unique<MagnumEnvRenderer>(env, W, H, debugDraw);
+    }
 
     tprof().startTimer("loop");
-    auto nFrames = main_loop(env, renderer);
+    auto nFrames = main_loop(env, *renderer);
     const auto usecPassed = tprof().stopTimer("loop");
     tprof().stopTimer("reset");
 

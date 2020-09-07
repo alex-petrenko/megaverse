@@ -9,15 +9,17 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(self, num_agents=2, vertical_look_limit_rad=0.0):
+    def __init__(self, num_agents=2, vertical_look_limit_rad=0.0, use_vulkan=False):
         set_voxel_env_log_level(2)
 
         self.img_w = 128
         self.img_h = 72
         self.channels = 3
 
+        self.use_vulkan = use_vulkan
+
         self.num_agents = num_agents
-        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents, vertical_look_limit_rad)
+        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents, vertical_look_limit_rad, use_vulkan)
 
         self.empty_infos = [{} for _ in range(self.num_agents)]
 
@@ -105,9 +107,9 @@ class VoxelEnv(gym.Env):
 
         return obs, rewards, dones, infos
 
-    @staticmethod
-    def convert_obs(obs):
-        obs = cv2.flip(obs, 0)
+    def convert_obs(self, obs):
+        if not self.use_vulkan:
+            obs = cv2.flip(obs, 0)
         obs = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
         return obs
 

@@ -11,6 +11,8 @@ using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
+namespace {
+
 Color3 agentColors[] = {
     0xffdd3c_rgbf,
     0x3bb372_rgbf,
@@ -18,6 +20,14 @@ Color3 agentColors[] = {
     0xffa351_rgbf,
 };
 const int numAgentColors = ARR_LENGTH(agentColors);
+
+const auto agentEyesColor = 0x222222_rgbf,
+           layoutColor = 0xffffff_rgbf,
+           movableObjectColor = 0xadd8e6_rgbf,
+           exitPadColor = 0x50c878_rgbf,
+           buildingZoneColor = 0x555555_rgbf;
+
+}
 
 
 Env::Env(int numAgents, float verticalLookLimitRad)
@@ -101,7 +111,7 @@ void Env::reset()
             agentBody.scale({0.35f, 0.36f, 0.35f}).translate({0, 0.09f, 0});
             addStandardDrawable(DrawableType::Capsule, agentBody, agentColors[i % numAgentColors]);
 
-            addStandardDrawable(DrawableType::Box, *agent.eyesObject, 0x222222_rgbf);
+            addStandardDrawable(DrawableType::Box, *agent.eyesObject, agentEyesColor);
 
             // auto &pickupSpot = agent.pickupSpot->addChild<Object3D>();
             // pickupSpot.scale({0.03f, 0.03f, 0.03f});
@@ -133,7 +143,7 @@ void Env::reset()
             layoutObject.scale(scale).translate(translation);
             layoutObject.syncPose();
 
-            addStandardDrawable(DrawableType::Box, layoutObject, 0xffffff_rgbf);
+            addStandardDrawable(DrawableType::Box, layoutObject, layoutColor);
             collisionShapes.emplace_back(std::move(bBoxShape));
         }
 
@@ -151,7 +161,7 @@ void Env::reset()
             object.setCollisionOffset({0.0f, -0.1f, 0.0f});
             object.syncPose();
 
-            addStandardDrawable(DrawableType::Box, object, 0xadd8e6_rgbf);
+            addStandardDrawable(DrawableType::Box, object, movableObjectColor);
 
             collisionShapes.emplace_back(std::move(bBoxShape));
 
@@ -179,7 +189,7 @@ void Env::reset()
                 exitPadObject.translate({0.0, 0.025, 0.0});
                 exitPadObject.translate(exitPadPos);
 
-                addStandardDrawable(DrawableType::Box, exitPadObject, 0x50c878_rgbf);
+                addStandardDrawable(DrawableType::Box, exitPadObject, exitPadColor);
             }
         }
 
@@ -196,7 +206,7 @@ void Env::reset()
                 zoneObject.translate({0.0, 0.055, 0.0});
                 zoneObject.translate(zonePos);
 
-                addStandardDrawable(DrawableType::Box, zoneObject, 0x555555_rgbf);
+                addStandardDrawable(DrawableType::Box, zoneObject, buildingZoneColor);
             }
         }
     }
@@ -430,4 +440,20 @@ bool Env::isInBuildingZone(const VoxelCoords &c) const
 float Env::buildingReward(float height) const
 {
     return std::min(0.1f * pow(2.0f, height), 10.0f);
+}
+
+std::vector<Magnum::Color3> Env::getPalette() const
+{
+    std::vector<Color3> palette {
+        agentEyesColor,
+        layoutColor,
+        movableObjectColor,
+        exitPadColor,
+        buildingZoneColor,
+    };
+
+    for (auto &agentColor : agentColors)
+        palette.emplace_back(agentColor);
+
+    return palette;
 }

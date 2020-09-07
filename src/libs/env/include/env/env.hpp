@@ -135,6 +135,11 @@ public:
     }
 
     /**
+     * We need this because of limitations of Vulkan renderer (materials have to be known in advance)
+     */
+    std::vector<Magnum::Color3> getPalette() const;
+
+    /**
      * Seed the rng with specific seed value.
      */
     void seed(int seedValue);

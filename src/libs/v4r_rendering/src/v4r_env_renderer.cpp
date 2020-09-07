@@ -50,6 +50,16 @@ private:
     uint32_t _instanceID;
 };
 
+
+struct ColorCompare
+{
+    bool operator()(const Magnum::Color3 &c1, const Magnum::Color3 &c2) const
+    {
+        return c1.r() == c2.r() ? c1.g() == c2.g() ? c1.b() < c2.b() : c1.g() < c2.g() : c1.r() < c2.r();
+    }
+};
+
+
 struct V4REnvRenderer::Impl
 {
 public:
@@ -80,11 +90,7 @@ public:
 
     SceneGraph::DrawableGroup3D drawables;
 
-    // Convenience variables for mesh / material indices
-    const uint32_t agentIdx { 0 };
-    const uint32_t eyeIdx { 1 };
-    const uint32_t exitIdx { 2 };
-    const uint32_t cubeIdx { 3 };
+    std::map<Color3, int, ColorCompare> materialIndices;
 
     // Fake camera for only object transformations
     SceneGraph::Camera3D *fakeCamera;
@@ -123,12 +129,10 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
         abort();
     }
     // Need to reserve numAgents here so references remain stable
-    envs.reserve(env.getNumAgents());
+    envs.reserve(size_t(env.getNumAgents()));
 
-    for (int i = 0; i < env.getNumAgents(); ++i) {
-        cpuFrames.emplace_back(size_t(framebufferSize.x *
-                                      framebufferSize.y * 4));
-    }
+    for (int i = 0; i < env.getNumAgents(); ++i)
+        cpuFrames.emplace_back(size_t(framebufferSize.x * framebufferSize.y * 4));
 
     vector<shared_ptr<v4r::Mesh>> meshes;
     vector<shared_ptr<v4r::Material>> materials;
@@ -141,10 +145,8 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
         vector<Vertex> vertices;
         vector<uint32_t> indices;
         const auto magnum_indices = magnum_mesh.indicesAsArray();
-        const auto magnum_positions =
-            magnum_mesh.positions3DAsArray();
-        const auto magnum_normals =
-            magnum_mesh.normalsAsArray();
+        const auto magnum_positions = magnum_mesh.positions3DAsArray();
+        const auto magnum_normals = magnum_mesh.normalsAsArray();
 
         for (size_t i = 0; i < magnum_positions.size(); i++) {
             const auto &position = magnum_positions[i];
@@ -165,14 +167,8 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
 
     // meshes
     {
-        auto agentMesh = Primitives::capsule3DSolid(3, 3, 8, 1.0);
-        meshes.emplace_back(convertMesh(agentMesh));
-
-        auto agentEyeMesh = Primitives::cubeSolid();
-        meshes.emplace_back(convertMesh(agentEyeMesh));
-
-        auto exitPadMesh = Primitives::cubeSolid();
-        meshes.emplace_back(convertMesh(exitPadMesh));
+        auto capsuleMesh = Primitives::capsule3DSolid(3, 3, 8, 1.0);
+        meshes.emplace_back(convertMesh(capsuleMesh));
 
         auto cubeMesh = Primitives::cubeSolid();
         meshes.emplace_back(convertMesh(cubeMesh));
@@ -180,40 +176,24 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
 
     // Materials
     {
-        // Agent material
-        materials.emplace_back(loader.makeMaterial(MaterialParams {
-            glm::vec3(0.976f, 0.843f, 0.110f),
-            glm::vec3(1.f),
-            150.f
-        }));
+        const auto palette = env.getPalette();
+        constexpr float shininess = 300.0f;
 
-        // Eye material
-        materials.emplace_back(loader.makeMaterial(MaterialParams {
-            glm::vec3(0.133f),
-            glm::vec3(1.f),
-            150.f
-        }));
+        for (auto c : palette) {
+            materialIndices[c] = int(materials.size());
 
-        // Exit pad material
-        materials.emplace_back(loader.makeMaterial(MaterialParams {
-            glm::vec3(0.314f, 0.784f, 0.471f),
-            glm::vec3(1.f),
-            150.f
-        }));
-
-        // Voxel material
-        materials.emplace_back(loader.makeMaterial(MaterialParams {
-            glm::vec3(0.647f, 0.788f, 0.918f),
-            glm::vec3(1.f),
-            300.f
-        }));
+            materials.emplace_back(loader.makeMaterial(MaterialParams {
+                glm::vec3(c.r(), c.g(), c.b()),
+                glm::vec3(1.f),
+                shininess
+            }));
+        }
     }
 
     // Scene
     { 
         v4r::SceneDescription scene_desc(move(meshes), move(materials));
-        scene_desc.addLight(glm::vec3(2.f, 10.f, 2.f),
-                            glm::vec3(0.667f));
+        scene_desc.addLight(glm::vec3(0, 4, 2), glm::vec3(0.66f));
 
         scene = loader.makeScene(scene_desc);
     }
@@ -230,107 +210,32 @@ void V4REnvRenderer::Impl::reset(Env &env)
     fakeCamera = &env.scene->addFeature<SceneGraph::Camera3D>();
 
     envs.clear();
-    for (int i = 0; i < env.getNumAgents(); i++) {
-        envs.emplace_back(cmdStream.makeEnvironment(scene,
-            75.f));
-    }
+    for (int i = 0; i < env.getNumAgents(); i++) envs.emplace_back(cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f));
 
     // reset renderer data structures
     {
         drawables = SceneGraph::DrawableGroup3D{};
     }
 
-    // agents
+    // drawables
     {
-        const auto &startingPositions = env.agentStartingPositions;
-        for (int i = 0; i < env.getNumAgents(); ++i) {
-            auto agentPtr = env.agents[i];
-            auto pos = Vector3{startingPositions[i]} + Vector3{0.5, 3.525, 0.5};
-            agentPtr->rotateY(frand(env.getRng()) * 360.0_degf);
-            agentPtr->translate(pos);
+        constexpr auto capsuleMeshIdx = 0, boxMeshIdx = 1;
 
-            auto &agentObject = agentPtr->addChild<Object3D>();
-            auto &agentEyeObject = agentPtr->addChild<Object3D>();
-            agentObject.scale({0.25f, 0.25f * 0.9f, 0.25f});
-            agentEyeObject.scale({0.17, 0.075, 0.17}).
-                translate({0.0f, 0.2f, -0.08f});
+        for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
+            auto &renderEnv = envs[agentIdx];
 
-            for (int j = 0; j < env.getNumAgents(); j++) {
-                // Add instance of agent (meshidx & material_idx = agentIdx)
-                // Transform doesn't matter as it will be overwritten when
-                // draw is called.
-                v4r::Environment &renderEnv = envs[j];
-
-                uint32_t agentRenderID =
-                    renderEnv.addInstance(agentIdx, agentIdx, glm::mat4(1.f));
-
-                uint32_t eyeRenderID =
-                    renderEnv.addInstance(eyeIdx, eyeIdx, glm::mat4(1.f));
-
-                agentObject.addFeature<V4RDrawable>(
-                        renderEnv, agentRenderID, drawables);
-
-                agentEyeObject.addFeature<V4RDrawable>(
-                        renderEnv, eyeRenderID, drawables);
+            for (const auto &sceneObjectInfo : env.drawables[DrawableType::Capsule]) {
+                const auto &color = sceneObjectInfo.color;
+                const auto materialIdx = materialIndices[color];
+                const auto renderID = renderEnv.addInstance(capsuleMeshIdx, uint32_t(materialIdx), glm::mat4(1.f));
+                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, drawables);
             }
-        }
-    }
 
-    // exit pad
-    {
-        const auto exitPadCoords = env.exitPad;
-        const auto exitPadScale = Vector3(
-            exitPadCoords.max.x() - exitPadCoords.min.x(),
-            1.0,
-            exitPadCoords.max.z() - exitPadCoords.min.z()
-        );
-        const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(),
-                                        exitPadCoords.min.z() + exitPadScale.z() / 2);
-
-        auto &exitPadObject = env.scene->addChild<Object3D>();
-
-        exitPadObject.scale({0.5, 0.025, 0.5}).scale(exitPadScale);
-        exitPadObject.translate({0.0, 0.025, 0.0});
-        exitPadObject.translate(exitPadPos);
-
-        for (int i = 0; i < env.getNumAgents(); i++) {
-            v4r::Environment &renderEnv = envs[i];
-            uint32_t exitRenderID =
-                renderEnv.addInstance(exitIdx, exitIdx, glm::mat4(1.f));
-
-            exitPadObject.addFeature<V4RDrawable>(
-                renderEnv, exitRenderID, drawables);
-        }
-    }
-
-    // map layout
-    {
-        TLOG(INFO) << "Rendering " << env.layoutDrawables.size() << " layout drawables";
-
-        for (auto layoutDrawable : env.layoutDrawables) {
-            auto &voxelObject = env.scene->addChild<Object3D>();
-
-            const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
-            auto scale = Vector3{
-                float(bboxMax.x() - bboxMin.x() + 1) / 2,
-                float(bboxMax.y() - bboxMin.y() + 1) / 2,
-                float(bboxMax.z() - bboxMin.z() + 1) / 2,
-            };
-
-            voxelObject.scale(scale)
-                .translate({0.5, 0.5, 0.5})
-                .translate({float((bboxMin.x() + bboxMax.x())) / 2, float((bboxMin.y() + bboxMax.y())) / 2, float((bboxMin.z() + bboxMax.z())) / 2});
-
-            //auto transformation = Matrix4::scaling(Vector3{1.0f});
-
-            for (int i= 0; i < env.getNumAgents(); i++) {
-                v4r::Environment &renderEnv = envs[i];
-
-                uint32_t voxelID =
-                    renderEnv.addInstance(cubeIdx, cubeIdx, glm::mat4(1.f));
-
-                voxelObject.addFeature<V4RDrawable>(
-                        renderEnv, voxelID, drawables);
+            for (const auto &sceneObjectInfo : env.drawables[DrawableType::Box]) {
+                const auto &color = sceneObjectInfo.color;
+                const auto materialIdx = materialIndices[color];
+                const auto renderID = renderEnv.addInstance(boxMeshIdx, uint32_t(materialIdx), glm::mat4(1.f));
+                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, drawables);
             }
         }
     }
@@ -353,13 +258,9 @@ void V4REnvRenderer::Impl::draw(Env &env)
     cmdStream.waitForFrame();
     rdoc.endFrame();
 
-    // for (int i = 0; i < env.getNumAgents(); i++)
-    //    memcpy(cpuFrames[i].data(), cmdStream.getRGB() + i * framebufferSize.x * framebufferSize.y * 4, framebufferSize.x * framebufferSize.y * 4);
-
-    cudaError_t cuda_res = cudaStreamSynchronize(cudaStream);
-    if (cuda_res != cudaSuccess) {
-        abort();
-    }
+//    cudaError_t cuda_res = cudaStreamSynchronize(cudaStream);
+//    if (cuda_res != cudaSuccess)
+//        abort();
 }
 
 const uint8_t * V4REnvRenderer::Impl::getObservation(int agentIdx) const

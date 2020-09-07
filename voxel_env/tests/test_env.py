@@ -41,9 +41,9 @@ class TestEnv(TestCase):
 
         # after this we have randomness due to physics?
 
-    def test_render(self):
-        e1 = VoxelEnv(num_agents=4)
-        e2 = VoxelEnv(num_agents=4)
+    def rendering(self, use_vulkan):
+        e1 = VoxelEnv(num_agents=4, use_vulkan=use_vulkan)
+        e2 = VoxelEnv(num_agents=4, use_vulkan=use_vulkan)
 
         e1.reset()
         e2.reset()
@@ -59,6 +59,12 @@ class TestEnv(TestCase):
 
         e1.close()
         e2.close()
+
+    def test_render(self):
+        self.rendering(use_vulkan=False)
+
+    def test_render_vulkan(self):
+        self.rendering(use_vulkan=True)
 
     @staticmethod
     def performance_num_envs(n, n_steps=5000):

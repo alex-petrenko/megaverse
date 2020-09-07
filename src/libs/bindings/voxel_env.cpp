@@ -1,4 +1,5 @@
 #include <env/env.hpp>
+#include <v4r_rendering/v4r_env_renderer.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 #include <pybind11/pybind11.h>
@@ -22,8 +23,8 @@ void setVoxelEnvLogLevel(int level)
 class VoxelEnvGym
 {
 public:
-    VoxelEnvGym(int w, int h, int numAgents, float verticalLookLimit)
-    : w{w}, h{h}
+    VoxelEnvGym(int w, int h, int numAgents, float verticalLookLimit, bool useVulkan)
+    : useVulkan{useVulkan}, w{w}, h{h}
     {
         env = std::make_unique<Env>(numAgents, verticalLookLimit);
     }
@@ -42,8 +43,13 @@ public:
     {
         env->reset();
 
-        if (!renderer)
-            renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
+        if (!renderer) {
+            if (useVulkan)
+                renderer = std::make_unique<V4REnvRenderer>(*env, w, h);
+            else
+                renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
+        }
+
         renderer->reset(*env);
         renderer->draw(*env);
 
@@ -91,7 +97,11 @@ public:
     void drawHires()
     {
         if (!hiresRenderer) {
-            hiresRenderer = std::make_unique<MagnumEnvRenderer>(*env, renderW, renderH);
+            if (useVulkan)
+                hiresRenderer = std::make_unique<V4REnvRenderer>(*env, renderW, renderH);
+            else
+                hiresRenderer = std::make_unique<MagnumEnvRenderer>(*env, renderW, renderH);
+
             hiresRenderer->reset(*env);
         }
 
@@ -126,9 +136,9 @@ public:
 
 private:
     std::unique_ptr<Env> env;
-    std::unique_ptr<MagnumEnvRenderer> renderer;
-    std::unique_ptr<MagnumEnvRenderer> hiresRenderer;
+    std::unique_ptr<EnvRenderer> renderer, hiresRenderer;
 
+    bool useVulkan;
     int w, h;
     int renderW = 768, renderH = 432;
 };
@@ -142,7 +152,7 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int, int, float>())
+        .def(py::init<int, int, int, float, bool>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("seed", &VoxelEnvGym::seed)
         .def("reset", &VoxelEnvGym::reset)

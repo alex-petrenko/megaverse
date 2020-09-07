@@ -53,25 +53,22 @@ public:
         SceneGraph::AbstractObject3D &parentObject,
         Containers::Array<InstanceData> &instanceData,
         const Color3 &color,
-        const Matrix4 &primitiveTransformation,
         SceneGraph::DrawableGroup3D &drawables
     )
-        : SceneGraph::Drawable3D{parentObject, &drawables}, _instanceData(instanceData), _color{color},
-          _primitiveTransformation{primitiveTransformation}
+    : SceneGraph::Drawable3D{parentObject, &drawables}, _instanceData(instanceData), _color{color}
     {}
 
 private:
-    void draw(const Matrix4& transformation, SceneGraph::Camera3D&) override {
-        const Matrix4 t = transformation*_primitiveTransformation;
+    void draw(const Matrix4& t, SceneGraph::Camera3D&) override {
         arrayAppend(_instanceData, Containers::InPlaceInit, t, t.normalMatrix(), _color);
     }
 
     Containers::Array<InstanceData>& _instanceData;
     Color3 _color;
-    Matrix4 _primitiveTransformation;
 };
 
 
+#ifdef UNUSED
 class SimpleDrawable3D : public Object3D, public SceneGraph::Drawable3D
 {
 public:
@@ -101,6 +98,7 @@ private:
     GL::Mesh& _mesh;
     Color3 _color;
 };
+#endif
 
 
 struct MagnumEnvRenderer::Impl
@@ -144,7 +142,7 @@ public:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh boxMesh, exitPadMesh, capsuleMesh;
+    GL::Mesh boxMesh, capsuleMesh;
 
     std::vector<Containers::Array<uint8_t>> agentFrames;
     std::vector<std::unique_ptr<MutableImageView2D>> agentImageViews;
@@ -187,14 +185,14 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h, bool withDebugDraw, Render
     }
 
     shaderInstanced = Shaders::Phong{Shaders::Phong::Flag::VertexColor | Shaders::Phong::Flag::InstancedTransformation};
-    shaderInstanced.setAmbientColor(0x555555_rgbf).setDiffuseColor(0xbbbbbb_rgbf).setShininess(300).setLightPosition({0,4,2}).setLightColor(0xaaaaaa_rgbf);
+    shaderInstanced.setShininess(300).setLightPosition({0, 4, 2}).setLightColor(0xaaaaaa_rgbf);
+    shaderInstanced.setDiffuseColor(0xbbbbbb_rgbf);
+    shaderInstanced.setAmbientColor(0x555555_rgbf);
 
     shader = Shaders::Phong{};
 
     // meshes
     {
-        exitPadMesh = MeshTools::compile(Primitives::cubeSolid());
-
         boxMesh = MeshTools::compile(Primitives::cubeSolid());
         boxInstanceBuffer = GL::Buffer{};
         boxMesh.addVertexBufferInstanced(
@@ -253,34 +251,16 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
         arrayResize(capsuleInstanceData, 0);
     }
 
-    // exit pad
-    {
-        const auto exitPadCoords = env.exitPad;
-        const auto exitPadScale = Vector3(
-            exitPadCoords.max.x() - exitPadCoords.min.x(),
-            1.0,
-            exitPadCoords.max.z() - exitPadCoords.min.z()
-        );
-        const auto exitPadPos = Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(),
-                                        exitPadCoords.min.z() + exitPadScale.z() / 2);
-
-        auto &exitPadDrawable = env.scene->addChild<SimpleDrawable3D>(drawables, shader, exitPadMesh, 0x50c878_rgbf, env.scene.get());
-        exitPadDrawable.scale({0.5, 0.025, 0.5}).scale(exitPadScale);
-        exitPadDrawable.translate({0.0, 0.025, 0.0});
-        exitPadDrawable.translate(exitPadPos);
-    }
-
     // drawables
     {
-        auto transformation = Matrix4::scaling(Vector3{1.0f});
         for (const auto &sceneObjectInfo : env.drawables[DrawableType::Box]) {
             const auto &color = sceneObjectInfo.color;
-            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(boxInstanceData, color, transformation, drawables);
+            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(boxInstanceData, color, drawables);
         }
 
         for (const auto &sceneObjectInfo : env.drawables[DrawableType::Capsule]) {
             const auto &color = sceneObjectInfo.color;
-            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, transformation, drawables);
+            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, drawables);
         }
     }
 
