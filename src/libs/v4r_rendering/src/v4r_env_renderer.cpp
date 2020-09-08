@@ -95,8 +95,6 @@ public:
     // Fake camera for only object transformations
     SceneGraph::Camera3D *fakeCamera;
 
-    cudaStream_t cudaStream;
-
     v4r::RenderDoc rdoc;
 };
 
@@ -121,13 +119,8 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
       cpuFrames(),
       drawables(),
       fakeCamera(),
-      cudaStream(),
       rdoc()
 {
-    cudaError_t cuda_res = cudaStreamCreate(&cudaStream);
-    if (cuda_res != cudaSuccess) {
-        abort();
-    }
     // Need to reserve numAgents here so references remain stable
     envs.reserve(size_t(env.getNumAgents()));
 
@@ -201,7 +194,6 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
 
 V4REnvRenderer::Impl::~Impl()
 {
-    cudaStreamDestroy(cudaStream);
     TLOG(INFO) << __PRETTY_FUNCTION__;
 }
 
