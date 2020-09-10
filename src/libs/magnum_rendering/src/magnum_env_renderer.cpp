@@ -189,6 +189,7 @@ MagnumEnvRenderer::Impl::Impl(Env &env, int w, int h, bool withDebugDraw, Render
     shaderInstanced.setDiffuseColor(0xbbbbbb_rgbf);
     shaderInstanced.setAmbientColor(0x555555_rgbf);
 
+
     shader = Shaders::Phong{};
 
     // meshes
@@ -281,7 +282,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env)
 void MagnumEnvRenderer::Impl::drawAgent(Env &env, int agentIdx, bool readToBuffer)
 {
     framebuffer
-        .clearColor(0, Color3{0.125f})
+        .clearColor(0, Color3{0})
         .clearDepth(1.0f)
         .bind();
 

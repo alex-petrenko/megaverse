@@ -40,10 +40,9 @@ public:
     {}
 
 private:
-    void draw(const Matrix4 &transformation,
-              SceneGraph::Camera3D &) override {
-        _renderEnv.updateInstanceTransform(_instanceID,
-            glm::make_mat4(transformation.data()));
+    void draw(const Matrix4 &transformation, SceneGraph::Camera3D &) override
+    {
+        _renderEnv.updateInstanceTransform(_instanceID, glm::make_mat4(transformation.data()));
     }
 
     v4r::Environment &_renderEnv;

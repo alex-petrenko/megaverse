@@ -126,7 +126,7 @@ public:
 
     float remainingTimeFraction() const
     {
-        return (horizonSec - episodeDurationSec) / horizonSec;
+        return std::max(0.0f, (horizonSec - episodeDurationSec) / horizonSec);
     }
 
     void setAvailableLayouts(const std::vector<LayoutType> &layouts)
