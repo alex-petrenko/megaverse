@@ -85,7 +85,7 @@ public:
 
     glm::u32vec2 framebufferSize;
 
-    vector<vector<uint8_t>> cpuFrames;
+    vector<uint8_t> cpuFrames;
 
     SceneGraph::DrawableGroup3D drawables;
 
@@ -123,8 +123,7 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
     // Need to reserve numAgents here so references remain stable
     envs.reserve(size_t(env.getNumAgents()));
 
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        cpuFrames.emplace_back(size_t(framebufferSize.x * framebufferSize.y * 4));
+    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x * framebufferSize.y * 4 * env.getNumAgents()));
 
     vector<shared_ptr<v4r::Mesh>> meshes;
     vector<shared_ptr<v4r::Material>> materials;
@@ -244,10 +243,17 @@ void V4REnvRenderer::Impl::draw(Env &env)
 
     fakeCamera->draw(drawables);
 
-    rdoc.startFrame();
+//    rdoc.startFrame();
     cmdStream.render(envs);
     cmdStream.waitForFrame();
-    rdoc.endFrame();
+
+    memcpy(
+        cpuFrames.data(),
+        cmdStream.getRGB(),
+        env.getNumAgents() * framebufferSize.x * framebufferSize.y * 4
+    );
+
+//    rdoc.endFrame();
 
 //    cudaError_t cuda_res = cudaStreamSynchronize(cudaStream);
 //    if (cuda_res != cudaSuccess)
@@ -256,7 +262,8 @@ void V4REnvRenderer::Impl::draw(Env &env)
 
 const uint8_t * V4REnvRenderer::Impl::getObservation(int agentIdx) const
 {
-    return cmdStream.getRGB() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
+    //return cmdStream.getRGB() ;
+    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
 V4REnvRenderer::V4REnvRenderer(Env &env, int w, int h)
