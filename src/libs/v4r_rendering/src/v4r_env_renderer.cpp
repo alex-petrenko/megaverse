@@ -85,7 +85,7 @@ public:
 
     glm::u32vec2 framebufferSize;
 
-    vector<uint8_t> cpuFrames;
+//    vector<uint8_t> cpuFrames;
 
     SceneGraph::DrawableGroup3D drawables;
 
@@ -115,7 +115,7 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
       cmdStream(renderer.makeCommandStream()),
       envs(),
       framebufferSize(w, h),
-      cpuFrames(),
+//      cpuFrames(),
       drawables(),
       fakeCamera(),
       rdoc()
@@ -123,7 +123,7 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
     // Need to reserve numAgents here so references remain stable
     envs.reserve(size_t(env.getNumAgents()));
 
-    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x * framebufferSize.y * 4 * env.getNumAgents()));
+//    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x * framebufferSize.y * 4 * env.getNumAgents()));
 
     vector<shared_ptr<v4r::Mesh>> meshes;
     vector<shared_ptr<v4r::Material>> materials;
@@ -247,11 +247,11 @@ void V4REnvRenderer::Impl::draw(Env &env)
     cmdStream.render(envs);
     cmdStream.waitForFrame();
 
-    memcpy(
-        cpuFrames.data(),
-        cmdStream.getRGB(),
-        env.getNumAgents() * framebufferSize.x * framebufferSize.y * 4
-    );
+//    memcpy(
+//        cpuFrames.data(),
+//        cmdStream.getRGB(),
+//        env.getNumAgents() * framebufferSize.x * framebufferSize.y * 4
+//    );
 
 //    rdoc.endFrame();
 
@@ -262,8 +262,8 @@ void V4REnvRenderer::Impl::draw(Env &env)
 
 const uint8_t * V4REnvRenderer::Impl::getObservation(int agentIdx) const
 {
-    //return cmdStream.getRGB() ;
-    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
+    return cmdStream.getRGB() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
+//    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
 V4REnvRenderer::V4REnvRenderer(Env &env, int w, int h)
