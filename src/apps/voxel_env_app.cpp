@@ -150,7 +150,7 @@ int main(int argc, char** argv)
 {
     (void)argc, void(argv);  // annoying warnings
 
-    const int numAgents = 16;
+    const int numAgents = 4;
 
     Env env(numAgents);
     env.seed(42);

@@ -119,7 +119,7 @@ public:
     float trueObjective() const
     {
         if (currLayoutType == LayoutType::Towers)
-            return std::accumulate(totalReward.begin(), totalReward.end(), 0.0f);
+            return highestTower;
         else
             return float(completed);
     }
@@ -159,7 +159,7 @@ private:
 
     void objectInteract(Agent *agent, int agentIdx);
     bool isInBuildingZone(const VoxelCoords &c) const;
-    float buildingReward(float height) const;
+    float buildingReward(float height, int objectsAtThisHeight) const;
 
     void addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color);
 
@@ -204,6 +204,7 @@ private:
 
     bool completed = false;
     int highestTower = 0;
+    std::array<int, 50> objectsPerHeight;
 
     LayoutGenerator layoutGenerator{rng};
 

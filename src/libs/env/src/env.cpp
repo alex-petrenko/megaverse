@@ -85,6 +85,11 @@ void Env::reset()
     agentStartingPositions = layoutGenerator.startingPositions(grid);
     objectSpawnPositions = layoutGenerator.objectSpawnPositions(grid);
 
+    memset(objectsPerHeight.data(), 0, objectsPerHeight.size());
+    for (const auto &c : objectSpawnPositions)
+        if (isInBuildingZone(c))
+            ++objectsPerHeight[c.y()];
+
     scene = std::make_unique<Scene3D>();
 
     // remove dangling pointers from the previous episode
@@ -338,7 +343,8 @@ void Env::objectInteract(Agent *agent, int agentIdx)
 
         VoxelCoords voxel{t};
         auto voxelPtr = grid.get(voxel);
-        if (!voxelPtr) {
+
+        if (isInBuildingZone(voxel) && !voxelPtr) {
             // voxel in front of us is empty, can place the object
             // the object should be on the ground or on top of another object
             // descend on y axis until we find ground
@@ -370,20 +376,29 @@ void Env::objectInteract(Agent *agent, int agentIdx)
             obj->translate({float(voxel.x()) + 0.5f, float(voxel.y()) + 0.5f, float(voxel.z()) + 0.5f});
             obj->syncPose();
 
-            int pickedUpHeight = agent->carryingObject->pickedUpHeight;
-            bool pickedUpInBuildingZone = agent->carryingObject->pickedUpBuildingZone;
             int placedHeight = voxel.y();
             bool placedInBuildingZone = isInBuildingZone(voxel);
-            // TLOG(INFO) << "placed height: " << agent->carryingObject->pickedUpHeight;
 
+            rewardDelta -= agent->carryingObject->placedReward;
+            const auto objectsAtThisHeight = objectsPerHeight[placedHeight];
+            const auto newReward = placedInBuildingZone ? buildingReward(placedHeight, objectsAtThisHeight) : 0;
+
+//            TLOG(INFO) << "Prev reward: " << agent->carryingObject->placedReward << " Curr reward: " << newReward;
+
+            agent->carryingObject->placedReward = newReward;
+            rewardDelta += newReward;
             agent->carryingObject = nullptr;
             obj->toggleCollision();
 
-            rewardDelta -= pickedUpInBuildingZone ? buildingReward(pickedUpHeight) : 0;
-            rewardDelta += placedInBuildingZone ? buildingReward(placedHeight) : 0;
-
-            if (placedInBuildingZone)
+            if (placedInBuildingZone) {
+                ++objectsPerHeight[placedHeight];
                 highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
+            }
+
+//            std::ostringstream s;
+//            for (int i = 0; i < 5; ++i)
+//                s << objectsPerHeight[i] << " ";
+//            TLOG(INFO) << s.str();
         }
 
     } else {
@@ -411,8 +426,8 @@ void Env::objectInteract(Agent *agent, int agentIdx)
                 obj->setParent(agent->pickupSpot);
 
                 agent->carryingObject = obj;
-                agent->carryingObject->pickedUpHeight = voxel.y();
-                agent->carryingObject->pickedUpBuildingZone = isInBuildingZone(voxel);
+                if (isInBuildingZone(voxel))
+                    --objectsPerHeight[voxel.y()];
                 // TLOG(INFO) << "pick up height: " << agent->carryingObject->pickedUpHeight;
 
                 grid.remove(voxel);
@@ -437,9 +452,11 @@ bool Env::isInBuildingZone(const VoxelCoords &c) const
 //    return true;  // temporary experiment
 }
 
-float Env::buildingReward(float height) const
+float Env::buildingReward(float height, int objectsAtThisHeight) const
 {
-    return std::min(0.1f * pow(2.0f, height), 10.0f);
+    auto reward = std::min(0.1f * pow(2.0f, height), 10.0f);
+    reward /= (1 << objectsAtThisHeight);
+    return reward;
 }
 
 std::vector<Magnum::Color3> Env::getPalette() const

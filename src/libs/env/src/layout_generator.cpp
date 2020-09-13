@@ -532,8 +532,8 @@ public:
         width = randRange(12, 25, rng);
 
         // determine the size and the position of the building zone
-        buildZoneLength = randRange(3, 8, rng);
-        buildZoneWidth = randRange(3, 8, rng);
+        buildZoneLength = randRange(3, 9, rng);
+        buildZoneWidth = randRange(2, 9, rng);
 
         materialsLength = randRange(2, 8, rng);
         materialsWidth = randRange(2, 8, rng);
@@ -544,34 +544,13 @@ public:
         buildZoneXOffset = randRange(1, length - buildZoneLength - 1, rng);
         buildZoneZOffset = randRange(1, width - buildZoneWidth - 1, rng);
 
-        for (int attempt = 0; attempt < 20; ++attempt) {
-            materialsXOffset = randRange(1, length - materialsLength - 1, rng);
-            materialsZOffset = randRange(1, width - materialsWidth - 1, rng);
-
-            // rough checks that the zones don't overlap
-            if (materialsXOffset >= buildZoneXOffset && materialsXOffset < buildZoneXOffset + buildZoneLength)
-                continue;
-            if (materialsXOffset + materialsLength >= buildZoneXOffset && materialsXOffset + materialsLength < buildZoneXOffset + buildZoneLength)
-                continue;
-
-            if (materialsZOffset >= buildZoneZOffset && materialsZOffset < buildZoneZOffset + buildZoneWidth)
-                continue;
-            if (materialsZOffset + materialsWidth >= buildZoneZOffset && materialsZOffset + materialsWidth < buildZoneZOffset + buildZoneWidth)
-                continue;
-
-            break;
-        }
+        materialsXOffset = randRange(1, length - materialsLength - 1, rng);
+        materialsZOffset = randRange(1, width - materialsWidth - 1, rng);
 
         std::vector<VoxelCoords> spawnCandidates;
         for (int x = 1; x < length - 1; ++x)
-            for (int z = 1; z < width - 1; ++z) {
-                if (x >= materialsXOffset && x < materialsXOffset + materialsLength)
-                    continue;
-                if (z >= materialsZOffset && z < materialsZOffset + materialsWidth)
-                    continue;
-
-                spawnCandidates.emplace_back(x, 1, z);
-            }
+            for (int z = 1; z < width - 1; ++z)
+                spawnCandidates.emplace_back(x, 2, z);
 
         std::shuffle(spawnCandidates.begin(), spawnCandidates.end(), rng);
 
@@ -580,13 +559,23 @@ public:
         );
         auto spawnIdx = int(agentSpawnCoords.size());
 
-        const auto maxRandomObjects = std::min(int(spawnCandidates.size()) - numAgents, 15);
+        const auto maxRandomObjects = std::min(int(spawnCandidates.size()) - numAgents, 25);
         const auto spawnObjects = randRange(0, std::max(1, maxRandomObjects), rng);
 
         objectSpawnCoords = std::vector<VoxelCoords>(
             spawnCandidates.begin() + spawnIdx, spawnCandidates.begin() + spawnIdx + spawnObjects
         );
 
+        for (auto &c : objectSpawnCoords) {
+            if (c.x() >= materialsXOffset && c.x() < materialsXOffset + materialsLength
+                && c.z() >= materialsZOffset && c.z() < materialsZOffset + materialsWidth) {
+                continue;
+            }
+
+            c.y() -= 1;  // put the object on the floor
+        }
+
+        // add the main bulk of materials
         for (int x = materialsXOffset; x < materialsXOffset + materialsLength; ++x)
             for (int y = 1; y <= 1; ++y)
                 for (int z = materialsZOffset; z < materialsZOffset + materialsWidth; ++z)

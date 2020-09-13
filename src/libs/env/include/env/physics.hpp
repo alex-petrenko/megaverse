@@ -75,8 +75,8 @@ public:
     }
 
 public:
-    int pickedUpHeight = 0;
-    bool pickedUpBuildingZone = false;
+    float placedReward = 0.0f;
+
 
 private:
     btDynamicsWorld& bWorld;

@@ -127,7 +127,7 @@ btVector3 Agent::forwardDirection() const
     auto xform = ghostObject.getWorldTransform ();
     btVector3 forwardDir = xform.getBasis()[2];
     forwardDir.setZ(-forwardDir.z());
-//    TLOG(INFO) << "forwardDir: " << forwardDir.x() << " " << forwardDir.y() << " " << forwardDir.z();
+    // TLOG(INFO) << "forwardDir: " << forwardDir.x() << " " << forwardDir.y() << " " << forwardDir.z();
     return forwardDir.normalize();
 }
 
@@ -147,7 +147,7 @@ void Agent::accelerate(const btVector3 &acc, btScalar frameDuration)
 void Agent::jump()
 {
     if (onGround())
-        bCharacter->jump(btVector3(0, 6.5, 0));
+        bCharacter->jump(btVector3(0, 6.0, 0));
 }
 
 bool Agent::onGround() const
