@@ -247,6 +247,18 @@ void V4REnvRenderer::Impl::draw(Env &env)
     cmdStream.render(envs);
     cmdStream.waitForFrame();
 
+    const auto remainingTimeBarThickness = 2;
+    const auto numPixelsInOneRow = framebufferSize.x * 4;
+    const auto pixelsToFill = env.remainingTimeFraction() * numPixelsInOneRow;
+
+    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
+        for (int i = 0; i < remainingTimeBarThickness; ++i) {
+            // viewport is flipped upside-down
+            const auto rowStart = numPixelsInOneRow * i;
+            memset((void *)(cmdStream.getRGB() + agentIdx * framebufferSize.x * framebufferSize.y * 4 + rowStart), 255, size_t(pixelsToFill));
+        }
+    }
+
 //    memcpy(
 //        cpuFrames.data(),
 //        cmdStream.getRGB(),

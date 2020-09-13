@@ -19,8 +19,8 @@ constexpr int delayMs = 10; //1000 / 15;
 
 constexpr bool useVulkan = true;
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool viz = true;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
