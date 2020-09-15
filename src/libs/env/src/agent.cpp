@@ -147,7 +147,7 @@ void Agent::accelerate(const btVector3 &acc, btScalar frameDuration)
 void Agent::jump()
 {
     if (onGround())
-        bCharacter->jump(btVector3(0, 6.0, 0));
+        bCharacter->jump(btVector3(0, 6.2, 0));
 }
 
 bool Agent::onGround() const

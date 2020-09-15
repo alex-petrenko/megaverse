@@ -344,7 +344,22 @@ void Env::objectInteract(Agent *agent, int agentIdx)
         VoxelCoords voxel{t};
         auto voxelPtr = grid.get(voxel);
 
-        if (isInBuildingZone(voxel) && !voxelPtr) {
+        bool collidesWithAgent = false;
+
+        for (const auto a : agents) {
+            if (a == agent)
+                continue;
+
+            const auto t = a->transformation().translation();
+            VoxelCoords c{t};
+
+            if (voxel == c) {
+                collidesWithAgent = true;
+                break;
+            }
+        }
+
+        if (isInBuildingZone(voxel) && !voxelPtr && !collidesWithAgent) {
             // voxel in front of us is empty, can place the object
             // the object should be on the ground or on top of another object
             // descend on y axis until we find ground
@@ -442,12 +457,14 @@ void Env::objectInteract(Agent *agent, int agentIdx)
         }
     }
 
-    lastReward[agentIdx] += rewardDelta;
+    // collective rewards
+    for (auto i = 0; i < numAgents; ++i)
+        lastReward[i] += rewardDelta;
 }
 
 bool Env::isInBuildingZone(const VoxelCoords &c) const
 {
-    return c.x() >= buildingZone.min.x() && c.x() <= buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() <= buildingZone.max.z();
+    return c.x() >= buildingZone.min.x() && c.x() < buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() < buildingZone.max.z();
 
 //    return true;  // temporary experiment
 }
