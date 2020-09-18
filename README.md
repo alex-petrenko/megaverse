@@ -39,3 +39,31 @@ python setup.py develop
 pip install -e .
 
 ```
+
+
+```
+v4r version
+
+1) install CUDA 10.2 (or newer?) https://developer.nvidia.com/cuda-10.2-download-archive?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=runfilelocal
+
+2) Download Vulkan SDK (tested on vulkansdk-linux-x86_64-1.2.148.1) and unzip
+
+3) Set env vars in the current shell
+cd <vulkan_sdk_folder>
+source setup-env.sh
+
+4) Update cmake if needed (tested on 3.18)
+sudo snap install cmake --classic
+
+5) Install bullet
+sudo apt install libbullet-dev
+
+6) Activate conda environment
+conda activate sample-factory-pytorch-1.6
+
+7) Cmake step
+cd src
+mkdir build-release
+cd build-release
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER=/usr/local/cuda-10.2/bin/nvcc ..
+```

@@ -9,7 +9,9 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(self, num_agents=2, vertical_look_limit_rad=0.0, use_vulkan=False):
+    def __init__(self, num_envs, num_agents_per_env, num_simulation_threads, vertical_look_limit_rad=0.0, use_vulkan=False):
+        self.is_multiagent = True
+
         set_voxel_env_log_level(2)
 
         self.img_w = 128
@@ -18,10 +20,16 @@ class VoxelEnv(gym.Env):
 
         self.use_vulkan = use_vulkan
 
-        self.num_agents = num_agents
-        self.env = VoxelEnvGym(self.img_w, self.img_h, self.num_agents, vertical_look_limit_rad, use_vulkan)
+        # total number of simulated agents
+        self.num_agents = num_envs * num_agents_per_env
+        self.num_envs = num_envs
+        self.num_agents_per_env = num_agents_per_env
 
-        self.empty_infos = [{} for _ in range(self.num_agents)]
+        self.env = VoxelEnvGym(
+            self.img_w, self.img_h,
+            num_envs, num_agents_per_env, num_simulation_threads,
+            vertical_look_limit_rad, use_vulkan,
+        )
 
         self.action_space = self.generate_action_space()
         self.observation_space = gym.spaces.Box(0, 255, (self.channels, self.img_h, self.img_w), dtype=np.uint8)
@@ -65,11 +73,12 @@ class VoxelEnv(gym.Env):
 
     def observations(self):
         obs = []
-        for i in range(self.num_agents):
-            o = self.env.get_observation(i)
-            o = o[:, :, :3]
-            o = np.transpose(o, (2, 0, 1))  # convert to CHW for PyTorch
-            obs.append(o)
+        for env_i in range(self.num_envs):
+            for agent_i in range(self.num_agents_per_env):
+                o = self.env.get_observation(env_i, agent_i)
+                o = o[:, :, :3]
+                o = np.transpose(o, (2, 0, 1))  # convert to CHW for PyTorch
+                obs.append(o)
 
         return obs
 
@@ -77,7 +86,7 @@ class VoxelEnv(gym.Env):
         self.env.reset()
         return self.observations()
 
-    def set_agent_actions(self, agent_idx, actions):
+    def set_agent_actions(self, env_i, agent_i, actions):
         action_idx = 0
         action_mask = 0
         spaces = self.action_space.spaces
@@ -87,23 +96,39 @@ class VoxelEnv(gym.Env):
             num_non_idle_actions = spaces[i].n - 1
             action_idx += num_non_idle_actions
 
-        self.env.set_action_mask(agent_idx, action_mask)
+        self.env.set_action_mask(env_i, agent_i, action_mask)
 
     def step(self, actions):
-        for i, agent_actions in enumerate(actions):
-            self.set_agent_actions(i, agent_actions)
+        action_idx = 0
+        for env_i in range(self.num_envs):
+            for agent_i in range(self.num_agents_per_env):
+                self.set_agent_actions(env_i, agent_i, actions[action_idx])
+                action_idx += 1
 
-        done = self.env.step()
-        dones = [done for _ in range(self.num_agents)]
-        rewards = [self.env.get_last_reward(i) for i in range(self.num_agents)]
+        self.env.step()
 
-        if done:
-            true_objective = self.env.true_objective()
-            infos = [dict(true_reward=float(true_objective)) for _ in range(self.num_agents)]
-            obs = self.reset()
-        else:
-            obs = self.observations()
-            infos = self.empty_infos
+        dones, infos = [], []
+
+        agent_i = 0
+        for env_i in range(self.num_envs):
+            done = self.env.is_done(env_i)  # currently no individual done per agent
+            dones.extend([done for _ in range(self.num_agents_per_env)])
+            if done:
+                true_objective = self.env.true_objective(env_i)
+                infos.extend([dict(true_reward=float(true_objective)) for _ in range(self.num_agents_per_env)])
+            else:
+                infos.extend([{} for _ in range(self.num_agents_per_env)])
+
+            agent_i += self.num_agents_per_env
+
+        reward_i = 0
+        rewards = [0.0] * self.num_agents
+        for env_i in range(self.num_envs):
+            for agent_i in range(self.num_agents_per_env):
+                rewards[reward_i] = self.env.get_last_reward(env_i, agent_i)
+                reward_i += 1
+
+        obs = self.observations()
 
         return obs, rewards, dones, infos
 
@@ -115,18 +140,15 @@ class VoxelEnv(gym.Env):
 
     def render(self, mode='human'):
         self.env.draw_hires()
-        max_num_rows = 2
-        num_rows = min(max_num_rows, self.num_agents // 2)
-        num_cols = self.num_agents // num_rows
 
         rows = []
-        for row in range(num_rows):
-            obs = [self.convert_obs(self.env.get_hires_observation(i + row * num_cols)) for i in range(num_cols)]
+        for env_i in range(self.num_envs):
+            obs = [self.convert_obs(self.env.get_hires_observation(env_i, i)) for i in range(self.num_agents_per_env)]
             obs_concat = np.concatenate(obs, axis=1)
             rows.append(obs_concat)
 
         obs_final = np.concatenate(rows, axis=0)
-        cv2.imshow(f'agent_{0}_{id(self)}', obs_final)
+        cv2.imshow(f'agent_{id(self)}', obs_final)
         cv2.waitKey(1)
 
     def close(self):

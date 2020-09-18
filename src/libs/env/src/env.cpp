@@ -227,7 +227,7 @@ void Env::setAction(int agentIdx, Action action)
     currAction[agentIdx] = action;
 }
 
-bool Env::step()
+void Env::step()
 {
     std::fill(lastReward.begin(), lastReward.end(), 0.0f);
 
@@ -274,7 +274,7 @@ bool Env::step()
     for (auto agent : agents)
         agent->updateTransform();
 
-    bool done = false;
+    done = false;
     int numAgentsAtExit = 0;
 
     for (int i = 0; i < int(agents.size()); ++i) {
@@ -314,6 +314,7 @@ bool Env::step()
     }
 
     episodeDurationSec += lastFrameDurationSec;
+
     if (episodeDurationSec >= horizonSec)
         done = true;
 
@@ -326,11 +327,14 @@ bool Env::step()
 
 //    if (fabs(lastReward[0]) > SIMD_EPSILON)
 //        TLOG(INFO) << "Last reward: " << lastReward[0];
+}
 
+bool Env::isDone() const
+{
     return done;
 }
 
-void Env::objectInteract(Agent *agent, int agentIdx)
+void Env::objectInteract(Agent *agent, int /*agentIdx*/)
 {
     const auto carryingScale = 0.78f, carryingScaleInverse = 1.0f / carryingScale;
 
@@ -350,8 +354,8 @@ void Env::objectInteract(Agent *agent, int agentIdx)
             if (a == agent)
                 continue;
 
-            const auto t = a->transformation().translation();
-            VoxelCoords c{t};
+            const auto agentTransformation = a->transformation().translation();
+            VoxelCoords c{agentTransformation};
 
             if (voxel == c) {
                 collidesWithAgent = true;

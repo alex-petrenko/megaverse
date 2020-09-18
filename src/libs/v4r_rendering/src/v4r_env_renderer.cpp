@@ -62,7 +62,7 @@ struct ColorCompare
 struct V4REnvRenderer::Impl
 {
 public:
-    explicit Impl(Env &env, int w, int h);
+    explicit Impl(Envs &envs, int w, int h);
 
     ~Impl();
 
@@ -70,29 +70,43 @@ public:
      * Reset the state of the renderer between episodes.
      * @param env
      */
-    void reset(Env &env);
+    void reset(Env &env, int envIdx);
 
-    void draw(Env &env);
+    void preDraw(Env &env, int envIdx);
+    void draw(Envs &envs);
+    void postDraw(Env &env, int envIdx);
 
-    const uint8_t * getObservation(int agentIdx) const;
+    const uint8_t * getObservation(int envIdx, int agentIdx) const;
+
+private:
+    int batchSize(const Envs &envs) const
+    {
+        int res = 0;
+        for (const auto &e : envs)
+            res += e->getNumAgents();
+
+        return res;
+    }
 
 public:
     v4r::BatchRenderer renderer;
     v4r::AssetLoader loader;
     v4r::CommandStream cmdStream;
     shared_ptr<v4r::Scene> scene;
-    vector<v4r::Environment> envs;
+    vector<v4r::Environment> renderEnvs;
 
     glm::u32vec2 framebufferSize;
 
+    int pixelsPerFrame, pixelsPerEnv;
+
 //    vector<uint8_t> cpuFrames;
 
-    SceneGraph::DrawableGroup3D drawables;
+    std::vector<SceneGraph::DrawableGroup3D> envDrawables;
 
     std::map<Color3, int, ColorCompare> materialIndices;
 
     // Fake camera for only object transformations
-    SceneGraph::Camera3D *fakeCamera;
+    std::vector<SceneGraph::Camera3D *> fakeCameras;
 
     v4r::RenderDoc rdoc;
 };
@@ -102,26 +116,27 @@ using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
                                  v4r::DataSource::Uniform,
                                  v4r::DataSource::Uniform>;
 
-V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
+V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
     : renderer({ 0, 1, 1,
-                 static_cast<uint32_t>(env.getNumAgents()),
+                 static_cast<uint32_t>(batchSize(envs)),
                  static_cast<uint32_t>(w),
                  static_cast<uint32_t>(h), 
                  glm::mat4(1.f) },
                v4r::RenderFeatures<Pipeline> {
                    v4r::RenderOptions::CpuSynchronization
                }),
-      loader(renderer.makeLoader()),
-      cmdStream(renderer.makeCommandStream()),
-      envs(),
-      framebufferSize(w, h),
-//      cpuFrames(),
-      drawables(),
-      fakeCamera(),
-      rdoc()
+    loader(renderer.makeLoader()),
+    cmdStream(renderer.makeCommandStream()),
+    renderEnvs(),
+    framebufferSize(w, h),
+    // cpuFrames(),
+    rdoc()
 {
     // Need to reserve numAgents here so references remain stable
-    envs.reserve(size_t(env.getNumAgents()));
+    envs.reserve(size_t(batchSize(envs)));
+
+    envDrawables = std::vector<SceneGraph::DrawableGroup3D>(envs.size());
+    fakeCameras = std::vector<SceneGraph::Camera3D *>(envs.size());
 
 //    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x * framebufferSize.y * 4 * env.getNumAgents()));
 
@@ -167,7 +182,7 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
 
     // Materials
     {
-        const auto palette = env.getPalette();
+        const auto palette = envs.front()->getPalette();
         constexpr float shininess = 300.0f;
 
         for (auto c : palette) {
@@ -188,6 +203,16 @@ V4REnvRenderer::Impl::Impl(Env &env, int w, int h)
 
         scene = loader.makeScene(scene_desc);
     }
+
+    // vector of render envs
+    {
+        for (auto &env : envs)
+            for (int agentIdx = 0; agentIdx < env->getNumAgents(); ++agentIdx)
+                renderEnvs.emplace_back(cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f));
+    }
+
+    pixelsPerFrame = framebufferSize.x * framebufferSize.y * 4;
+    pixelsPerEnv = envs.front()->getNumAgents() * pixelsPerFrame;
 }
 
 V4REnvRenderer::Impl::~Impl()
@@ -195,16 +220,18 @@ V4REnvRenderer::Impl::~Impl()
     TLOG(INFO) << __PRETTY_FUNCTION__;
 }
 
-void V4REnvRenderer::Impl::reset(Env &env)
+void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 {
-    fakeCamera = &env.scene->addFeature<SceneGraph::Camera3D>();
+    fakeCameras[envIdx] = &env.scene->addFeature<SceneGraph::Camera3D>();
 
-    envs.clear();
-    for (int i = 0; i < env.getNumAgents(); i++) envs.emplace_back(cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f));
+    for (int i = 0; i < env.getNumAgents(); i++) {
+        const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
+        renderEnvs[idx] = cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f);
+    }
 
     // reset renderer data structures
     {
-        drawables = SceneGraph::DrawableGroup3D{};
+        envDrawables[envIdx] = SceneGraph::DrawableGroup3D{};
     }
 
     // drawables
@@ -212,52 +239,45 @@ void V4REnvRenderer::Impl::reset(Env &env)
         constexpr auto capsuleMeshIdx = 0, boxMeshIdx = 1;
 
         for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
-            auto &renderEnv = envs[agentIdx];
+            const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
+            auto &renderEnv = renderEnvs[renderEnvIdx];
 
             for (const auto &sceneObjectInfo : env.drawables[DrawableType::Capsule]) {
                 const auto &color = sceneObjectInfo.color;
                 const auto materialIdx = materialIndices[color];
                 const auto renderID = renderEnv.addInstance(capsuleMeshIdx, uint32_t(materialIdx), glm::mat4(1.f));
-                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, drawables);
+                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
             }
 
             for (const auto &sceneObjectInfo : env.drawables[DrawableType::Box]) {
                 const auto &color = sceneObjectInfo.color;
                 const auto materialIdx = materialIndices[color];
                 const auto renderID = renderEnv.addInstance(boxMeshIdx, uint32_t(materialIdx), glm::mat4(1.f));
-                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, drawables);
+                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
             }
         }
     }
 }
 
-void V4REnvRenderer::Impl::draw(Env &env)
+void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
 {
-    for (int i = 0; i < env.getNumAgents(); ++i) {
-        v4r::Environment &renderEnv = envs[i];
+    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
+        const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
+        v4r::Environment &renderEnv = renderEnvs[renderEnvIdx];
 
-        auto activeCameraPtr = env.agents[i]->camera;
+        auto activeCameraPtr = env.agents[agentIdx]->camera;
         auto view = glm::make_mat4(activeCameraPtr->cameraMatrix().data());
         renderEnv.setCameraView(view);
     }
 
-    fakeCamera->draw(drawables);
+    fakeCameras[envIdx]->draw(envDrawables[envIdx]);
+}
 
+void V4REnvRenderer::Impl::draw(Envs &)
+{
 //    rdoc.startFrame();
-    cmdStream.render(envs);
+    cmdStream.render(renderEnvs);
     cmdStream.waitForFrame();
-
-    const auto remainingTimeBarThickness = 2;
-    const auto numPixelsInOneRow = framebufferSize.x * 4;
-    const auto pixelsToFill = env.remainingTimeFraction() * numPixelsInOneRow;
-
-    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
-        for (int i = 0; i < remainingTimeBarThickness; ++i) {
-            // viewport is flipped upside-down
-            const auto rowStart = numPixelsInOneRow * i;
-            memset((void *)(cmdStream.getRGB() + agentIdx * framebufferSize.x * framebufferSize.y * 4 + rowStart), 255, size_t(pixelsToFill));
-        }
-    }
 
 //    memcpy(
 //        cpuFrames.data(),
@@ -272,31 +292,60 @@ void V4REnvRenderer::Impl::draw(Env &env)
 //        abort();
 }
 
-const uint8_t * V4REnvRenderer::Impl::getObservation(int agentIdx) const
+void V4REnvRenderer::Impl::postDraw(Env &env, int envIdx)
 {
-    return cmdStream.getRGB() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
+    const auto remainingTimeBarThickness = 2;
+    const auto numPixelsInOneRow = framebufferSize.x * 4;
+    const auto pixelsToFill = env.remainingTimeFraction() * numPixelsInOneRow;
+
+    const auto startIdx = envIdx * pixelsPerEnv;
+
+    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
+        for (int i = 0; i < remainingTimeBarThickness; ++i) {
+            // viewport is flipped upside-down
+            const auto rowStart = numPixelsInOneRow * i;
+            memset((void *)(cmdStream.getRGB() + startIdx + agentIdx * pixelsPerFrame + rowStart), 255, size_t(pixelsToFill));
+        }
+    }
+}
+
+
+const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) const
+{
+    const auto startIdx = envIdx * pixelsPerEnv;
+    return cmdStream.getRGB() + startIdx + agentIdx * pixelsPerFrame;
 //    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
-V4REnvRenderer::V4REnvRenderer(Env &env, int w, int h)
+V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h)
 {
-    pimpl = std::make_unique<Impl>(env, w, h);
+    pimpl = std::make_unique<Impl>(envs, w, h);
 }
 
 V4REnvRenderer::~V4REnvRenderer() = default;
 
 
-void V4REnvRenderer::reset(Env &env)
+void V4REnvRenderer::reset(Env &env, int envIdx)
 {
-    pimpl->reset(env);
+    pimpl->reset(env, envIdx);
 }
 
-void V4REnvRenderer::draw(Env &env)
+void V4REnvRenderer::preDraw(Env &env, int envIndex)
 {
-    pimpl->draw(env);
+    pimpl->preDraw(env, envIndex);
 }
 
-const uint8_t * V4REnvRenderer::getObservation(int agentIdx) const
+void V4REnvRenderer::draw(Envs &envs)
 {
-    return pimpl->getObservation(agentIdx);
+    pimpl->draw(envs);
+}
+
+void V4REnvRenderer::postDraw(Env &env, int envIndex)
+{
+    pimpl->postDraw(env, envIndex);
+}
+
+const uint8_t *V4REnvRenderer::getObservation(int envIdx, int agentIdx) const
+{
+    return pimpl->getObservation(envIdx, agentIdx);
 }

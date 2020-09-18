@@ -95,9 +95,10 @@ public:
 
     /**
      * Advance simulation by one step.
-     * @return episode termination flag
      */
-    bool step();
+    void step();
+
+    bool isDone() const;
 
     /**
      * @param agentIdx agent for which to query the last reward
@@ -135,7 +136,7 @@ public:
     }
 
     /**
-     * We need this because of limitations of Vulkan renderer (materials have to be known in advance)
+     * We need this because of the requirements of the Vulkan renderer (materials have to be known in advance)
      */
     std::vector<Magnum::Color3> getPalette() const;
 
@@ -190,6 +191,8 @@ private:
     int numAgents;
     float verticalLookLimitRad;
 
+    bool done = false;
+
     const float horizonSec = 60;
     float episodeDurationSec = 0;
 
@@ -213,3 +216,6 @@ private:
     float simulationStepSeconds = 1.0f / 15.0f;  // 15 FPS is default
     float lastFrameDurationSec = simulationStepSeconds;
 };
+
+
+using Envs = std::vector<std::unique_ptr<Env>>;

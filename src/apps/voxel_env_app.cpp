@@ -13,11 +13,12 @@
 #include <v4r_rendering/v4r_env_renderer.hpp>
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
+#include <env/vector_env.hpp>
 
 
-constexpr int delayMs = 10; //1000 / 15;
+constexpr int delayMs = 1; //1000 / 15;
 
-constexpr bool useVulkan = true;
+constexpr bool useVulkan = false;
 
 constexpr bool viz = false;
 constexpr bool hires = false;
@@ -32,7 +33,14 @@ constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;
 
 
-int main_loop(Env &env, EnvRenderer &renderer)
+std::string windowName(int envIdx, int agentIdx)
+{
+    const auto wname = std::to_string(envIdx) + std::to_string(agentIdx);
+    return wname;
+}
+
+
+int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
 {
     if constexpr (performanceTest)
         randomActions = true;
@@ -41,28 +49,27 @@ int main_loop(Env &env, EnvRenderer &renderer)
     int numFrames = 0;
 
     if constexpr (viz) {
-        for (int i = 0; i < env.getNumAgents(); ++i) {
-            const auto wname = std::to_string(i);
-            cv::namedWindow(wname);
-            cv::moveWindow(wname, int(W * i * 1.1), 0);
+        for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
+            for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
+                const auto wname = windowName(envIdx, i);
+                cv::namedWindow(wname);
+                cv::moveWindow(wname, int(W * i * 1.1), int(H * envIdx * 1.1));
+            }
         }
     }
 
+    venv.reset();
+
     bool shouldExit = false;
-    for (int episode = 0; episode < maxNumEpisodes && !shouldExit; ++episode) {
-        bool done;
 
-        tprof().startTimer("reset");
-        env.reset();
-        renderer.reset(env);
-        tprof().pauseTimer("reset");
+    while (!shouldExit) {
+        tprof().startTimer("step");
+        venv.step();
+        tprof().pauseTimer("step");
 
-        while (true) {
-            done = env.step();
-            renderer.draw(env);
-
-            for (int i = 0; i < env.getNumAgents(); ++i) {
-                const uint8_t *obsData = renderer.getObservation(i);
+        for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
+            for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
+                const uint8_t *obsData = renderer.getObservation(envIdx, i);
 
                 if constexpr (viz) {
                     cv::Mat mat(H, W, CV_8UC4, (char *) obsData);
@@ -71,75 +78,71 @@ int main_loop(Env &env, EnvRenderer &renderer)
                     if constexpr (!useVulkan)
                         cv::flip(mat, mat, 0);
 
-                    cv::imshow(std::to_string(i), mat);
+                    cv::imshow(windowName(envIdx, i), mat);
                 }
-            }
-
-            if constexpr (viz) {
-                auto latestAction = Action::Idle;
-                auto key = cv::waitKeyEx(delayMs);
-
-                switch (key) {
-                    case 'w':
-                        latestAction |= Action::Forward;
-                        break;
-                    case 's':
-                        latestAction |= Action::Backward;
-                        break;
-                    case 'a':
-                        latestAction |= Action::Left;
-                        break;
-                    case 'd':
-                        latestAction |= Action::Right;
-                        break;
-                    case ' ':
-                        latestAction |= Action::Jump;
-                        break;
-
-                    case keyLeft:
-                        latestAction |= Action::LookLeft;
-                        break;
-                    case keyRight:
-                        latestAction |= Action::LookRight;
-                        break;
-                    case keyUp:
-                        latestAction |= Action::LookUp;
-                        break;
-                    case keyDown:
-                        latestAction |= Action::LookDown;
-                        break;
-
-                    case '1':
-                        activeAgent = 0;
-                        break;
-                    case '2':
-                        activeAgent = 1;
-                        break;
-
-                    default:
-                        break;
-                }
-
-                env.setAction(activeAgent, latestAction);
-            }
-
-            if (randomActions) {
-                auto randomAction = randRange(0, int(Action::NumActions), env.getRng());
-                env.setAction(activeAgent, Action(1 << randomAction));
-            }
-
-            ++numFrames;
-            if (numFrames > maxNumFrames) {
-                shouldExit = true;
-                break;
-            } else if (numFrames % 5000 == 0)
-                TLOG(INFO) << "Progress " << numFrames << "/" << maxNumFrames;
-
-            if (done) {
-                TLOG(INFO) << "Finished episode";
-                break;
             }
         }
+
+        if constexpr (viz) {
+            auto latestAction = Action::Idle;
+            auto key = cv::waitKeyEx(delayMs);
+
+            switch (key) {
+                case 'w':
+                    latestAction |= Action::Forward;
+                    break;
+                case 's':
+                    latestAction |= Action::Backward;
+                    break;
+                case 'a':
+                    latestAction |= Action::Left;
+                    break;
+                case 'd':
+                    latestAction |= Action::Right;
+                    break;
+                case ' ':
+                    latestAction |= Action::Jump;
+                    break;
+
+                case keyLeft:
+                    latestAction |= Action::LookLeft;
+                    break;
+                case keyRight:
+                    latestAction |= Action::LookRight;
+                    break;
+                case keyUp:
+                    latestAction |= Action::LookUp;
+                    break;
+                case keyDown:
+                    latestAction |= Action::LookDown;
+                    break;
+
+                case '1':
+                    activeAgent = 0;
+                    break;
+                case '2':
+                    activeAgent = 1;
+                    break;
+
+                default:
+                    break;
+            }
+
+            venv.envs.front()->setAction(activeAgent, latestAction);
+        }
+
+        if (randomActions) {
+            auto randomAction = randRange(0, int(Action::NumActions), venv.envs.front()->getRng());
+            venv.envs.front()->setAction(activeAgent, Action(1 << randomAction));
+        }
+
+        ++numFrames;
+        if (numFrames > maxNumFrames) {
+            shouldExit = true;
+            TLOG(INFO) << "Done: " << numFrames;
+            break;
+        } else if (numFrames % 5000 == 0)
+            TLOG(INFO) << "Progress " << numFrames << "/" << maxNumFrames;
     }
 
     return numFrames;
@@ -150,28 +153,38 @@ int main(int argc, char** argv)
 {
     (void)argc, void(argv);  // annoying warnings
 
-    const int numAgents = 4;
+    const int numEnvs = 2;  // to test vectorized env interface
+    const int numAgentsPerEnv = 4;
+    const int numSimulationThreads = 2;
 
-    Env env(numAgents);
-    env.seed(42);
-    env.reset();
+    std::vector<std::unique_ptr<Env>> envs;
+    for (int i = 0; i < numEnvs; ++i) {
+        envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv));
+        envs[i]->seed(42 + i);
+    }
 
     std::unique_ptr<EnvRenderer> renderer;
     if constexpr (useVulkan)
-        renderer = std::make_unique<V4REnvRenderer>(env, W, H);
+        renderer = std::make_unique<V4REnvRenderer>(envs, W, H);
     else {
         const auto debugDraw = false;
-        renderer = std::make_unique<MagnumEnvRenderer>(env, W, H, debugDraw);
+        renderer = std::make_unique<MagnumEnvRenderer>(envs, W, H, debugDraw);
     }
 
+    VectorEnv vectorEnv{envs, *renderer, numSimulationThreads};
+    vectorEnv.reset();
+
     tprof().startTimer("loop");
-    auto nFrames = main_loop(env, *renderer);
+    auto nFrames = mainLoop(vectorEnv, *renderer);
     const auto usecPassed = tprof().stopTimer("loop");
-    tprof().stopTimer("reset");
+    tprof().stopTimer("step");
 
-    auto fps = nFrames / (usecPassed / 1e6);
+    vectorEnv.close();
 
-    TLOG(DEBUG) << "\n\n" << fps * env.getNumAgents() << " FPS! (" << env.getNumAgents() << "*" << fps << ") for " << nFrames << " frames";
+    const auto fps = nFrames / (usecPassed / 1e6);
+    const auto totalNumAgents = envs.front()->getNumAgents() * envs.size();
+
+    TLOG(DEBUG) << "\n\n" << fps * totalNumAgents << " FPS! (" << totalNumAgents << "*" << fps << ") for " << nFrames << " frames";
 
     return EXIT_SUCCESS;
 }

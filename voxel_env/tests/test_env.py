@@ -13,14 +13,18 @@ def sample_actions(e):
 
 class TestEnv(TestCase):
     def test_env(self):
-        e = VoxelEnv()
+        e = VoxelEnv(num_envs=1, num_agents_per_env=1, num_simulation_threads=1)
         o = e.reset()
         o = e.step(sample_actions(e))
         e.close()
 
+    def test_env_close_immediately(self):
+        e = VoxelEnv(1, 1, 1)
+        e.close()
+
     def test_two_envs_same_process(self):
-        e1 = VoxelEnv()
-        e2 = VoxelEnv()
+        e1 = VoxelEnv(1, 1, 1)
+        e2 = VoxelEnv(1, 1, 1)
 
         e1.reset()
         e2.reset()
@@ -29,9 +33,9 @@ class TestEnv(TestCase):
         e2.close()
 
     def test_seeds(self):
-        e1 = VoxelEnv()
+        e1 = VoxelEnv(1, 1, 1)
         e1.seed(42)
-        e2 = VoxelEnv()
+        e2 = VoxelEnv(1, 1, 1)
         e2.seed(42)
 
         obs1 = e1.reset()
@@ -42,8 +46,8 @@ class TestEnv(TestCase):
         # after this we have randomness due to physics?
 
     def rendering(self, use_vulkan):
-        e1 = VoxelEnv(num_agents=4, use_vulkan=use_vulkan)
-        e2 = VoxelEnv(num_agents=4, use_vulkan=use_vulkan)
+        e1 = VoxelEnv(num_envs=2, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=use_vulkan)
+        e2 = VoxelEnv(num_envs=2, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=use_vulkan)
 
         e1.reset()
         e2.reset()
@@ -51,7 +55,7 @@ class TestEnv(TestCase):
         e1.render()
         e2.render()
 
-        for i in range(200):
+        for i in range(50):
             e1.step(sample_actions(e1))
             e1.render()
             e2.step(sample_actions(e2))
@@ -68,7 +72,7 @@ class TestEnv(TestCase):
 
     @staticmethod
     def performance_num_envs(n, n_steps=5000):
-        envs = [VoxelEnv() for _ in range(n)]
+        envs = [VoxelEnv(16, 4, 4, use_vulkan=True) for _ in range(n)]
         for e in envs:
             e.seed(42)
             e.reset()
@@ -93,7 +97,8 @@ class TestEnv(TestCase):
 
     def test_performance(self):
         fps1 = self.performance_num_envs(1)
-        fps2 = self.performance_num_envs(2)
-        fps4 = self.performance_num_envs(4)
+        # fps2 = self.performance_num_envs(2)
+        # fps4 = self.performance_num_envs(4)
 
-        print(fps1, fps2, fps4)
+        print(fps1)
+        # print(fps1, fps2, fps4)

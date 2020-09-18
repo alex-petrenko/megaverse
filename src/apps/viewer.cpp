@@ -57,13 +57,13 @@ private:
     void handleActions(const KeyEvent::Key &key, bool addAction);
 
 private:
-    std::unique_ptr<Env> env;
+    Envs envs;
     std::unique_ptr<MagnumEnvRenderer> renderer;
     std::unique_ptr<RenderingContext> ctx;
 
     bool withDebugDraw = true;
 
-    int activeAgent = 0;
+    int activeEnv = 0, activeAgent = 0;
     Action currAction = Action::Idle;
 
     bool forceReset = false;
@@ -92,19 +92,11 @@ Viewer::Viewer(const Arguments& arguments):
 
     const int numAgents = 4;
     const float verticalLookLimitRad = 0.1f;
-    env = std::make_unique<Env>(numAgents, verticalLookLimitRad);
-    env->setAvailableLayouts({LayoutType::Towers});
 
+    auto env = std::make_unique<Env>(numAgents, verticalLookLimitRad);
+    env->setAvailableLayouts({LayoutType::Towers});
     // env->seed(42);
     env->reset();
-
-    ctx = std::make_unique<WindowRenderingContext>();
-
-    auto viewport = GL::defaultFramebuffer.viewport();
-    renderer = std::make_unique<MagnumEnvRenderer>(*env, viewport.sizeX(), viewport.sizeY(), withDebugDraw, ctx.get());
-    renderer->reset(*env);
-
-    timeline.start();
 
     const int desiredFps = 15;
     const unsigned int delayMs = 1000 / desiredFps;
@@ -112,13 +104,26 @@ Viewer::Viewer(const Arguments& arguments):
 
     env->setSimulationResolution(1.0f / desiredFps);
 
+    envs.emplace_back(std::move(env));
+
+    ctx = std::make_unique<WindowRenderingContext>();
+
+    auto viewport = GL::defaultFramebuffer.viewport();
+    renderer = std::make_unique<MagnumEnvRenderer>(envs, viewport.sizeX(), viewport.sizeY(), withDebugDraw, ctx.get());
+    renderer->reset(*envs[activeEnv], activeEnv);
+
+    timeline.start();
     setSwapInterval(0);
 }
 
 
 void Viewer::drawEvent()
 {
-    renderer->drawAgent(*env, activeAgent, false);
+    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
+        renderer->preDraw(*envs[envIdx], envIdx);
+        renderer->drawAgent(*envs[envIdx], envIdx, activeAgent, false);
+    }
+
     auto framebuffer = renderer->getFramebuffer();
 
     GL::defaultFramebuffer.bind();
@@ -134,8 +139,10 @@ void Viewer::drawEvent()
 }
 
 void Viewer::tickEvent() {
+    auto &env = envs[activeEnv];
     env->setFrameDuration(timeline.previousFrameDuration());
     env->setAction(activeAgent, currAction);
+
     currAction &= ~Action::Interact;
 
     const auto done = env->step();
@@ -151,7 +158,7 @@ void Viewer::tickEvent() {
         TLOG(INFO) << "Total reward " << s.str();
         TLOG(INFO) << "True objective " << env->trueObjective();
         env->reset();
-        renderer->reset(*env);
+        renderer->reset(*env, activeEnv);
         forceReset = false;
     }
 

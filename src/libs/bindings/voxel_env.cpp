@@ -23,65 +23,81 @@ void setVoxelEnvLogLevel(int level)
 class VoxelEnvGym
 {
 public:
-    VoxelEnvGym(int w, int h, int numAgents, float verticalLookLimit, bool useVulkan)
-    : useVulkan{useVulkan}, w{w}, h{h}
+    VoxelEnvGym(
+        int w, int h,
+        int numEnvs, int numAgentsPerEnv, int numSimulationThreads,
+        float verticalLookLimit,
+        bool useVulkan
+    )
+    : useVulkan{useVulkan}, w{w}, h{h}, numSimulationThreads{numSimulationThreads}
     {
-        env = std::make_unique<Env>(numAgents, verticalLookLimit);
+        for (int i = 0; i < numEnvs; ++i)
+            envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit));
     }
 
     void seed(int seedValue)
     {
-        env->seed(seedValue);
+        TLOG(INFO) << "Seeding vector env with seed value " << seedValue;
+
+        rng.seed((unsigned long)seedValue);
+        for (auto &e : envs) {
+            const auto noise = randRange(0, 1 << 30, rng);
+            e->seed(noise);
+        }
     }
 
     int numAgents() const
     {
-        return env->getNumAgents();
+        return envs.front()->getNumAgents();
     }
 
     void reset()
     {
-        env->reset();
-
-        if (!renderer) {
+        if (!vectorEnv) {
             if (useVulkan)
-                renderer = std::make_unique<V4REnvRenderer>(*env, w, h);
+                renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
             else
-                renderer = std::make_unique<MagnumEnvRenderer>(*env, w, h);
+                renderer = std::make_unique<MagnumEnvRenderer>(envs, w, h);
+
+            vectorEnv = std::make_unique<VectorEnv>(envs, *renderer, numSimulationThreads);
         }
 
-        renderer->reset(*env);
-        renderer->draw(*env);
+        // this also resets the main renderer
+        vectorEnv->reset();
 
         if (hiresRenderer)
-            hiresRenderer->reset(*env);
+            for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
+                hiresRenderer->reset(*envs[envIdx], envIdx);
     }
 
-    void setAction(int agentIdx, int actionIdx)
+    void setAction(int envIdx, int agentIdx, int actionIdx)
     {
-        env->setAction(agentIdx, Action(1 << actionIdx));
+        envs[envIdx]->setAction(agentIdx, Action(1 << actionIdx));
     }
 
-    void setActionMask(int agentIdx, int actionMask)
+    void setActionMask(int envIdx, int agentIdx, int actionMask)
     {
-        env->setAction(agentIdx, Action(actionMask));
+        envs[envIdx]->setAction(agentIdx, Action(actionMask));
     }
 
-    bool step()
+    void step()
     {
-        auto done = env->step();
-        renderer->draw(*env);
-        return done;
+        vectorEnv->step();
     }
 
-    float getLastReward(int agentIdx)
+    bool isDone(int envIdx)
     {
-        return env->getLastReward(agentIdx);
+        return envs[envIdx]->isDone();
     }
 
-    py::array_t<uint8_t> getObservation(int agentIdx)
+    float getLastReward(int envIdx, int agentIdx)
     {
-        const uint8_t *obsData = renderer->getObservation(agentIdx);
+        return envs[envIdx]->getLastReward(agentIdx);
+    }
+
+    py::array_t<uint8_t> getObservation(int envIdx, int agentIdx)
+    {
+        const uint8_t *obsData = renderer->getObservation(envIdx, agentIdx);
         return py::array_t<uint8_t>({h, w, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
@@ -98,30 +114,35 @@ public:
     {
         if (!hiresRenderer) {
             if (useVulkan)
-                hiresRenderer = std::make_unique<V4REnvRenderer>(*env, renderW, renderH);
+                hiresRenderer = std::make_unique<V4REnvRenderer>(envs, renderW, renderH);
             else
-                hiresRenderer = std::make_unique<MagnumEnvRenderer>(*env, renderW, renderH);
+                hiresRenderer = std::make_unique<MagnumEnvRenderer>(envs, renderW, renderH);
 
-            hiresRenderer->reset(*env);
+            for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
+                hiresRenderer->reset(*envs[envIdx], envIdx);
         }
 
-        hiresRenderer->draw(*env);
+        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
+            hiresRenderer->preDraw(*envs[envIdx], envIdx);
+        hiresRenderer->draw(envs);
+        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
+            hiresRenderer->postDraw(*envs[envIdx], envIdx);
     }
 
-    py::array_t<uint8_t> getHiresObservation(int agentIdx)
+    py::array_t<uint8_t> getHiresObservation(int envIdx, int agentIdx)
     {
-        const uint8_t *obsData = hiresRenderer->getObservation(agentIdx);
+        const uint8_t *obsData = hiresRenderer->getObservation(envIdx, agentIdx);
         return py::array_t<uint8_t>({renderH, renderW, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
-    bool isLevelCompleted() const
+    bool isLevelCompleted(int envIdx) const
     {
-        return env->isLevelCompleted();
+        return envs[envIdx]->isLevelCompleted();
     }
 
-    float trueObjective() const
+    float trueObjective(int envIdx) const
     {
-        return env->trueObjective();
+        return envs[envIdx]->trueObjective();
     }
 
     /**
@@ -129,18 +150,28 @@ public:
      */
     void close()
     {
+        if (vectorEnv)
+            vectorEnv->close();
+
         hiresRenderer.reset();
         renderer.reset();
-        env.reset();
+        vectorEnv.reset();
+
+        envs.clear();
     }
 
 private:
-    std::unique_ptr<Env> env;
+    Envs envs;
+    std::unique_ptr<VectorEnv> vectorEnv;
     std::unique_ptr<EnvRenderer> renderer, hiresRenderer;
+
+    Rng rng{std::random_device{}()};
 
     bool useVulkan;
     int w, h;
     int renderW = 768, renderH = 432;
+
+    int numSimulationThreads;
 };
 
 
@@ -152,13 +183,14 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int, int, float, bool>())
+        .def(py::init<int, int, int, int, int, float, bool>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("seed", &VoxelEnvGym::seed)
         .def("reset", &VoxelEnvGym::reset)
         .def("set_action", &VoxelEnvGym::setAction)
         .def("set_action_mask", &VoxelEnvGym::setActionMask)
         .def("step", &VoxelEnvGym::step)
+        .def("is_done", &VoxelEnvGym::isDone)
         .def("get_observation", &VoxelEnvGym::getObservation)
         .def("get_last_reward", &VoxelEnvGym::getLastReward)
         .def("is_level_completed", &VoxelEnvGym::isLevelCompleted)

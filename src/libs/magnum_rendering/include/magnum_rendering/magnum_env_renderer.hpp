@@ -6,7 +6,9 @@
 
 #include <util/magnum.hpp>
 
+#include <env/vector_env.hpp>
 #include <env/env_renderer.hpp>
+
 #include <magnum_rendering/windowless_context.hpp>
 
 
@@ -14,15 +16,20 @@
 class MagnumEnvRenderer : public EnvRenderer
 {
 public:
-    explicit MagnumEnvRenderer(Env &env, int w, int h, bool withDebugDraw = false, RenderingContext *ctx = nullptr);
+    explicit MagnumEnvRenderer(
+        Envs &envs, int w, int h, bool withDebugDraw = false, RenderingContext *ctx = nullptr
+    );
+
     ~MagnumEnvRenderer() override;
 
-    void reset(Env &env) override;
+    void reset(Env &env, int envIdx) override;
 
-    void draw(Env &env) override;
-    void drawAgent(Env &env, int agentIndex, bool readToBuffer);
+    void preDraw(Env &env, int envIndex) override;
+    void draw(Envs &envs) override;
+    void drawAgent(Env &env, int envIndex, int agentIndex, bool readToBuffer);
+    void postDraw(Env &env, int envIndex) override;
 
-    const uint8_t * getObservation(int agentIdx) const override;
+    const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 
     Magnum::GL::Framebuffer * getFramebuffer();
 
