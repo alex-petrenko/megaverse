@@ -18,7 +18,7 @@
 
 constexpr int delayMs = 1; //1000 / 15;
 
-constexpr bool useVulkan = false;
+constexpr bool useVulkan = true;
 
 constexpr bool viz = false;
 constexpr bool hires = false;
@@ -61,13 +61,17 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
     venv.reset();
 
     bool shouldExit = false;
+    std::vector<bool> done(venv.envs.size());
 
     while (!shouldExit) {
         tprof().startTimer("step");
-        venv.step();
+        venv.step(done);
         tprof().pauseTimer("step");
 
         for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
+            if (done[envIdx])
+                TLOG(INFO) << "Episode boundary env: " << envIdx << " frames: " << numFrames;
+
             for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
                 const uint8_t *obsData = renderer.getObservation(envIdx, i);
 

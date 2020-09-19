@@ -72,7 +72,7 @@ class TestEnv(TestCase):
 
     @staticmethod
     def performance_num_envs(n, n_steps=5000):
-        envs = [VoxelEnv(16, 4, 4, use_vulkan=True) for _ in range(n)]
+        envs = [VoxelEnv(1, 1, 1, use_vulkan=True) for _ in range(n)]
         for e in envs:
             e.seed(42)
             e.reset()
@@ -97,8 +97,7 @@ class TestEnv(TestCase):
 
     def test_performance(self):
         fps1 = self.performance_num_envs(1)
-        # fps2 = self.performance_num_envs(2)
-        # fps4 = self.performance_num_envs(4)
+        fps2 = self.performance_num_envs(2)
+        fps4 = self.performance_num_envs(4)
 
-        print(fps1)
-        # print(fps1, fps2, fps4)
+        print(fps1, fps2, fps4)

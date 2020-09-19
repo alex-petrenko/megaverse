@@ -79,7 +79,7 @@ void VectorEnv::executeTask(Task task)
     while (numReady < numThreads - 1);
 }
 
-void VectorEnv::step()
+void VectorEnv::step(std::vector<bool> &done)
 {
     executeTask(Task::STEP);
     renderer.draw(envs);
@@ -91,8 +91,11 @@ void VectorEnv::step()
     // do this in background thread??
     for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
         if (envs[envIdx]->isDone()) {
+            done[envIdx] = true;
             envs[envIdx]->reset();
             renderer.reset(*envs[envIdx], envIdx);
+        } else {
+            done[envIdx] = false;
         }
     }
 }

@@ -33,6 +33,8 @@ public:
     {
         for (int i = 0; i < numEnvs; ++i)
             envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit));
+
+        done = std::vector<bool>(size_t(numEnvs));
     }
 
     void seed(int seedValue)
@@ -82,12 +84,12 @@ public:
 
     void step()
     {
-        vectorEnv->step();
+        vectorEnv->step(done);
     }
 
     bool isDone(int envIdx)
     {
-        return envs[envIdx]->isDone();
+        return done[envIdx];
     }
 
     float getLastReward(int envIdx, int agentIdx)
@@ -162,6 +164,7 @@ public:
 
 private:
     Envs envs;
+    std::vector<bool> done;
     std::unique_ptr<VectorEnv> vectorEnv;
     std::unique_ptr<EnvRenderer> renderer, hiresRenderer;
 

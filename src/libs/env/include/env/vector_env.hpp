@@ -22,7 +22,7 @@ public:
 public:
     explicit VectorEnv(Envs &envs, EnvRenderer &renderer, int numThreads);
 
-    void step();
+    void step(std::vector<bool> &done);
     void reset();
     void close();
 
