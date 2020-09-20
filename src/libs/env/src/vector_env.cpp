@@ -36,6 +36,9 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs, EnvRenderer &rende
 
         backgroundThreads.emplace_back(std::move(t));
     }
+
+    done = std::vector<bool>(envs.size());
+    trueObjectives = std::vector<float>(envs.size());
 }
 
 void VectorEnv::stepEnv(int envIdx)
@@ -79,7 +82,7 @@ void VectorEnv::executeTask(Task task)
     while (numReady < numThreads - 1);
 }
 
-void VectorEnv::step(std::vector<bool> &done)
+void VectorEnv::step()
 {
     executeTask(Task::STEP);
     renderer.draw(envs);
@@ -92,6 +95,7 @@ void VectorEnv::step(std::vector<bool> &done)
     for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
         if (envs[envIdx]->isDone()) {
             done[envIdx] = true;
+            trueObjectives[envIdx] = envs[envIdx]->trueObjective();
             envs[envIdx]->reset();
             renderer.reset(*envs[envIdx], envIdx);
         } else {

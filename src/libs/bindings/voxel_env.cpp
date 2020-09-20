@@ -33,8 +33,6 @@ public:
     {
         for (int i = 0; i < numEnvs; ++i)
             envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit));
-
-        done = std::vector<bool>(size_t(numEnvs));
     }
 
     void seed(int seedValue)
@@ -84,12 +82,12 @@ public:
 
     void step()
     {
-        vectorEnv->step(done);
+        vectorEnv->step();
     }
 
     bool isDone(int envIdx)
     {
-        return done[envIdx];
+        return vectorEnv->done[envIdx];
     }
 
     float getLastReward(int envIdx, int agentIdx)
@@ -137,14 +135,9 @@ public:
         return py::array_t<uint8_t>({renderH, renderW, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
-    bool isLevelCompleted(int envIdx) const
-    {
-        return envs[envIdx]->isLevelCompleted();
-    }
-
     float trueObjective(int envIdx) const
     {
-        return envs[envIdx]->trueObjective();
+        return vectorEnv->trueObjectives[envIdx];
     }
 
     /**
@@ -164,7 +157,7 @@ public:
 
 private:
     Envs envs;
-    std::vector<bool> done;
+
     std::unique_ptr<VectorEnv> vectorEnv;
     std::unique_ptr<EnvRenderer> renderer, hiresRenderer;
 
@@ -196,7 +189,6 @@ PYBIND11_MODULE(voxel_env, m)
         .def("is_done", &VoxelEnvGym::isDone)
         .def("get_observation", &VoxelEnvGym::getObservation)
         .def("get_last_reward", &VoxelEnvGym::getLastReward)
-        .def("is_level_completed", &VoxelEnvGym::isLevelCompleted)
         .def("true_objective", &VoxelEnvGym::trueObjective)
         .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
         .def("draw_hires", &VoxelEnvGym::drawHires)

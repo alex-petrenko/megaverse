@@ -22,7 +22,7 @@ public:
 public:
     explicit VectorEnv(Envs &envs, EnvRenderer &renderer, int numThreads);
 
-    void step(std::vector<bool> &done);
+    void step();
     void reset();
     void close();
 
@@ -36,6 +36,9 @@ private:
 public:
     std::vector<std::unique_ptr<Env>> &envs;
     EnvRenderer &renderer;
+
+    std::vector<bool> done;
+    std::vector<float> trueObjectives;
 
 private:
     int numThreads, envsPerThread;

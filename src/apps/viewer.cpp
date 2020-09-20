@@ -145,7 +145,8 @@ void Viewer::tickEvent() {
 
     currAction &= ~Action::Interact;
 
-    const auto done = env->step();
+    env->step();
+    const auto done = env->isDone();
 
     if (done || forceReset) {
         if (done)

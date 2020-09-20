@@ -98,7 +98,7 @@ public:
      */
     void step();
 
-    bool isDone() const;
+    bool isDone() const { return done; }
 
     /**
      * @param agentIdx agent for which to query the last reward
@@ -107,11 +107,6 @@ public:
     float getLastReward(int agentIdx)
     {
         return lastReward[agentIdx];
-    }
-
-    bool isLevelCompleted() const
-    {
-        return completed;
     }
 
     /**

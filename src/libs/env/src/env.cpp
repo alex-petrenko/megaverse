@@ -329,11 +329,6 @@ void Env::step()
 //        TLOG(INFO) << "Last reward: " << lastReward[0];
 }
 
-bool Env::isDone() const
-{
-    return done;
-}
-
 void Env::objectInteract(Agent *agent, int /*agentIdx*/)
 {
     const auto carryingScale = 0.78f, carryingScaleInverse = 1.0f / carryingScale;
