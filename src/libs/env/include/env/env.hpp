@@ -77,6 +77,9 @@ private:
     {
         bool visitedExit = false;
         float minDistToGoal = -1.0f;  // to be calculated on the first frame
+
+        bool pickedUpObject = false;
+        bool visitedBuildingZoneWithObject = false;
     };
 
 public:
@@ -160,6 +163,8 @@ private:
     void addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color);
 
 public:
+    static const std::vector<int> actionSpaceSizes;
+
     // physics stuff
     btDbvtBroadphase bBroadphase;
     btSequentialImpulseConstraintSolver bConstraintSolver;
@@ -181,6 +186,9 @@ public:
     std::map<DrawableType, std::vector<SceneObjectInfo>> drawables;
 
     std::vector<float> totalReward;
+
+    // reward shaping schemes for every agent in the env
+    std::vector<std::map<std::string, float>> rewardShaping;
 
 private:
     int numAgents;

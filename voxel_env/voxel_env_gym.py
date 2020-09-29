@@ -31,11 +31,14 @@ class VoxelEnv(gym.Env):
             vertical_look_limit_rad, use_vulkan,
         )
 
-        self.action_space = self.generate_action_space()
+        # obtaining default reward shaping scheme
+        self.default_shaping_scheme = self.env.get_reward_shaping(0, 0)
+
+        self.action_space = self.generate_action_space(self.env.action_space_sizes())
         self.observation_space = gym.spaces.Box(0, 255, (self.channels, self.img_h, self.img_w), dtype=np.uint8)
 
     @staticmethod
-    def generate_action_space():
+    def generate_action_space(action_space_sizes):
         """
         Left = 1 << 1,
         Right = 1 << 2,
@@ -52,15 +55,16 @@ class VoxelEnv(gym.Env):
         LookDown = 1 << 9,
         LookUp = 1 << 10,
         """
-        spaces = [
-            Discrete(3),  # noop, go left, go right
-            Discrete(3),  # noop, forward, backward
-            Discrete(3),  # noop, look left, look right
-            Discrete(2),  # noop, jump
-            Discrete(2),  # noop, interact
-            Discrete(3),  # noop, look down, look up
-        ]
+        # spaces = [
+        #     Discrete(3),  # noop, go left, go right
+        #     Discrete(3),  # noop, forward, backward
+        #     Discrete(3),  # noop, look left, look right
+        #     Discrete(2),  # noop, jump
+        #     Discrete(2),  # noop, interact
+        #     Discrete(3),  # noop, look down, look up
+        # ]
 
+        spaces = [Discrete(sz) for sz in action_space_sizes]
         space = gym.spaces.Tuple(spaces)
         return space
 
@@ -86,23 +90,24 @@ class VoxelEnv(gym.Env):
         self.env.reset()
         return self.observations()
 
-    def set_agent_actions(self, env_i, agent_i, actions):
-        action_idx = 0
-        action_mask = 0
-        spaces = self.action_space.spaces
-        for i, action in enumerate(actions):
-            if action > 0:
-                action_mask = action_mask | (1 << (action_idx + action))
-            num_non_idle_actions = spaces[i].n - 1
-            action_idx += num_non_idle_actions
-
-        self.env.set_action_mask(env_i, agent_i, action_mask)
+    # def set_agent_actions(self, env_i, agent_i, actions):
+    #     action_idx = 0
+    #     action_mask = 0
+    #     spaces = self.action_space.spaces
+    #     for i, action in enumerate(actions):
+    #         if action > 0:
+    #             action_mask = action_mask | (1 << (action_idx + action))
+    #         num_non_idle_actions = spaces[i].n - 1
+    #         action_idx += num_non_idle_actions
+    #
+    #     self.env.set_action_mask(env_i, agent_i, action_mask)
 
     def step(self, actions):
         action_idx = 0
         for env_i in range(self.num_envs):
             for agent_i in range(self.num_agents_per_env):
-                self.set_agent_actions(env_i, agent_i, actions[action_idx])
+                # self.set_agent_actions(env_i, agent_i, actions[action_idx])
+                self.env.set_actions(env_i, agent_i, actions[action_idx])
                 action_idx += 1
 
         self.env.step()
@@ -121,12 +126,7 @@ class VoxelEnv(gym.Env):
 
             agent_i += self.num_agents_per_env
 
-        reward_i = 0
-        rewards = [0.0] * self.num_agents
-        for env_i in range(self.num_envs):
-            for agent_i in range(self.num_agents_per_env):
-                rewards[reward_i] = self.env.get_last_reward(env_i, agent_i)
-                reward_i += 1
+        rewards = self.env.get_last_rewards()
 
         obs = self.observations()
 
@@ -150,6 +150,19 @@ class VoxelEnv(gym.Env):
         obs_final = np.concatenate(rows, axis=0)
         cv2.imshow(f'agent_{id(self)}', obs_final)
         cv2.waitKey(1)
+
+    def get_default_reward_shaping(self):
+        return self.default_shaping_scheme
+
+    def get_current_reward_shaping(self, actor_idx: int):
+        env_idx = actor_idx // self.num_agents_per_env
+        agent_idx = actor_idx % self.num_agents_per_env
+        return self.env.get_reward_shaping(env_idx, agent_idx)
+
+    def set_reward_shaping(self, reward_shaping: dict, actor_idx: int):
+        env_idx = actor_idx // self.num_agents_per_env
+        agent_idx = actor_idx % self.num_agents_per_env
+        return self.env.set_reward_shaping(env_idx, agent_idx, reward_shaping)
 
     def close(self):
         if self.env:

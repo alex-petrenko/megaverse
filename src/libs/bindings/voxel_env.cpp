@@ -1,14 +1,18 @@
-#include <env/env.hpp>
-#include <v4r_rendering/v4r_env_renderer.hpp>
-#include <magnum_rendering/magnum_env_renderer.hpp>
+#include <utility>
 
-#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
 #include <util/tiny_logger.hpp>
+
+#include <env/env.hpp>
+#include <v4r_rendering/v4r_env_renderer.hpp>
+#include <magnum_rendering/magnum_env_renderer.hpp>
 
 namespace py = pybind11;
 
@@ -29,10 +33,17 @@ public:
         float verticalLookLimit,
         bool useVulkan
     )
-    : useVulkan{useVulkan}, w{w}, h{h}, numSimulationThreads{numSimulationThreads}
+    : numEnvs{numEnvs}
+    , numAgentsPerEnv{numAgentsPerEnv}
+    , useVulkan{useVulkan}
+    , w{w}
+    , h{h}
+    , numSimulationThreads{numSimulationThreads}
     {
         for (int i = 0; i < numEnvs; ++i)
             envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit));
+
+        rewards = std::vector<float>(size_t(numEnvs * numAgentsPerEnv));
     }
 
     void seed(int seedValue)
@@ -70,13 +81,26 @@ public:
                 hiresRenderer->reset(*envs[envIdx], envIdx);
     }
 
-    void setAction(int envIdx, int agentIdx, int actionIdx)
+    std::vector<int> actionSpaceSizes()
     {
-        envs[envIdx]->setAction(agentIdx, Action(1 << actionIdx));
+        return Env::actionSpaceSizes;
     }
 
-    void setActionMask(int envIdx, int agentIdx, int actionMask)
+    void setActions(int envIdx, int agentIdx, std::vector<int> actions)
     {
+        int actionIdx = 0, actionMask = 0;
+        const auto &spaces = Env::actionSpaceSizes;
+
+        for (int i = 0; i < int(actions.size()); ++i) {
+            const auto action = actions[i];
+
+            if (action > 0)
+                actionMask = actionMask | (1 << (actionIdx + action));
+
+            const auto numNonIdleActions = spaces[i] - 1;
+            actionIdx += numNonIdleActions;
+        }
+
         envs[envIdx]->setAction(agentIdx, Action(actionMask));
     }
 
@@ -90,9 +114,15 @@ public:
         return vectorEnv->done[envIdx];
     }
 
-    float getLastReward(int envIdx, int agentIdx)
+    std::vector<float> getLastRewards()
     {
-        return envs[envIdx]->getLastReward(agentIdx);
+        int i = 0;
+
+        for (int envIdx = 0; envIdx < numEnvs; ++envIdx)
+            for (int agentIdx = 0; agentIdx < numAgentsPerEnv; ++agentIdx)
+                rewards[i++] = envs[envIdx]->getLastReward(agentIdx);
+
+        return rewards;
     }
 
     py::array_t<uint8_t> getObservation(int envIdx, int agentIdx)
@@ -140,6 +170,16 @@ public:
         return vectorEnv->trueObjectives[envIdx];
     }
 
+    std::map<std::string, float> getRewardShaping(int envIdx, int agentIdx)
+    {
+        return envs[envIdx]->rewardShaping[agentIdx];
+    }
+
+    void setRewardShaping(int envIdx, int agentIdx, std::map<std::string, float> rewardShaping)
+    {
+        envs[envIdx]->rewardShaping[agentIdx] = std::move(rewardShaping);
+    }
+
     /**
      * Explicitly destroy the env and the renderer to avoid doing this when the Python object goes out-of-scope.
      */
@@ -157,6 +197,8 @@ public:
 
 private:
     Envs envs;
+    int numEnvs, numAgentsPerEnv;
+    std::vector<float> rewards;  // to avoid reallocating on every call
 
     std::unique_ptr<VectorEnv> vectorEnv;
     std::unique_ptr<EnvRenderer> renderer, hiresRenderer;
@@ -181,17 +223,19 @@ PYBIND11_MODULE(voxel_env, m)
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
         .def(py::init<int, int, int, int, int, float, bool>())
         .def("num_agents", &VoxelEnvGym::numAgents)
+        .def("action_space_sizes", &VoxelEnvGym::actionSpaceSizes)
         .def("seed", &VoxelEnvGym::seed)
         .def("reset", &VoxelEnvGym::reset)
-        .def("set_action", &VoxelEnvGym::setAction)
-        .def("set_action_mask", &VoxelEnvGym::setActionMask)
+        .def("set_actions", &VoxelEnvGym::setActions)
         .def("step", &VoxelEnvGym::step)
         .def("is_done", &VoxelEnvGym::isDone)
         .def("get_observation", &VoxelEnvGym::getObservation)
-        .def("get_last_reward", &VoxelEnvGym::getLastReward)
+        .def("get_last_rewards", &VoxelEnvGym::getLastRewards)
         .def("true_objective", &VoxelEnvGym::trueObjective)
         .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
         .def("draw_hires", &VoxelEnvGym::drawHires)
         .def("get_hires_observation", &VoxelEnvGym::getHiresObservation)
+        .def("get_reward_shaping", &VoxelEnvGym::getRewardShaping)
+        .def("set_reward_shaping", &VoxelEnvGym::setRewardShaping)
         .def("close", &VoxelEnvGym::close);
 }

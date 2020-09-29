@@ -1,3 +1,4 @@
+import copy
 import time
 
 import numpy as np
@@ -101,3 +102,22 @@ class TestEnv(TestCase):
         fps4 = self.performance_num_envs(4)
 
         print(fps1, fps2, fps4)
+
+    def test_reward_shaping(self):
+        e = VoxelEnv(num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
+        default_reward_shaping = e.get_default_reward_shaping()
+        self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(0))
+        self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(1))
+        self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(2))
+        self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(5))
+
+        new_reward_shaping = copy.deepcopy(default_reward_shaping)
+        for k, v in new_reward_shaping.items():
+            new_reward_shaping[k] = v * 3
+        e.set_reward_shaping(new_reward_shaping, 3)
+
+        self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(0))
+        self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(1))
+        self.assertNotEqual(default_reward_shaping, e.get_current_reward_shaping(3))
+
+        e.close()

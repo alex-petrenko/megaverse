@@ -30,13 +30,42 @@ const auto agentEyesColor = 0x222222_rgbf,
 }
 
 
+/**
+Left = 1 << 1,
+Right = 1 << 2,
+
+Forward = 1 << 3,
+Backward = 1 << 4,
+
+LookLeft = 1 << 5,
+LookRight = 1 << 6,
+
+Jump = 1 << 7,
+Interact = 1 << 8,
+
+LookDown = 1 << 9,
+LookUp = 1 << 10,
+**/
+const std::vector<int> Env::actionSpaceSizes = {3, 3, 3, 2, 2, 3};
+
+
 Env::Env(int numAgents, float verticalLookLimitRad)
     : totalReward(size_t(numAgents), 0.0f)
+    , rewardShaping(size_t(numAgents))
     , numAgents{numAgents}
     , verticalLookLimitRad{verticalLookLimitRad}
     , currAction(size_t(numAgents), Action::Idle)
     , lastReward(size_t(numAgents), 0.0f)
 {
+    std::map<std::string, float> rewardShapingScheme{
+        {"teamSpirit", 0.1f},  // from 0 to 1
+        {"pickedUpObject", 0.1f},
+        {"visitedBuildingZoneWithObject", 0.1f},
+    };
+
+    for (int i = 0; i < numAgents; ++i)
+        rewardShaping[i] = rewardShapingScheme;
+
     // what is this?
     bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
@@ -300,6 +329,17 @@ void Env::step()
                 agentStates[i].visitedExit = true;
             }
         }
+
+        if (agent->carryingObject) {
+            VoxelCoords voxel{t};
+            if (isInBuildingZone(voxel)) {
+                if (!agentStates[i].visitedBuildingZoneWithObject) {
+                    lastReward[i] += rewardShaping[i]["visitedBuildingZoneWithObject"];
+                    agentStates[i].visitedBuildingZoneWithObject = true;
+                }
+            }
+        }
+
     }
 
     if (numAgentsAtExit == numAgents) {
@@ -329,7 +369,7 @@ void Env::step()
 //        TLOG(INFO) << "Last reward: " << lastReward[0];
 }
 
-void Env::objectInteract(Agent *agent, int /*agentIdx*/)
+void Env::objectInteract(Agent *agent, int agentIdx)
 {
     const auto carryingScale = 0.78f, carryingScaleInverse = 1.0f / carryingScale;
 
@@ -445,6 +485,12 @@ void Env::objectInteract(Agent *agent, int /*agentIdx*/)
                 // TLOG(INFO) << "pick up height: " << agent->carryingObject->pickedUpHeight;
 
                 grid.remove(voxel);
+
+                if (!agentStates[agentIdx].pickedUpObject) {
+                    lastReward[agentIdx] += rewardShaping[agentIdx]["picedkUpObject"];
+                    agentStates[agentIdx].pickedUpObject = true;
+                }
+
                 break;
 
             } else {
@@ -457,15 +503,19 @@ void Env::objectInteract(Agent *agent, int /*agentIdx*/)
     }
 
     // collective rewards
-    for (auto i = 0; i < numAgents; ++i)
-        lastReward[i] += rewardDelta;
+    for (auto i = 0; i < numAgents; ++i) {
+        if (i == agentIdx)
+            lastReward[i] += rewardDelta;
+        else {
+            const auto teamSpirit = rewardShaping[i]["teamSpirit"];
+            lastReward[i] += teamSpirit * rewardDelta;
+        }
+    }
 }
 
 bool Env::isInBuildingZone(const VoxelCoords &c) const
 {
     return c.x() >= buildingZone.min.x() && c.x() < buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() < buildingZone.max.z();
-
-//    return true;  // temporary experiment
 }
 
 float Env::buildingReward(float height, int objectsAtThisHeight) const
