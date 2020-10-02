@@ -31,7 +31,8 @@ public:
         int w, int h,
         int numEnvs, int numAgentsPerEnv, int numSimulationThreads,
         float verticalLookLimit,
-        bool useVulkan
+        bool useVulkan,
+        std::map<std::string, float> floatParams
     )
     : numEnvs{numEnvs}
     , numAgentsPerEnv{numAgentsPerEnv}
@@ -41,9 +42,14 @@ public:
     , numSimulationThreads{numSimulationThreads}
     {
         for (int i = 0; i < numEnvs; ++i)
-            envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit));
+            envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit, floatParams));
 
         rewards = std::vector<float>(size_t(numEnvs * numAgentsPerEnv));
+    }
+
+    void setFloatParams()
+    {
+
     }
 
     void seed(int seedValue)
@@ -221,7 +227,7 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int, int, int, int, float, bool>())
+        .def(py::init<int, int, int, int, int, float, bool, std::map<std::string, float>>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("action_space_sizes", &VoxelEnvGym::actionSpaceSizes)
         .def("seed", &VoxelEnvGym::seed)

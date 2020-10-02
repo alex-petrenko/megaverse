@@ -49,7 +49,7 @@ LookUp = 1 << 10,
 const std::vector<int> Env::actionSpaceSizes = {3, 3, 3, 2, 2, 3};
 
 
-Env::Env(int numAgents, float verticalLookLimitRad)
+Env::Env(int numAgents, float verticalLookLimitRad, FloatParams customFloatParams)
     : totalReward(size_t(numAgents), 0.0f)
     , rewardShaping(size_t(numAgents))
     , numAgents{numAgents}
@@ -57,10 +57,13 @@ Env::Env(int numAgents, float verticalLookLimitRad)
     , currAction(size_t(numAgents), Action::Idle)
     , lastReward(size_t(numAgents), 0.0f)
 {
+    for (const auto &[k, v] : customFloatParams)
+        floatParams[k] = v;
+
     std::map<std::string, float> rewardShapingScheme{
-        {"teamSpirit", 0.1f},  // from 0 to 1
-        {"pickedUpObject", 0.1f},
-        {"visitedBuildingZoneWithObject", 0.1f},
+        {Str::teamSpirit, 0.1f},  // from 0 to 1
+        {Str::pickedUpObject, 0.1f},
+        {Str::visitedBuildingZoneWithObject, 0.1f},
     };
 
     for (int i = 0; i < numAgents; ++i)
@@ -92,7 +95,7 @@ void Env::reset()
     rng.seed((unsigned long)seed);
     TLOG(INFO) << "Using seed " << seed;
 
-    episodeDurationSec = 0;
+    currEpisodeSec = 0;
 
     // delete the previous layout/state
     grid.clear();
@@ -334,7 +337,7 @@ void Env::step()
             VoxelCoords voxel{t};
             if (isInBuildingZone(voxel)) {
                 if (!agentStates[i].visitedBuildingZoneWithObject) {
-                    lastReward[i] += rewardShaping[i]["visitedBuildingZoneWithObject"];
+                    lastReward[i] += rewardShaping[i].at(Str::visitedBuildingZoneWithObject);
                     agentStates[i].visitedBuildingZoneWithObject = true;
                 }
             }
@@ -353,9 +356,9 @@ void Env::step()
         }
     }
 
-    episodeDurationSec += lastFrameDurationSec;
+    currEpisodeSec += lastFrameDurationSec;
 
-    if (episodeDurationSec >= horizonSec)
+    if (currEpisodeSec >= episodeLengthSec())
         done = true;
 
     // clear the actions
@@ -487,7 +490,7 @@ void Env::objectInteract(Agent *agent, int agentIdx)
                 grid.remove(voxel);
 
                 if (!agentStates[agentIdx].pickedUpObject) {
-                    lastReward[agentIdx] += rewardShaping[agentIdx]["picedkUpObject"];
+                    lastReward[agentIdx] += rewardShaping[agentIdx].at(Str::pickedUpObject);
                     agentStates[agentIdx].pickedUpObject = true;
                 }
 
@@ -507,7 +510,7 @@ void Env::objectInteract(Agent *agent, int agentIdx)
         if (i == agentIdx)
             lastReward[i] += rewardDelta;
         else {
-            const auto teamSpirit = rewardShaping[i]["teamSpirit"];
+            const auto teamSpirit = rewardShaping[i].at(Str::teamSpirit);
             lastReward[i] += teamSpirit * rewardDelta;
         }
     }

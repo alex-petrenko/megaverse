@@ -9,7 +9,9 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(self, num_envs, num_agents_per_env, num_simulation_threads, vertical_look_limit_rad=0.0, use_vulkan=False):
+    def __init__(
+            self, num_envs, num_agents_per_env, num_simulation_threads, vertical_look_limit_rad=0.0,
+            use_vulkan=False, params=None):
         self.is_multiagent = True
 
         set_voxel_env_log_level(2)
@@ -25,10 +27,19 @@ class VoxelEnv(gym.Env):
         self.num_envs = num_envs
         self.num_agents_per_env = num_agents_per_env
 
+        float_params = {}
+        if params is not None:
+            for k, v in params.items():
+                if isinstance(v, float):
+                    float_params[k] = v
+                else:
+                    raise Exception('Params of type %r not supported', type(v))
+
         self.env = VoxelEnvGym(
             self.img_w, self.img_h,
             num_envs, num_agents_per_env, num_simulation_threads,
             vertical_look_limit_rad, use_vulkan,
+            float_params,
         )
 
         # obtaining default reward shaping scheme

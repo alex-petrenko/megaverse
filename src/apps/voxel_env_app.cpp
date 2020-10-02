@@ -16,12 +16,12 @@
 #include <env/vector_env.hpp>
 
 
-constexpr int delayMs = 1; //1000 / 15;
+constexpr int delayMs = 1000 / 15;
 
-constexpr bool useVulkan = true;
+constexpr bool useVulkan = false;
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool viz = true;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
@@ -160,9 +160,11 @@ int main(int argc, char** argv)
     const int numAgentsPerEnv = 4;
     const int numSimulationThreads = 2;
 
+    FloatParams params{{Str::episodeLengthSec, 60.0f}};
+
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
-        envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv));
+        envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, 0.0f, params));
         envs[i]->seed(42 + i);
     }
 

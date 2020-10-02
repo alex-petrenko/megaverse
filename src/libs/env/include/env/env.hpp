@@ -70,6 +70,19 @@ struct SceneObjectInfo
 };
 
 
+using FloatParams = std::map<std::string, float>;
+using ConstStr = const char * const;
+
+namespace Str
+{
+    ConstStr episodeLengthSec = "episodeLengthSec";
+
+    ConstStr teamSpirit = "teamSpirit",
+             pickedUpObject = "pickedUpObject",
+             visitedBuildingZoneWithObject = "visitedBuildingZoneWithObject";
+}
+
+
 class Env
 {
 private:
@@ -83,7 +96,7 @@ private:
     };
 
 public:
-    explicit Env(int numAgents = 2, float verticalLookLimitRad = 0.0f);
+    explicit Env(int numAgents = 2, float verticalLookLimitRad = 0.0f, FloatParams customFloatParams = FloatParams{});
 
     int getNumAgents() const { return numAgents; }
 
@@ -123,9 +136,16 @@ public:
             return float(completed);
     }
 
+    float episodeLengthSec() const
+    {
+        const auto episodeLengthSec = floatParams.at(Str::episodeLengthSec);
+        return episodeLengthSec;
+    }
+
     float remainingTimeFraction() const
     {
-        return std::max(0.0f, (horizonSec - episodeDurationSec) / horizonSec);
+        const auto len = episodeLengthSec();
+        return std::max(0.0f, (len - currEpisodeSec) / len);
     }
 
     void setAvailableLayouts(const std::vector<LayoutType> &layouts)
@@ -190,14 +210,18 @@ public:
     // reward shaping schemes for every agent in the env
     std::vector<std::map<std::string, float>> rewardShaping;
 
+    // default values, can be overridden in ctor
+    FloatParams floatParams = {
+        {"episodeLengthSec", 60.0f}
+    };
+
 private:
     int numAgents;
     float verticalLookLimitRad;
 
     bool done = false;
 
-    const float horizonSec = 60;
-    float episodeDurationSec = 0;
+    float currEpisodeSec = 0;
 
     Rng rng{std::random_device{}()};
 
