@@ -50,7 +50,7 @@ class TestEnv(TestCase):
         params = {'episodeLengthSec': episode_length_sec}
 
         e1 = VoxelEnv(num_envs=2, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=use_vulkan, params=params)
-        e2 = VoxelEnv(num_envs=2, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=use_vulkan, params=params)
+        e2 = VoxelEnv(num_envs=1, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=use_vulkan, params=params)
 
         e1.reset()
         e2.reset()
@@ -58,7 +58,7 @@ class TestEnv(TestCase):
         e1.render()
         e2.render()
 
-        for i in range(50):
+        for i in range(100):
             e1.step(sample_actions(e1))
             e1.render()
             e2.step(sample_actions(e2))

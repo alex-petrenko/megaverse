@@ -158,8 +158,13 @@ public:
                 hiresRenderer->reset(*envs[envIdx], envIdx);
         }
 
-        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
+        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
+            if (isDone(envIdx))
+                hiresRenderer->reset(*envs[envIdx], envIdx);
+
             hiresRenderer->preDraw(*envs[envIdx], envIdx);
+        }
+
         hiresRenderer->draw(envs);
         for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
             hiresRenderer->postDraw(*envs[envIdx], envIdx);

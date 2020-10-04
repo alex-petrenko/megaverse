@@ -119,5 +119,3 @@ void VectorEnv::close()
     for (auto &t : backgroundThreads)
         t.join();
 }
-
-

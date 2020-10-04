@@ -109,6 +109,8 @@ public:
     std::vector<SceneGraph::Camera3D *> fakeCameras;
 
     v4r::RenderDoc rdoc;
+
+    std::map<DrawableType, int> meshIndices;
 };
 
 using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
@@ -174,9 +176,11 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
     // meshes
     {
         auto capsuleMesh = Primitives::capsule3DSolid(3, 3, 8, 1.0);
+        meshIndices[DrawableType::Capsule] = int(meshes.size());
         meshes.emplace_back(convertMesh(capsuleMesh));
 
         auto cubeMesh = Primitives::cubeSolid();
+        meshIndices[DrawableType::Box] = int(meshes.size());
         meshes.emplace_back(convertMesh(cubeMesh));
     }
 
@@ -222,7 +226,8 @@ V4REnvRenderer::Impl::~Impl()
 
 void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 {
-    fakeCameras[envIdx] = &env.scene->addFeature<SceneGraph::Camera3D>();
+    auto fakeCameraObj = &env.scene->addChild<Object3D>();
+    fakeCameras[envIdx] = &fakeCameraObj->addFeature<SceneGraph::Camera3D>();
 
     for (int i = 0; i < env.getNumAgents(); i++) {
         const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
@@ -236,24 +241,17 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 
     // drawables
     {
-        constexpr auto capsuleMeshIdx = 0, boxMeshIdx = 1;
-
         for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
             const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
             auto &renderEnv = renderEnvs[renderEnvIdx];
 
-            for (const auto &sceneObjectInfo : env.drawables[DrawableType::Capsule]) {
-                const auto &color = sceneObjectInfo.color;
-                const auto materialIdx = materialIndices[color];
-                const auto renderID = renderEnv.addInstance(capsuleMeshIdx, uint32_t(materialIdx), glm::mat4(1.f));
-                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
-            }
-
-            for (const auto &sceneObjectInfo : env.drawables[DrawableType::Box]) {
-                const auto &color = sceneObjectInfo.color;
-                const auto materialIdx = materialIndices[color];
-                const auto renderID = renderEnv.addInstance(boxMeshIdx, uint32_t(materialIdx), glm::mat4(1.f));
-                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
+            for (const auto &[drawableType, meshIndex] : meshIndices) {
+                for (const auto &sceneObjectInfo : env.drawables[drawableType]) {
+                    const auto &color = sceneObjectInfo.color;
+                    const auto materialIdx = materialIndices[color];
+                    const auto renderID = renderEnv.addInstance(uint32_t(meshIndex), uint32_t(materialIdx), glm::mat4(1.f));
+                    sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
+                }
             }
         }
     }
