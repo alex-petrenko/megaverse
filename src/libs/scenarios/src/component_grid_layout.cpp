@@ -689,8 +689,9 @@ std::vector<VoxelCoords> GridLayoutComponent::objectSpawnPositions(const VoxelGr
     return generator->objectSpawnPositions(grid);
 }
 
-void VoxelWorld::GridLayoutComponent::addLayoutDrawables(DrawablesMap &drawables, Env::EnvState &envState,
-                                                         VoxelGrid<VoxelState> &grid)
+void VoxelWorld::GridLayoutComponent::addLayoutDrawables(
+    DrawablesMap &drawables, Env::EnvState &envState, VoxelGrid<VoxelState> &grid, bool withExitPad
+)
 {
     collisionShapes.clear();
 
@@ -754,6 +755,7 @@ void VoxelWorld::GridLayoutComponent::addLayoutDrawables(DrawablesMap &drawables
     }
 
     // exit pad
+    if (withExitPad)
     {
         const auto exitPadCoords = generator->levelExit(grid);
         const auto exitPadScale = Magnum::Vector3(

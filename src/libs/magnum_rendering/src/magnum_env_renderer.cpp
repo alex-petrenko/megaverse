@@ -9,9 +9,8 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Primitives/Cube.h>
-#include <Magnum/Primitives/Axis.h>
-#include <Magnum/Primitives/Plane.h>
 #include <Magnum/Primitives/Capsule.h>
+#include <Magnum/Primitives/Icosphere.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/MeshData.h>
@@ -137,8 +136,8 @@ public:
 
     std::vector<SceneGraph::DrawableGroup3D> envDrawables;
 
-    GL::Buffer boxInstanceBuffer{NoCreate}, capsuleInstanceBuffer{NoCreate};
-    Containers::Array<InstanceData> boxInstanceData, capsuleInstanceData;
+    GL::Buffer boxInstanceBuffer{NoCreate}, capsuleInstanceBuffer{NoCreate}, sphereInstanceBuffer{NoCreate};
+    Containers::Array<InstanceData> boxInstanceData, capsuleInstanceData, sphereInstanceData;
 
     Shaders::Phong shader{NoCreate};
     Shaders::Phong shaderInstanced{NoCreate};
@@ -146,7 +145,7 @@ public:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh boxMesh, capsuleMesh;
+    GL::Mesh boxMesh, capsuleMesh, sphereMesh;
 
     std::vector<std::vector<Containers::Array<uint8_t>>> agentFrames;
     std::vector<std::vector<std::unique_ptr<MutableImageView2D>>> agentImageViews;
@@ -228,6 +227,15 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, Rend
             Shaders::Phong::NormalMatrix{},
             Shaders::Phong::Color3{}
         );
+
+        sphereMesh = MeshTools::compile(Primitives::icosphereSolid(1));
+        sphereInstanceBuffer = GL::Buffer{};
+        sphereMesh.addVertexBufferInstanced(
+            sphereInstanceBuffer, 1, 0,
+            Shaders::Phong::TransformationMatrix{},
+            Shaders::Phong::NormalMatrix{},
+            Shaders::Phong::Color3{}
+        );
     }
 
     // drawables
@@ -287,6 +295,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
         envDrawables[envIndex] = SceneGraph::DrawableGroup3D{};
         arrayResize(boxInstanceData, 0);
         arrayResize(capsuleInstanceData, 0);
+        arrayResize(sphereInstanceData, 0);
     }
 
     // drawables
@@ -301,6 +310,11 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
         for (const auto &sceneObjectInfo : drawables.at(DrawableType::Capsule)) {
             const auto &color = sceneObjectInfo.color;
             sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, envDrawables[envIndex]);
+        }
+
+        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Sphere)) {
+            const auto &color = sceneObjectInfo.color;
+            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(sphereInstanceData, color, envDrawables[envIndex]);
         }
     }
 }
@@ -318,6 +332,7 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
 
     arrayResize(boxInstanceData, 0);
     arrayResize(capsuleInstanceData, 0);
+    arrayResize(sphereInstanceData, 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
     if (withOverviewCamera && overviewMode)
@@ -334,13 +349,20 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     boxMesh.setInstanceCount(Int(boxInstanceData.size()));
     shaderInstanced.draw(boxMesh);
 
-    capsuleInstanceBuffer.setData(capsuleInstanceData, GL::BufferUsage::DynamicDraw);
-    capsuleMesh.setInstanceCount(Int(capsuleInstanceData.size()));
-    shaderInstanced.draw(capsuleMesh);
+    if (!capsuleInstanceData.empty()) {
+        capsuleInstanceBuffer.setData(capsuleInstanceData, GL::BufferUsage::DynamicDraw);
+        capsuleMesh.setInstanceCount(Int(capsuleInstanceData.size()));
+        shaderInstanced.draw(capsuleMesh);
+    }
+
+    if (!sphereInstanceData.empty()) {
+        sphereInstanceBuffer.setData(sphereInstanceData, GL::BufferUsage::DynamicDraw);
+        sphereMesh.setInstanceCount(Int(sphereInstanceData.size()));
+        shaderInstanced.draw(sphereMesh);
+    }
 
     // Bullet debug draw
-    if (withDebugDraw)
-    {
+    if (withDebugDraw) {
         GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
         debugDraw.setTransformationProjectionMatrix(activeCameraPtr->projectionMatrix()*activeCameraPtr->cameraMatrix());
         env.getPhysics().bWorld.debugDrawWorld();

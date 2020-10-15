@@ -60,7 +60,8 @@ DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &
     auto stepHeight = btScalar(0.2f);
     bCharacter = std::make_unique<KinematicCharacterController>(&ghostObject, capsuleShape.get(), stepHeight, btVector3(0.0, 1.0, 0.0));
 
-    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter);
+//    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter); // TODO!!!
+    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter); // TODO!!!
     bWorld.addAction(bCharacter.get());
 
     this->updateTransform();

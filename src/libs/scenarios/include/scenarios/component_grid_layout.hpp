@@ -56,7 +56,7 @@ public:
 
     std::vector<VoxelCoords> objectSpawnPositions(const VoxelGrid<VoxelState> &grid);
 
-    void addLayoutDrawables(DrawablesMap &drawables, Env::EnvState &envState, VoxelGrid<VoxelState> &grid);
+    void addLayoutDrawables(DrawablesMap &drawables, Env::EnvState &envState, VoxelGrid<VoxelState> &grid, bool withExit);
 
 private:
     Rng &rng;

@@ -65,7 +65,7 @@ private:
     std::unique_ptr<MagnumEnvRenderer> renderer;
     std::unique_ptr<RenderingContext> ctx;
 
-    bool withDebugDraw = true;
+    bool withDebugDraw = false;
 
     int activeEnv = 0, activeAgent = 0;
     Action currAction = Action::Idle;
@@ -96,10 +96,11 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
-    const int numAgents = 4;
-    const float verticalLookLimitRad = 0.1f;
+    const int numAgents = 2;
+    // const auto scenarioName = "TowerBuilding";
+    const auto scenarioName = "Football";
 
-    auto env = std::make_unique<Env>("TowerBuilding", numAgents);
+    auto env = std::make_unique<Env>(scenarioName, numAgents);
     // env->seed(42);
     env->reset();
 

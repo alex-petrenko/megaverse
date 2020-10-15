@@ -20,8 +20,6 @@ TowerBuilding::TowerBuilding(const std::string &name, Env &env, Env::EnvState &e
 
     for (int i = 0; i < env.getNumAgents(); ++i)
         rewardShaping[i] = rewardShapingScheme;
-
-    // TODO building zone
 }
 
 void TowerBuilding::reset()
@@ -49,7 +47,7 @@ std::vector<VoxelCoords> TowerBuilding::agentStartingPositions()
 
 void TowerBuilding::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    gridLayoutComponent.addLayoutDrawables(drawables, envState, vg.grid);
+    gridLayoutComponent.addLayoutDrawables(drawables, envState, vg.grid, true);
 }
 
 void TowerBuilding::step()
