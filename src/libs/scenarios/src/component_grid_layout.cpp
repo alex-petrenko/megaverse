@@ -3,12 +3,14 @@
 #include <cassert>
 #include <unordered_set>
 
-#include <util/tiny_logger.hpp>
-
-#include <env/layout_generator.hpp>
-
 #include <util/util.hpp>
 #include <util/magnum.hpp>
+#include <util/tiny_logger.hpp>
+
+#include <scenarios/component_grid_layout.hpp>
+
+
+using namespace VoxelWorld;
 
 
 // Utils
@@ -58,12 +60,12 @@ std::vector<VoxelCoords> getFreeVoxels(const VoxelGrid<VoxelState> &grid, int le
 
 // Layout generators
 
-class LayoutGenerator::LayoutGeneratorImpl
+class GridLayoutComponent::GridLayoutImpl
 {
 public:
-    explicit LayoutGeneratorImpl(int numAgents, Rng &rng)
-    : numAgents{numAgents}
-    , rng{rng}
+    explicit GridLayoutImpl(int numAgents, Rng &rng)
+        : numAgents{numAgents}
+          , rng{rng}
     {
     }
 
@@ -95,17 +97,17 @@ public:
 };
 
 
-class LayoutGeneratorBasic : public LayoutGenerator::LayoutGeneratorImpl
+class LayoutGeneratorBasic : public GridLayoutComponent::GridLayoutImpl
 {
 public:
     explicit LayoutGeneratorBasic(int numAgents, Rng &rng)
-    : LayoutGeneratorImpl(numAgents, rng)
+        : GridLayoutImpl(numAgents, rng)
     {
     }
 
     void init() override
     {
-        LayoutGeneratorImpl::init();
+        GridLayoutImpl::init();
 
         height = randRange(3, 5, rng);
     }
@@ -253,7 +255,7 @@ class LayoutGeneratorWalls : public LayoutGeneratorBasic
 {
 public:
     explicit LayoutGeneratorWalls(int numAgents, Rng &rng)
-    : LayoutGeneratorBasic(numAgents, rng)
+        : LayoutGeneratorBasic(numAgents, rng)
     {
     }
 
@@ -374,7 +376,7 @@ class LayoutGeneratorCave : public LayoutGeneratorBasic
 {
 public:
     explicit LayoutGeneratorCave(int numAgents, Rng &rng)
-    : LayoutGeneratorBasic(numAgents, rng)
+        : LayoutGeneratorBasic(numAgents, rng)
     {
     }
 
@@ -582,7 +584,7 @@ public:
                     objectSpawnCoords.emplace_back(x, y, z);
 
         while (int(agentSpawnCoords.size()) < numAgents)
-            agentSpawnCoords.emplace_back(agentSpawnCoords[0]);
+        agentSpawnCoords.emplace_back(agentSpawnCoords[0]);
     }
 
     void generate(VoxelGrid<VoxelState> &grid) override
@@ -609,7 +611,7 @@ public:
     BoundingBox buildingZone(const VoxelGrid<VoxelState> &) override
     {
         const VoxelCoords minCoord{buildZoneXOffset, 1, buildZoneZOffset},
-                          maxCoord{buildZoneXOffset + buildZoneLength, 1, buildZoneZOffset + buildZoneWidth};
+            maxCoord{buildZoneXOffset + buildZoneLength, 1, buildZoneZOffset + buildZoneWidth};
         return {minCoord, maxCoord};
     }
 
@@ -624,17 +626,17 @@ private:
 
 // Wrapper class
 
-LayoutGenerator::LayoutGenerator(Rng &rng)
-    : rng{rng}
+GridLayoutComponent::GridLayoutComponent(Scenario &scenario, Rng &rng)
+    : ScenarioComponent{scenario}
+    , rng{rng}
 {
-
 }
 
 
-LayoutGenerator::~LayoutGenerator() = default;
+GridLayoutComponent::~GridLayoutComponent() = default;
 
 
-void LayoutGenerator::init(int numAgents, LayoutType layoutType)
+void GridLayoutComponent::init(int numAgents, LayoutType layoutType)
 {
     switch (layoutType) {
         case LayoutType::Empty:
@@ -657,33 +659,139 @@ void LayoutGenerator::init(int numAgents, LayoutType layoutType)
     generator->init();
 }
 
-
-void LayoutGenerator::generate(VoxelGrid<VoxelState> &grid)
+void GridLayoutComponent::generate(VoxelGrid<VoxelState> &grid)
 {
     generator->generate(grid);
 }
 
-std::vector<BoundingBox> LayoutGenerator::extractPrimitives(VoxelGrid<VoxelState> &grid)
+std::vector<BoundingBox> GridLayoutComponent::extractPrimitives(VoxelGrid<VoxelState> &grid)
 {
     return generator->extractPrimitives(grid);
 }
 
-BoundingBox LayoutGenerator::levelExit(const VoxelGrid<VoxelState> &grid)
+BoundingBox GridLayoutComponent::levelExit(const VoxelGrid<VoxelState> &grid)
 {
     return generator->levelExit(grid);
 }
 
-BoundingBox LayoutGenerator::buildingZone(const VoxelGrid<VoxelState> &grid)
+BoundingBox GridLayoutComponent::buildingZone(const VoxelGrid<VoxelState> &grid)
 {
     return generator->buildingZone(grid);
 }
 
-std::vector<VoxelCoords> LayoutGenerator::startingPositions(const VoxelGrid<VoxelState> &grid)
+std::vector<VoxelCoords> GridLayoutComponent::startingPositions(const VoxelGrid<VoxelState> &grid)
 {
     return generator->startingPositions(grid);
 }
 
-std::vector<VoxelCoords> LayoutGenerator::objectSpawnPositions(const VoxelGrid<VoxelState> &grid)
+std::vector<VoxelCoords> GridLayoutComponent::objectSpawnPositions(const VoxelGrid<VoxelState> &grid)
 {
     return generator->objectSpawnPositions(grid);
+}
+
+void VoxelWorld::GridLayoutComponent::addLayoutDrawables(DrawablesMap &drawables, Env::EnvState &envState,
+                                                         VoxelGrid<VoxelState> &grid)
+{
+    collisionShapes.clear();
+
+    {
+        auto layoutDrawables = generator->extractPrimitives(grid);
+
+        TLOG(INFO) << "Env has " << layoutDrawables.size() << " layout drawables";
+
+        for (auto layoutDrawable : layoutDrawables) {
+            const auto bboxMin = layoutDrawable.min, bboxMax = layoutDrawable.max;
+            auto scale = Magnum::Vector3{
+                float(bboxMax.x() - bboxMin.x() + 1) / 2,
+                float(bboxMax.y() - bboxMin.y() + 1) / 2,
+                float(bboxMax.z() - bboxMin.z() + 1) / 2,
+            };
+
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), scale.y(), scale.z()});
+            // auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
+            auto &layoutObject = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+
+            auto translation = Magnum::Vector3{
+                float((bboxMin.x() + bboxMax.x())) / 2 + 0.5f,
+                float((bboxMin.y() + bboxMax.y())) / 2 + 0.5f,
+                float((bboxMin.z() + bboxMax.z())) / 2 + 0.5f
+            };
+
+            layoutObject.scale(scale).translate(translation);
+            layoutObject.syncPose();
+
+            drawables[DrawableType::Box].emplace_back(&layoutObject, rgb(ColorRgb::LAYOUT));
+
+            collisionShapes.emplace_back(std::move(bBoxShape));
+        }
+    }
+
+    {
+        const auto objectSpawnPositions = generator->objectSpawnPositions(grid);
+
+        const auto objSize = 0.39f;
+        auto objScale = Magnum::Vector3{objSize, objSize, objSize};
+
+        for (const auto &movableObject : objectSpawnPositions) {
+            const auto pos = movableObject;
+            auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f};
+
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{0.45f, 0.5f, 0.45f});
+
+            auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+            object.scale(objScale).translate(translation);
+            object.setCollisionOffset({0.0f, -0.1f, 0.0f});
+            object.syncPose();
+
+            drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::MOVABLE_BOX));
+
+            collisionShapes.emplace_back(std::move(bBoxShape));
+
+            VoxelState voxelState{false};
+            voxelState.obj = &object;
+            grid.set(pos, voxelState);
+        }
+    }
+
+    // exit pad
+    {
+        const auto exitPadCoords = generator->levelExit(grid);
+        const auto exitPadScale = Magnum::Vector3(
+            exitPadCoords.max.x() - exitPadCoords.min.x(),
+            1.0,
+            exitPadCoords.max.z() - exitPadCoords.min.z()
+        );
+
+        if (exitPadScale.x() > 0) {
+            // otherwise we don't need the exit pad
+            const auto exitPadPos = Magnum::Vector3(exitPadCoords.min.x() + exitPadScale.x() / 2, exitPadCoords.min.y(), exitPadCoords.min.z() + exitPadScale.z() / 2);
+
+            auto &exitPadObject = envState.scene->addChild<Object3D>(envState.scene.get());
+            exitPadObject.scale({0.5, 0.025, 0.5}).scale(exitPadScale);
+            exitPadObject.translate({0.0, 0.025, 0.0});
+            exitPadObject.translate(exitPadPos);
+
+            drawables[DrawableType::Box].emplace_back(&exitPadObject, rgb(ColorRgb::EXIT_PAD));
+        }
+    }
+
+    // building zone
+    {
+        const auto buildingZone = generator->buildingZone(grid);
+
+        const auto zoneScale = Magnum::Vector3(buildingZone.max.x() - buildingZone.min.x(), 1.0, buildingZone.max.z() - buildingZone.min.z());
+
+        if (zoneScale.x() > 0) {
+            // otherwise we don't need the zone
+            const auto zonePos = Magnum::Vector3(buildingZone.min.x() + zoneScale.x() / 2, buildingZone.min.y(),
+                                                 buildingZone.min.z() + zoneScale.z() / 2);
+
+            auto &zoneObject = envState.scene->addChild<Object3D>(envState.scene.get());
+            zoneObject.scale({0.55, 0.075, 0.55}).scale(zoneScale);
+            zoneObject.translate({0.0, 0.055, 0.0});
+            zoneObject.translate(zonePos);
+
+            drawables[DrawableType::Box].emplace_back(&zoneObject, rgb(ColorRgb::BUILDING_ZONE));
+        }
+    }
 }

@@ -9,19 +9,25 @@
 #include <util/tiny_profiler.hpp>
 
 #include <env/env.hpp>
+#include <env/const.hpp>
+#include <env/vector_env.hpp>
+
+#include <scenarios/init.hpp>
 
 #include <v4r_rendering/v4r_env_renderer.hpp>
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
-#include <env/vector_env.hpp>
+
+
+using namespace VoxelWorld;
 
 
 constexpr int delayMs = 1000 / 15;
 
-constexpr bool useVulkan = false;
+constexpr bool useVulkan = true;
 
-constexpr bool viz = true;
-constexpr bool hires = true;
+constexpr bool viz = false;
+constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
@@ -156,15 +162,17 @@ int main(int argc, char** argv)
 {
     (void)argc, void(argv);  // annoying warnings
 
+    scenariosGlobalInit();
+
     const int numEnvs = 2;  // to test vectorized env interface
     const int numAgentsPerEnv = 4;
     const int numSimulationThreads = 2;
 
-    FloatParams params{{Str::episodeLengthSec, 60.0f}};
+    FloatParams params{{Str::episodeLengthSec, 1.0f}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
-        envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, 0.0f, params));
+        envs.emplace_back(std::make_unique<Env>("TowerBuilding", numAgentsPerEnv, params));
         envs[i]->seed(42 + i);
     }
 

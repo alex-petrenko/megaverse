@@ -9,12 +9,12 @@ from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
 class VoxelEnv(gym.Env):
-    def __init__(
-            self, num_envs, num_agents_per_env, num_simulation_threads, vertical_look_limit_rad=0.0,
-            use_vulkan=False, params=None):
+    def __init__(self, scenario_name, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
         self.is_multiagent = True
 
-        set_voxel_env_log_level(2)
+        self.scenario_name = scenario_name
+
+        # set_voxel_env_log_level(2)
 
         self.img_w = 128
         self.img_h = 72
@@ -36,10 +36,8 @@ class VoxelEnv(gym.Env):
                     raise Exception('Params of type %r not supported', type(v))
 
         self.env = VoxelEnvGym(
-            self.img_w, self.img_h,
-            num_envs, num_agents_per_env, num_simulation_threads,
-            vertical_look_limit_rad, use_vulkan,
-            float_params,
+            self.scenario_name,
+            self.img_w, self.img_h, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, float_params,
         )
 
         # obtaining default reward shaping scheme

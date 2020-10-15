@@ -3,6 +3,9 @@
 #include <memory>
 
 
+namespace VoxelWorld
+{
+
 class RenderingContext
 {
 public:
@@ -26,6 +29,7 @@ class WindowlessContext : public RenderingContext
 {
 public:
     explicit WindowlessContext(int gpuDevice = 0);
+
     ~WindowlessContext() override;
 
     void makeCurrent() override;
@@ -34,3 +38,5 @@ protected:
     struct Impl;
     std::unique_ptr<Impl> pimpl;
 };
+
+}

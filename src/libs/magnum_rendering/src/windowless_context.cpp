@@ -17,6 +17,8 @@
 #include <util/tiny_logger.hpp>
 
 
+using namespace VoxelWorld;
+
 namespace Mn = Magnum;
 
 

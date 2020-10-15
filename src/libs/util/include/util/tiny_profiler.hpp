@@ -3,6 +3,9 @@
 #include <memory>
 
 
+namespace VoxelWorld
+{
+
 class TinyProfiler
 {
     /// Private implementation to hide some stl headers.
@@ -10,7 +13,7 @@ class TinyProfiler
 
 public:
     /// Singleton.
-    static TinyProfiler & instance();
+    static TinyProfiler &instance();
 
     /// Start measurement for key.
     void startTimer(const std::string &key);
@@ -25,6 +28,7 @@ public:
     float stopTimer(const std::string &key);
 
     TinyProfiler(const TinyProfiler &) = delete;
+
     void operator=(const TinyProfiler &) = delete;
 
 private:
@@ -34,4 +38,6 @@ private:
     std::unique_ptr<TinyProfilerImpl> data;
 };
 
-TinyProfiler & tprof();
+TinyProfiler &tprof();
+
+}

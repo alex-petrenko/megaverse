@@ -8,6 +8,9 @@
 #include <env/env_renderer.hpp>
 
 
+namespace VoxelWorld
+{
+
 class VectorEnv
 {
 public:
@@ -23,14 +26,18 @@ public:
     explicit VectorEnv(Envs &envs, EnvRenderer &renderer, int numThreads);
 
     void step();
+
     void reset();
+
     void close();
 
 private:
     void taskFunc(Task task, int threadIdx);
+
     void executeTask(Task task);
 
     void stepEnv(int envIdx);
+
     void resetEnv(int envIdx);
 
 public:
@@ -47,6 +54,6 @@ private:
     std::condition_variable cvTask;
     std::mutex mutex;
     std::atomic<int> numReady = 0;
-
-
 };
+
+}

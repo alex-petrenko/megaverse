@@ -12,8 +12,12 @@
 
 #include <env/agent.hpp>
 #include <env/physics.hpp>
-#include <env/layout_generator.hpp>
 
+
+namespace VoxelWorld
+{
+
+class Scenario;
 
 enum class Action
 {
@@ -39,11 +43,16 @@ enum class Action
 
 
 inline Action operator|(Action a, Action b) { return Action(int(a) | int(b)); }
-inline Action & operator|=(Action &a, Action b) { return (Action &)((int &)a |= int(b)); }
+
+inline Action &operator|=(Action &a, Action b) { return (Action &) ((int &) a |= int(b)); }
+
 inline Action operator&(Action a, Action b) { return Action(int(a) & int(b)); }
-inline Action & operator&=(Action &a, Action b) { return (Action &)((int &)a &= int(b)); }
+
+inline Action &operator&=(Action &a, Action b) { return (Action &) ((int &) a &= int(b)); }
+
 inline Action operator~(Action a) { return Action(~int(a)); }
-inline bool operator!(Action a) {return a == Action::Idle; }
+
+inline bool operator!(Action a) { return a == Action::Idle; }
 
 
 enum class DrawableType
@@ -52,6 +61,7 @@ enum class DrawableType
 
     Box = 0,
     Capsule = 1,
+    Sphere = 2,
 
     NumTypes,
 };
@@ -60,8 +70,8 @@ enum class DrawableType
 struct SceneObjectInfo
 {
     SceneObjectInfo(Object3D *objectPtr, const Magnum::Color3 &color)
-    : objectPtr{objectPtr}
-    , color{color}
+        : objectPtr{objectPtr}
+          , color{color}
     {
     }
 
@@ -71,34 +81,91 @@ struct SceneObjectInfo
 
 
 using FloatParams = std::map<std::string, float>;
-using ConstStr = const char * const;
-
-namespace Str
-{
-    ConstStr episodeLengthSec = "episodeLengthSec";
-
-    ConstStr teamSpirit = "teamSpirit",
-             pickedUpObject = "pickedUpObject",
-             visitedBuildingZoneWithObject = "visitedBuildingZoneWithObject";
-}
-
+using Agents = std::vector<AbstractAgent *>;
+using DrawablesMap = std::map<DrawableType, std::vector<SceneObjectInfo>>;
+using RewardShaping = std::map<std::string, float>;
 
 class Env
 {
-private:
-    struct AgentState
+public:
+    /**
+     * Physics-related fields (PyBullet)
+     */
+    struct EnvPhysics
     {
-        bool visitedExit = false;
-        float minDistToGoal = -1.0f;  // to be calculated on the first frame
+        btDbvtBroadphase bBroadphase;
+        btSequentialImpulseConstraintSolver bConstraintSolver;
+        btDefaultCollisionConfiguration bCollisionConfiguration;
+        btCollisionDispatcher bCollisionDispatcher{&bCollisionConfiguration};
+        btDiscreteDynamicsWorld bWorld{&bCollisionDispatcher, &bBroadphase, &bConstraintSolver, &bCollisionConfiguration};
+    };
 
-        bool pickedUpObject = false;
-        bool visitedBuildingZoneWithObject = false;
+    /**
+     * Current state of the environment.
+     * This is what other components (e.g. Scenario) will get access to.
+     */
+    struct EnvState
+    {
+    public:
+        explicit EnvState(int numAgents)
+        : currAction(size_t(numAgents), Action::Idle)
+        , lastReward(size_t(numAgents), 0)
+        , totalReward(size_t(numAgents), 0.0f)
+        {
+        }
+
+        void reset()
+        {
+            done = false;
+            currEpisodeSec = 0;
+
+            std::fill(currAction.begin(), currAction.end(), Action::Idle);
+            std::fill(lastReward.begin(), lastReward.end(), 0.0f);
+            std::fill(totalReward.begin(), totalReward.end(), 0.0f);
+
+            scene = std::make_unique<Scene3D>();
+
+            agents.clear();
+        }
+
+    public:
+        // Basic environment info
+        bool done = false;
+        float currEpisodeSec = 0;
+        float simulationStepSeconds = 1.0f / 15.0f;  // 15 FPS is default
+        float lastFrameDurationSec = simulationStepSeconds;
+        std::vector<Action> currAction;
+        std::vector<float> lastReward, totalReward;
+
+        Agents agents;
+
+        std::unique_ptr<Scene3D> scene;
+
+        Rng rng{std::random_device{}()};
+
+        EnvPhysics physics;
     };
 
 public:
-    explicit Env(int numAgents = 2, float verticalLookLimitRad = 0.0f, FloatParams customFloatParams = FloatParams{});
+    explicit Env(const std::string &scenarioName, int numAgents = 2, FloatParams customFloatParams = FloatParams{});
+
+    ~Env();
 
     int getNumAgents() const { return numAgents; }
+
+    Scenario & getScenario() { return *scenario; }
+
+    Scene3D & getScene() { return *state.scene; }
+
+    Agents & getAgents() { return state.agents; }
+
+    EnvPhysics & getPhysics() { return state.physics; }
+
+    /**
+     * Main interface between the env and the renderer.
+     * @return the list of drawables for each geometric shape supported.
+     */
+    const DrawablesMap & getDrawables() const { return drawables; }
 
     void reset();
 
@@ -114,43 +181,27 @@ public:
      */
     void step();
 
-    bool isDone() const { return done; }
+    bool isDone() const { return state.done; }
 
     /**
      * @param agentIdx agent for which to query the last reward
      * @return reward in the last tick
      */
-    float getLastReward(int agentIdx)
-    {
-        return lastReward[agentIdx];
-    }
+    float getLastReward(int agentIdx) const { return state.lastReward[agentIdx]; }
+
+    float getTotalReward(int agentIdx) const { return state.totalReward[agentIdx]; }
 
     /**
      * Unshaped reward that we're actually trying to maximize.
      */
-    float trueObjective() const
-    {
-        if (currLayoutType == LayoutType::Towers)
-            return highestTower;
-        else
-            return float(completed);
-    }
+    float trueObjective() const;
 
-    float episodeLengthSec() const
-    {
-        const auto episodeLengthSec = floatParams.at(Str::episodeLengthSec);
-        return episodeLengthSec;
-    }
+    float episodeLengthSec() const;
 
     float remainingTimeFraction() const
     {
         const auto len = episodeLengthSec();
-        return std::max(0.0f, (len - currEpisodeSec) / len);
-    }
-
-    void setAvailableLayouts(const std::vector<LayoutType> &layouts)
-    {
-        availableLayouts = layouts;
+        return std::max(0.0f, (len - state.currEpisodeSec) / len);
     }
 
     /**
@@ -163,86 +214,31 @@ public:
      */
     void seed(int seedValue);
 
-    Rng & getRng() { return rng; }
+    Rng &getRng() { return state.rng; }
 
     /**
      * This is when we're running an actual realtime rendering loop with human controls.
      * Should not be used by Gym env interface.
      * @param sec actual duration of the last frame.
      */
-    void setFrameDuration(float sec) { lastFrameDurationSec = sec; }
+    void setFrameDuration(float sec) { state.lastFrameDurationSec = sec; }
 
-    void setSimulationResolution(float sec) { simulationStepSeconds = sec; }
-
-private:
-
-    void objectInteract(Agent *agent, int agentIdx);
-    bool isInBuildingZone(const VoxelCoords &c) const;
-    float buildingReward(float height, int objectsAtThisHeight) const;
-
-    void addStandardDrawable(DrawableType type, Object3D &object, const Magnum::Color3 &color);
+    void setSimulationResolution(float sec) { state.simulationStepSeconds = sec; }
 
 public:
+    // need better mechanism for this
     static const std::vector<int> actionSpaceSizes;
 
-    // physics stuff
-    btDbvtBroadphase bBroadphase;
-    btSequentialImpulseConstraintSolver bConstraintSolver;
-    btDefaultCollisionConfiguration bCollisionConfiguration;
-    btCollisionDispatcher bCollisionDispatcher{&bCollisionConfiguration};
-    btDiscreteDynamicsWorld bWorld{&bCollisionDispatcher, &bBroadphase, &bConstraintSolver, &bCollisionConfiguration};
-
-    std::unique_ptr<Scene3D> scene;
-
-    VoxelGrid<VoxelState> grid{100, {0, 0, 0}, 1};
-    std::vector<BoundingBox> layoutDrawables;
-    BoundingBox exitPad, buildingZone;
-    Magnum::Vector3 exitPadCenter;
-
-    std::vector<VoxelCoords> agentStartingPositions;
-    std::vector<VoxelCoords> objectSpawnPositions;
-    std::vector<Agent *> agents;
-
-    std::map<DrawableType, std::vector<SceneObjectInfo>> drawables;
-
-    std::vector<float> totalReward;
-
-    // reward shaping schemes for every agent in the env
-    std::vector<std::map<std::string, float>> rewardShaping;
-
-    // default values, can be overridden in ctor
-    FloatParams floatParams = {
-        {"episodeLengthSec", 60.0f}
-    };
-
 private:
+    std::string scenarioName;
+    std::unique_ptr<Scenario> scenario;
+
+    EnvState state;
     int numAgents;
-    float verticalLookLimitRad;
-
-    bool done = false;
-
-    float currEpisodeSec = 0;
-
-    Rng rng{std::random_device{}()};
-
-    std::vector<LayoutType> availableLayouts;
-    LayoutType currLayoutType;
-
-    std::vector<Action> currAction;
-    std::vector<float> lastReward;
-    std::vector<AgentState> agentStates;
-
-    bool completed = false;
-    int highestTower = 0;
-    std::array<int, 50> objectsPerHeight;
-
-    LayoutGenerator layoutGenerator{rng};
-
-    std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
-
-    float simulationStepSeconds = 1.0f / 15.0f;  // 15 FPS is default
-    float lastFrameDurationSec = simulationStepSeconds;
+    DrawablesMap drawables;
 };
 
 
 using Envs = std::vector<std::unique_ptr<Env>>;
+
+}

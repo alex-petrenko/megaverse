@@ -6,6 +6,8 @@
 #include <util/string_utils.hpp>
 
 
+using namespace VoxelWorld;
+
 #define TST_LOG(level) LogMessage(level, __FILE__, __LINE__, __FUNCTION__, &testStream)()
 
 
@@ -41,7 +43,7 @@ TEST(logger, concurrency)
     for (int i = 0; i < numThreads; ++i)
         threads[i].join();
 
-    std::vector<std::string> lines = splitString(testStream.str(), "\n");
+    std::vector<std::string> lines = VoxelWorld::splitString(testStream.str(), "\n");
     int threadIdx = 0;
     for (auto &line : lines)
     {

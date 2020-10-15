@@ -3,6 +3,9 @@
 #include <util/voxel_grid.hpp>
 
 
+using namespace VoxelWorld;
+
+
 struct TestVoxelState
 {
     int someInt;

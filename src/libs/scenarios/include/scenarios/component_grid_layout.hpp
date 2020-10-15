@@ -1,10 +1,12 @@
 #pragma once
 
-#include <util/util.hpp>
 #include <util/voxel_grid.hpp>
 
-#include <env/voxel_state.hpp>
+#include <env/scenario_component.hpp>
 
+
+namespace VoxelWorld
+{
 
 enum class LayoutType
 {
@@ -30,14 +32,15 @@ struct BoundingBox
 };
 
 
-class LayoutGenerator
+class GridLayoutComponent : public ScenarioComponent
 {
 public:
-    class LayoutGeneratorImpl;
+    class GridLayoutImpl;
 
 public:
-    explicit LayoutGenerator(Rng &rng);
-    ~LayoutGenerator();
+    explicit GridLayoutComponent(Scenario &scenario, Rng &rng);
+
+    ~GridLayoutComponent() override;
 
     void init(int numAgents, LayoutType layoutType = LayoutType::Empty);
 
@@ -53,8 +56,15 @@ public:
 
     std::vector<VoxelCoords> objectSpawnPositions(const VoxelGrid<VoxelState> &grid);
 
+    void addLayoutDrawables(DrawablesMap &drawables, Env::EnvState &envState, VoxelGrid<VoxelState> &grid);
+
 private:
     Rng &rng;
 
-    std::unique_ptr<LayoutGeneratorImpl> generator;
+    std::unique_ptr<GridLayoutImpl> generator;
+
+    // TODO decouple layout generation and collision shapes
+    std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
 };
+
+}

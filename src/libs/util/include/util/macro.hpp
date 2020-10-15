@@ -10,3 +10,6 @@
 
 
 #define EPSILON 1e-5f
+
+
+#define ARR_LENGTH(arr) sizeof(arr) / sizeof(arr[0])

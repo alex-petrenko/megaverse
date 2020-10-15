@@ -26,6 +26,9 @@ using namespace std;
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
+using namespace VoxelWorld;
+
+
 class V4RDrawable : public SceneGraph::Drawable3D
 {
 public:
@@ -226,10 +229,10 @@ V4REnvRenderer::Impl::~Impl()
 
 void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 {
-    auto fakeCameraObj = &env.scene->addChild<Object3D>();
+    auto fakeCameraObj = &env.getScene().addChild<Object3D>();
     fakeCameras[envIdx] = &fakeCameraObj->addFeature<SceneGraph::Camera3D>();
 
-    for (int i = 0; i < env.getNumAgents(); i++) {
+    for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
         renderEnvs[idx] = cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f);
     }
@@ -241,12 +244,14 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 
     // drawables
     {
+        const auto &drawables = env.getDrawables();
+
         for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
             const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
             auto &renderEnv = renderEnvs[renderEnvIdx];
 
             for (const auto &[drawableType, meshIndex] : meshIndices) {
-                for (const auto &sceneObjectInfo : env.drawables[drawableType]) {
+                for (const auto &sceneObjectInfo : drawables.at(drawableType)) {
                     const auto &color = sceneObjectInfo.color;
                     const auto materialIdx = materialIndices[color];
                     const auto renderID = renderEnv.addInstance(uint32_t(meshIndex), uint32_t(materialIdx), glm::mat4(1.f));
@@ -263,7 +268,7 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
         const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
         v4r::Environment &renderEnv = renderEnvs[renderEnvIdx];
 
-        auto activeCameraPtr = env.agents[agentIdx]->camera;
+        auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
         auto view = glm::make_mat4(activeCameraPtr->cameraMatrix().data());
         renderEnv.setCameraView(view);
     }
@@ -306,7 +311,6 @@ void V4REnvRenderer::Impl::postDraw(Env &env, int envIdx)
         }
     }
 }
-
 
 const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) const
 {

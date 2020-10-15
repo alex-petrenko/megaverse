@@ -38,6 +38,8 @@
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
+using namespace VoxelWorld;
+
 
 struct InstanceData {
     Magnum::Matrix4 transformationMatrix;
@@ -238,12 +240,12 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, Rend
         debugDraw.setMode(BulletIntegration::DebugDraw::Mode::DrawWireframe);
 
         for (auto &e : envs)
-            e->bWorld.setDebugDrawer(&debugDraw);
+            e->getPhysics().bWorld.setDebugDrawer(&debugDraw);
     }
 
 
     if (withOverviewCamera) {
-        overviewCameraObject = &(envs[0]->scene->addChild<Object3D>());
+        overviewCameraObject = &(envs[0]->getScene().addChild<Object3D>());
         overviewCameraObject->rotateX(-40.0_degf);
         overviewCameraObject->rotateY(225.0_degf);
         overviewCameraObject->translate(Magnum::Vector3{0.8f, 10.0f, 0.8f});
@@ -289,12 +291,14 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
 
     // drawables
     {
-        for (const auto &sceneObjectInfo : env.drawables[DrawableType::Box]) {
+        const auto &drawables = env.getDrawables();
+
+        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Box)) {
             const auto &color = sceneObjectInfo.color;
             sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(boxInstanceData, color, envDrawables[envIndex]);
         }
 
-        for (const auto &sceneObjectInfo : env.drawables[DrawableType::Capsule]) {
+        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Capsule)) {
             const auto &color = sceneObjectInfo.color;
             sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, envDrawables[envIndex]);
         }
@@ -315,7 +319,7 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     arrayResize(boxInstanceData, 0);
     arrayResize(capsuleInstanceData, 0);
 
-    auto activeCameraPtr = env.agents[agentIdx]->camera;
+    auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
     if (withOverviewCamera && overviewMode)
         activeCameraPtr = overviewCamera;
 
@@ -339,7 +343,7 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     {
         GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
         debugDraw.setTransformationProjectionMatrix(activeCameraPtr->projectionMatrix()*activeCameraPtr->cameraMatrix());
-        env.bWorld.debugDrawWorld();
+        env.getPhysics().bWorld.debugDrawWorld();
         GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::Less);
     }
 

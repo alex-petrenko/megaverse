@@ -7,6 +7,9 @@
 #include <iostream>
 
 
+namespace VoxelWorld
+{
+
 enum LogLevel
 {
     FATAL,
@@ -25,9 +28,10 @@ class LogMessage
 {
 public:
     LogMessage(LogLevel level, const char *file, int line, const char *func, std::ostream *outStream = &std::cout);
+
     ~LogMessage();
 
-    std::ostringstream & operator()();
+    std::ostringstream &operator()();
 
 private:
     std::shared_ptr<std::ostringstream> stream;
@@ -39,17 +43,16 @@ class NullStream : public std::ostringstream
 {
 public:
     NullStream()
-        : std::ostringstream()
-    {}
+        : std::ostringstream() {}
 
-    NullStream & operator()()
+    NullStream &operator()()
     {
         return *this;
     }
 };
 
 template<typename T>
-inline NullStream & operator<<(NullStream &stream, T &&)
+inline NullStream &operator<<(NullStream &stream, T &&)
 {
     return stream;
 }
@@ -67,17 +70,18 @@ inline NullStream & operator<<(NullStream &stream, T &&)
 
 // various helper functions
 
-template <typename T>
-std::ostream & operator<<(std::ostream &stream, const std::vector<T> &vec)
+template<typename T>
+std::ostream &operator<<(std::ostream &stream, const std::vector<T> &vec)
 {
     stream << '[';
     const auto end = std::end(vec);
-    for (auto it = std::begin(vec); it != end; ++it)
-    {
+    for (auto it = std::begin(vec); it != end; ++it) {
         stream << *it;
         if (it + 1 != end)
             stream << ", ";
     }
     stream << ']';
     return stream;
+}
+
 }

@@ -12,11 +12,20 @@
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
+using namespace VoxelWorld;
 
-Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition, float rotationRad, float verticalLookLimitRad)
+
+AbstractAgent::AbstractAgent(Object3D *parent, btDynamicsWorld &bWorld, float verticalLookLimitRad)
 : Object(parent)
 , verticalLookLimitRad{verticalLookLimitRad}
 , bWorld(bWorld)
+{
+}
+
+
+DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition,
+                                             float rotationRad, float verticalLookLimitRad)
+: AbstractAgent(parent, bWorld, verticalLookLimitRad)
 {
     cameraObject = &(addChild<Object3D>());
     // cameraObject.rotateY(0.0_degf);
@@ -28,16 +37,13 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
         .setProjectionMatrix(Matrix4::perspectiveProjection(115.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
-    eyesObject = &(cameraObject->addChild<Object3D>());
-    eyesObject->scale({0.25f, 0.12f, 0.2f}).translate({0.0f, 0.0f, -0.19f});
-
     pickupSpot = &(cameraObject->addChild<Object3D>());
     pickupSpot->translate({0.0f, -0.44f, -1.0f});
 
     btTransform startTransform;
     startTransform.setIdentity();
     startTransform.setRotation(btQuaternion(btVector3(0, 1, 0), rotationRad));
-    startTransform.setOrigin (btVector3(startingPosition.x(), startingPosition.y(), startingPosition.z()));
+    startTransform.setOrigin (btVector3(startingPosition.x(), startingPosition.y() + getAgentHeight(), startingPosition.z()));
     ghostObject.setWorldTransform(startTransform);
 
     // btScalar characterHeight = 1.0f;  //1.6
@@ -60,13 +66,13 @@ Agent::Agent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingP
     this->updateTransform();
 }
 
-Agent::~Agent()
+DefaultKinematicAgent::~DefaultKinematicAgent()
 {
     bWorld.removeCollisionObject(&ghostObject);
     bWorld.removeAction(bCharacter.get());
 }
 
-void Agent::updateTransform()
+void DefaultKinematicAgent::updateTransform()
 {
     auto worldTrans = ghostObject.getWorldTransform();
 
@@ -87,17 +93,17 @@ void Agent::updateTransform()
     this->resetTransformation().rotate(Rad{rotation}, axis.normalized()).translate(position);
 }
 
-void Agent::lookLeft(float dt)
+void DefaultKinematicAgent::lookLeft(float dt)
 {
     rotateYAxis(rotateRadians * dt);
 }
 
-void Agent::lookRight(float dt)
+void DefaultKinematicAgent::lookRight(float dt)
 {
     rotateYAxis(-rotateRadians * dt);
 }
 
-void Agent::lookUp(float dt)
+void DefaultKinematicAgent::lookUp(float dt)
 {
     cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
     currXRotation += rotateXRadians * dt;
@@ -105,7 +111,7 @@ void Agent::lookUp(float dt)
     cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
 }
 
-void Agent::lookDown(float dt)
+void DefaultKinematicAgent::lookDown(float dt)
 {
     cameraObject->rotateXLocal(Math::Rad<float>(-currXRotation));
     // this is a hack, in the beginning of training the agents really love to look at the sky and can't learn anything
@@ -115,14 +121,14 @@ void Agent::lookDown(float dt)
     cameraObject->rotateXLocal(Math::Rad<float>(currXRotation));
 }
 
-void Agent::rotateYAxis(float radians)
+void DefaultKinematicAgent::rotateYAxis(float radians)
 {
     btMatrix3x3 orn = ghostObject.getWorldTransform().getBasis();
     orn *= btMatrix3x3(btQuaternion(btVector3(0, 1, 0), radians));
     ghostObject.getWorldTransform ().setBasis(orn);
 }
 
-btVector3 Agent::forwardDirection() const
+btVector3 DefaultKinematicAgent::forwardDirection() const
 {
     auto xform = ghostObject.getWorldTransform ();
     btVector3 forwardDir = xform.getBasis()[2];
@@ -131,7 +137,7 @@ btVector3 Agent::forwardDirection() const
     return forwardDir.normalize();
 }
 
-btVector3 Agent::strafeLeftDirection() const
+btVector3 DefaultKinematicAgent::strafeLeftDirection() const
 {
     auto xform = ghostObject.getWorldTransform ();
     btVector3 sidewaysDir = xform.getBasis()[0];
@@ -139,18 +145,18 @@ btVector3 Agent::strafeLeftDirection() const
     return sidewaysDir.normalize();
 }
 
-void Agent::accelerate(const btVector3 &acc, btScalar frameDuration)
+void DefaultKinematicAgent::accelerate(const btVector3 &acc, btScalar frameDuration)
 {
     bCharacter->setAcceleration(acc, frameDuration);
 }
 
-void Agent::jump()
+void DefaultKinematicAgent::jump()
 {
     if (onGround())
         bCharacter->jump(btVector3(0, 6.2, 0));
 }
 
-bool Agent::onGround() const
+bool DefaultKinematicAgent::onGround() const
 {
     return bCharacter->onGround();
 }

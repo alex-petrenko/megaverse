@@ -2,6 +2,10 @@
 
 #include <env/env.hpp>
 
+
+namespace VoxelWorld
+{
+
 class EnvRenderer
 {
 public:
@@ -10,7 +14,9 @@ public:
     virtual void reset(Env &env, int envIdx) = 0;
 
     virtual void preDraw(Env &env, int envIndex) = 0;
+
     virtual void draw(Envs &envs) = 0;
+
     virtual void postDraw(Env &env, int envIndex) = 0;
 
     /**
@@ -19,5 +25,7 @@ public:
      * @param agentIdx agent for which we're querying the observation.
      * @return pointer to the memory holding the observation.
      */
-    virtual const uint8_t * getObservation(int envIdx, int agentIdx) const = 0;
+    virtual const uint8_t *getObservation(int envIdx, int agentIdx) const = 0;
 };
+
+}

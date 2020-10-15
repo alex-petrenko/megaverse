@@ -12,20 +12,25 @@ def sample_actions(e):
     return [e.action_space.sample() for _ in range(e.num_agents)]
 
 
+def make_env(num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
+    """Making env with a default scenario name."""
+    return VoxelEnv("TowerBuilding", num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
+
+
 class TestEnv(TestCase):
     def test_env(self):
-        e = VoxelEnv(num_envs=1, num_agents_per_env=1, num_simulation_threads=1)
+        e = make_env(num_envs=1, num_agents_per_env=1, num_simulation_threads=1)
         o = e.reset()
         o = e.step(sample_actions(e))
         e.close()
 
     def test_env_close_immediately(self):
-        e = VoxelEnv(1, 1, 1)
+        e = make_env(1, 1, 1)
         e.close()
 
     def test_two_envs_same_process(self):
-        e1 = VoxelEnv(1, 1, 1)
-        e2 = VoxelEnv(1, 1, 1)
+        e1 = make_env(1, 1, 1)
+        e2 = make_env(1, 1, 1)
 
         e1.reset()
         e2.reset()
@@ -34,9 +39,9 @@ class TestEnv(TestCase):
         e2.close()
 
     def test_seeds(self):
-        e1 = VoxelEnv(1, 1, 1)
+        e1 = make_env(1, 1, 1)
         e1.seed(42)
-        e2 = VoxelEnv(1, 1, 1)
+        e2 = make_env(1, 1, 1)
         e2.seed(42)
 
         obs1 = e1.reset()
@@ -49,8 +54,8 @@ class TestEnv(TestCase):
     def rendering(self, use_vulkan, episode_length_sec=60.0):
         params = {'episodeLengthSec': episode_length_sec}
 
-        e1 = VoxelEnv(num_envs=2, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=use_vulkan, params=params)
-        e2 = VoxelEnv(num_envs=1, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=use_vulkan, params=params)
+        e1 = make_env(num_envs=2, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=use_vulkan, params=params)
+        e2 = make_env(num_envs=1, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=use_vulkan, params=params)
 
         e1.reset()
         e2.reset()
@@ -81,7 +86,7 @@ class TestEnv(TestCase):
 
     @staticmethod
     def performance_num_envs(n, n_steps=5000):
-        envs = [VoxelEnv(1, 1, 1, use_vulkan=True) for _ in range(n)]
+        envs = [make_env(1, 1, 1, use_vulkan=True) for _ in range(n)]
         for e in envs:
             e.seed(42)
             e.reset()
@@ -112,7 +117,7 @@ class TestEnv(TestCase):
         print(fps1, fps2, fps4)
 
     def test_reward_shaping(self):
-        e = VoxelEnv(num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
+        e = make_env(num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
         default_reward_shaping = e.get_default_reward_shaping()
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(0))
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(1))

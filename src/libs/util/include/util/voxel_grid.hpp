@@ -6,9 +6,14 @@
 #include <Magnum/Math/Vector3.h>
 
 
+namespace VoxelWorld
+{
+
 using VoxelCoords = Magnum::Vector3i;
 
 constexpr int maxGridResolution = 1'000;
+
+}
 
 //bool operator==(const VoxelCoords &lhs, const VoxelCoords &rhs)
 //{
@@ -18,11 +23,11 @@ constexpr int maxGridResolution = 1'000;
 namespace std
 {
 
-template <> struct hash<VoxelCoords>
+template <> struct hash<VoxelWorld::VoxelCoords>
 {
-    std::size_t operator()(const VoxelCoords &voxel) const noexcept
+    std::size_t operator()(const VoxelWorld::VoxelCoords &voxel) const noexcept
     {
-        constexpr auto res = maxGridResolution;
+        constexpr auto res = VoxelWorld::maxGridResolution;
         return size_t(res * res * voxel.x() + res * voxel.y() + voxel.z());
     }
 };
@@ -30,8 +35,10 @@ template <> struct hash<VoxelCoords>
 }
 
 
-template <typename VoxelState>
-class VoxelGrid
+namespace VoxelWorld
+{
+
+template<typename VoxelState> class VoxelGrid
 {
 public:
     using HashMap = std::unordered_map<VoxelCoords, VoxelState>;
@@ -44,11 +51,10 @@ public:
      * @param voxelSize scale of one voxel
      */
     explicit VoxelGrid(size_t voxelCount, const Magnum::Vector3 &origin, float voxelSize)
-    : voxelCount{voxelCount}
-    , grid{voxelCount}
-    , origin{origin}
-    , voxelSize{voxelSize}
-    {}
+        : voxelCount{voxelCount}
+          , grid{voxelCount}
+          , origin{origin}
+          , voxelSize{voxelSize} {}
 
     /**
      * Reset the grid (empty).
@@ -71,7 +77,7 @@ public:
      * @param coords location in voxel grid.
      * @return pointer to VoxelState at the "coords" location, or nullptr if nothing is there.
      */
-    const VoxelState * get(const VoxelCoords &coords) const
+    const VoxelState *get(const VoxelCoords &coords) const
     {
         auto voxelIt = grid.find(coords);
         if (voxelIt == grid.end())
@@ -80,7 +86,7 @@ public:
         return &(voxelIt->second);
     }
 
-    VoxelState * get(const VoxelCoords &coords)
+    VoxelState *get(const VoxelCoords &coords)
     {
         auto voxelIt = grid.find(coords);
         if (voxelIt == grid.end())
@@ -129,3 +135,5 @@ private:
     Magnum::Vector3 origin;
     float voxelSize;
 };
+
+}

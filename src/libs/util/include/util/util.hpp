@@ -7,10 +7,10 @@
 #include <util/macro.hpp>
 
 
-#define ARR_LENGTH(arr) sizeof(arr) / sizeof(arr[0])
+namespace VoxelWorld
+{
 
-
-template <typename T>
+template<typename T>
 int sgn(T val)
 {
     return (T(0) < val) - (val < T(0));
@@ -55,3 +55,5 @@ bool contains(const C &c, const T &val)
 }
 
 void memcpyStride(char *dst, const char *src, int elemSize, int numElements, int ofs, int stride);
+
+}

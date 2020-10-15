@@ -10,4 +10,4 @@ set(MAGNUM_DEPENDENCIES
 )
 
 add_library_default(env)
-target_link_libraries(env util ${MAGNUM_DEPENDENCIES})
+target_link_libraries(env PUBLIC util ${MAGNUM_DEPENDENCIES})

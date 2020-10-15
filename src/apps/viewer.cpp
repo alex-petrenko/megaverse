@@ -33,12 +33,16 @@
 #include <util/tiny_logger.hpp>
 
 #include <env/env.hpp>
+#include <scenarios/init.hpp>
 #include <magnum_rendering/windowless_context.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
+
+
+using namespace VoxelWorld;
 
 
 class Viewer: public Platform::Application
@@ -74,6 +78,8 @@ private:
 Viewer::Viewer(const Arguments& arguments):
     Platform::Application{arguments, NoCreate}
 {
+    scenariosGlobalInit();
+
     // Try 8x MSAA, fall back to zero samples if not possible. Enable only 2x MSAA if we have enough DPI.
     {
         const Vector2 dpiScaling = this->dpiScaling({});
@@ -93,8 +99,7 @@ Viewer::Viewer(const Arguments& arguments):
     const int numAgents = 4;
     const float verticalLookLimitRad = 0.1f;
 
-    auto env = std::make_unique<Env>(numAgents, verticalLookLimitRad);
-    env->setAvailableLayouts({LayoutType::Towers});
+    auto env = std::make_unique<Env>("TowerBuilding", numAgents);
     // env->seed(42);
     env->reset();
 
@@ -154,7 +159,7 @@ void Viewer::tickEvent() {
 
         std::ostringstream s;
         for (int i = 0; i < env->getNumAgents(); ++i)
-            s << " " << env->totalReward[i];
+            s << " " << env->getTotalReward(i);
 
         TLOG(INFO) << "Total reward " << s.str();
         TLOG(INFO) << "True objective " << env->trueObjective();

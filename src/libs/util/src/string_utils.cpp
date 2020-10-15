@@ -3,6 +3,9 @@
 #include <util/string_utils.hpp>
 
 
+namespace VoxelWorld
+{
+
 std::vector<std::string> splitString(const std::string &s, const std::string &d)
 {
     std::vector<std::string> result;
@@ -10,8 +13,7 @@ std::vector<std::string> splitString(const std::string &s, const std::string &d)
     char *cStr = new char[s.size() + 1];
     strcpy(cStr, s.c_str());
     char *token = strtok(cStr, d.c_str());
-    while (token)
-    {
+    while (token) {
         result.emplace_back(token);
         token = strtok(nullptr, d.c_str());
     }
@@ -34,4 +36,6 @@ bool endsWith(const std::string &s, const std::string &t)
     if (t.empty())
         return true;
     return s.find(t) == s.size() - t.size();
+}
+
 }

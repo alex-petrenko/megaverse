@@ -12,6 +12,8 @@
 #include <magnum_rendering/windowless_context.hpp>
 
 
+namespace VoxelWorld
+{
 
 class MagnumEnvRenderer : public EnvRenderer
 {
@@ -24,14 +26,17 @@ public:
 
     void reset(Env &env, int envIdx) override;
 
-    void preDraw(Env &env, int envIndex) override;
+    void preDraw(Env &env, int envIdx) override;
+
     void draw(Envs &envs) override;
-    void drawAgent(Env &env, int envIndex, int agentIndex, bool readToBuffer);
-    void postDraw(Env &env, int envIndex) override;
 
-    const uint8_t * getObservation(int envIdx, int agentIdx) const override;
+    void drawAgent(Env &env, int envIdx, int agentIndex, bool readToBuffer);
 
-    Magnum::GL::Framebuffer * getFramebuffer();
+    void postDraw(Env &env, int envIdx) override;
+
+    const uint8_t *getObservation(int envIdx, int agentIdx) const override;
+
+    Magnum::GL::Framebuffer *getFramebuffer();
 
     void toggleOverviewMode();
 
@@ -39,3 +44,5 @@ private:
     struct Impl;
     std::unique_ptr<Impl> pimpl;
 };
+
+}

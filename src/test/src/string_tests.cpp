@@ -3,6 +3,9 @@
 #include <util/string_utils.hpp>
 
 
+using namespace VoxelWorld;
+
+
 TEST(str, startsWith)
 {
     EXPECT_TRUE(startsWith("abc", "a"));

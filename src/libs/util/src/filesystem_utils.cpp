@@ -1,9 +1,12 @@
 #include <util/filesystem_utils.hpp>
 
 
+namespace VoxelWorld
+{
+
 size_t readAllBytes(const std::string &filename, std::vector<char> &buffer)
 {
-    std::ifstream f{ filename, std::ios::in | std::ios::binary };
+    std::ifstream f{filename, std::ios::in | std::ios::binary};
     return readAllBytes(f, buffer);
 }
 
@@ -23,4 +26,6 @@ bool fileExists(const std::string filename)
 {
     std::ifstream f(filename);
     return f.good();
+}
+
 }

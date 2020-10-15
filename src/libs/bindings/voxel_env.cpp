@@ -11,11 +11,17 @@
 #include <util/tiny_logger.hpp>
 
 #include <env/env.hpp>
+#include <env/scenario.hpp>
+
+#include <scenarios/init.hpp>
+
 #include <v4r_rendering/v4r_env_renderer.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
+
 namespace py = pybind11;
 
+using namespace VoxelWorld;
 
 
 void setVoxelEnvLogLevel(int level)
@@ -28,9 +34,9 @@ class VoxelEnvGym
 {
 public:
     VoxelEnvGym(
+        std::string scenario,
         int w, int h,
         int numEnvs, int numAgentsPerEnv, int numSimulationThreads,
-        float verticalLookLimit,
         bool useVulkan,
         std::map<std::string, float> floatParams
     )
@@ -41,15 +47,12 @@ public:
     , h{h}
     , numSimulationThreads{numSimulationThreads}
     {
+        scenariosGlobalInit();
+
         for (int i = 0; i < numEnvs; ++i)
-            envs.emplace_back(std::make_unique<Env>(numAgentsPerEnv, verticalLookLimit, floatParams));
+            envs.emplace_back(std::make_unique<Env>(scenario, numAgentsPerEnv, floatParams));
 
         rewards = std::vector<float>(size_t(numEnvs * numAgentsPerEnv));
-    }
-
-    void setFloatParams()
-    {
-
     }
 
     void seed(int seedValue)
@@ -183,12 +186,12 @@ public:
 
     std::map<std::string, float> getRewardShaping(int envIdx, int agentIdx)
     {
-        return envs[envIdx]->rewardShaping[agentIdx];
+        return envs[envIdx]->getScenario().getRewardShaping(agentIdx);
     }
 
-    void setRewardShaping(int envIdx, int agentIdx, std::map<std::string, float> rewardShaping)
+    void setRewardShaping(int envIdx, int agentIdx, const std::map<std::string, float> &rewardShaping)
     {
-        envs[envIdx]->rewardShaping[agentIdx] = std::move(rewardShaping);
+        envs[envIdx]->getScenario().setRewardShaping(agentIdx, rewardShaping);
     }
 
     /**
@@ -224,7 +227,6 @@ private:
 };
 
 
-
 PYBIND11_MODULE(voxel_env, m)
 {
     m.doc() = "voxel env"; // optional module docstring
@@ -232,7 +234,7 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<int, int, int, int, int, float, bool, std::map<std::string, float>>())
+        .def(py::init<std::string, int, int, int, int, int, bool, FloatParams>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("action_space_sizes", &VoxelEnvGym::actionSpaceSizes)
         .def("seed", &VoxelEnvGym::seed)

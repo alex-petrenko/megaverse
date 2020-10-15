@@ -2,6 +2,8 @@
 
 #include <magnum_rendering/windowless_context.hpp>
 
+using namespace VoxelWorld;
+
 
 TEST(gfx, context)
 {

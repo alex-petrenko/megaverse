@@ -11,9 +11,11 @@
 #include <util/tiny_logger.hpp>
 
 
+using namespace VoxelWorld;
+
+
 // static helper method
-static btVector3
-getNormalizedVector(const btVector3& v)
+static btVector3 getNormalizedVector(const btVector3& v)
 {
     btVector3 n(0, 0, 0);
 

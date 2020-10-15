@@ -5,6 +5,9 @@
 #include <util/util.hpp>
 
 
+using namespace VoxelWorld;
+
+
 TEST(util, memcpyStride)
 {
     char buf[] = { 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1 };
