@@ -34,7 +34,7 @@ DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &
     camera = &(cameraObject->addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-        .setProjectionMatrix(Matrix4::perspectiveProjection(115.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
+        .setProjectionMatrix(Matrix4::perspectiveProjection(110.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
     pickupSpot = &(cameraObject->addChild<Object3D>());

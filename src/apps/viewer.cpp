@@ -1,4 +1,3 @@
-#include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/Optional.h>
 
 #include <Magnum/GL/Buffer.h>
@@ -9,13 +8,6 @@
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Primitives/Cube.h>
-#include <Magnum/Primitives/Axis.h>
-#include <Magnum/Primitives/Plane.h>
-#include <Magnum/Primitives/Capsule.h>
-#include <Magnum/Shaders/Phong.h>
-#include <Magnum/Shaders/Flat.h>
-#include <Magnum/Trade/MeshData.h>
-#include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/MeshTools/Compile.h>
@@ -25,10 +17,6 @@
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/Timeline.h>
-
-#include <Magnum/BulletIntegration/Integration.h>
-#include <Magnum/BulletIntegration/MotionState.h>
-#include <Magnum/BulletIntegration/DebugDraw.h>
 
 #include <util/tiny_logger.hpp>
 
@@ -57,18 +45,22 @@ private:
 
     void keyPressEvent(KeyEvent &event) override;
     void keyReleaseEvent(KeyEvent &event) override;
+    void mouseMoveEvent(MouseMoveEvent& event) override;
 
     void handleActions(const KeyEvent::Key &key, bool addAction);
+    void controlOverview(const KeyEvent::Key &key, bool addAction);
+    void moveOverviewCamera();
 
 private:
     Envs envs;
     std::unique_ptr<MagnumEnvRenderer> renderer;
     std::unique_ptr<RenderingContext> ctx;
 
-    bool withDebugDraw = false;
+    bool withDebugDraw = true;
 
     int activeEnv = 0, activeAgent = 0;
     Action currAction = Action::Idle;
+    Action currOverviewAction = Action::Idle;
 
     bool forceReset = false;
 
@@ -96,9 +88,12 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
+    setCursor(Cursor::HiddenLocked);
+
     const int numAgents = 2;
     // const auto scenarioName = "TowerBuilding";
-    const auto scenarioName = "Football";
+    // const auto scenarioName = "Football";
+    const auto scenarioName = "Obstacles";
 
     auto env = std::make_unique<Env>(scenarioName, numAgents);
     // env->seed(42);
@@ -121,7 +116,6 @@ Viewer::Viewer(const Arguments& arguments):
     timeline.start();
     setSwapInterval(0);
 }
-
 
 void Viewer::drawEvent()
 {
@@ -169,6 +163,8 @@ void Viewer::tickEvent() {
         forceReset = false;
     }
 
+    moveOverviewCamera();
+
     redraw();
 }
 
@@ -203,6 +199,52 @@ void Viewer::handleActions(const KeyEvent::Key &key, bool addAction)
         currAction &= ~a;
 }
 
+void Viewer::controlOverview(const KeyEvent::Key &key, bool addAction)
+{
+    auto a = Action::Idle;
+
+    switch(key) {
+        case KeyEvent::Key::NumEight: a = Action::Forward; break;
+        case KeyEvent::Key::NumTwo:
+        case KeyEvent::Key::NumFive: a = Action::Backward; break;
+        case KeyEvent::Key::NumFour: a = Action::Left; break;
+        case KeyEvent::Key::NumSix: a = Action::Right; break;
+        default: break;
+    }
+
+    if (a == Action::Idle)
+        return;
+
+    if (addAction)
+        currOverviewAction |= a;
+    else
+        currOverviewAction &= ~a;
+
+    redraw();
+}
+
+void Viewer::moveOverviewCamera()
+{
+    auto &overview = renderer->getOverview();
+    if (!overview.enabled)
+        return;
+
+    const auto backwardDirection = overview.verticalTilt->absoluteTransformation().backward();
+
+    if (!!(currOverviewAction & Action::Forward))
+        overview.root->translate(-backwardDirection);
+    else if (!!(currOverviewAction & Action::Backward))
+        overview.root->translate(backwardDirection);
+
+    const auto rightDirection = overview.verticalTilt->absoluteTransformation().right();
+
+    if (!!(currOverviewAction & Action::Left))
+        overview.root->translate(-rightDirection);
+    else if (!!(currOverviewAction & Action::Right))
+        overview.root->translate(rightDirection);
+
+    overview.saveTransformation();
+}
 
 void Viewer::keyPressEvent(KeyEvent& event)
 {
@@ -210,27 +252,7 @@ void Viewer::keyPressEvent(KeyEvent& event)
 
     handleActions(event.key(), true);
 
-//    auto objectToMovePtr = freeCameraObject;
-//    if (!noclip)
-//        objectToMovePtr = env.agents[activeAgent].get();
-//
-//    Vector3 delta;
-//
-//    switch(event.key()) {
-//        case KeyEvent::Key::N:
-//            noclip = !noclip;
-//            break;
-//        case KeyEvent::Key::C:
-//            noclipCamera = !noclipCamera;
-//            break;
-//
-//    }
-//
-//    if (noclip)
-//        freeCameraObject->translate(delta);
-//    else
-//        moveAgent(*agents[activeAgent], delta, env.getVoxelGrid());
-//
+    controlOverview(event.key(), true);
 
     switch (event.key()) {
         case KeyEvent::Key::One:
@@ -246,7 +268,10 @@ void Viewer::keyPressEvent(KeyEvent& event)
             forceReset = true;
             break;
         case KeyEvent::Key::O:
-            renderer->toggleOverviewMode();
+            renderer->getOverview().enabled = !renderer->getOverview().enabled;
+            break;
+        case KeyEvent::Key::Enter:
+            renderer->toggleDebugMode();
             break;
         case KeyEvent::Key::Esc:
             exit(0);
@@ -260,6 +285,37 @@ void Viewer::keyPressEvent(KeyEvent& event)
 void Viewer::keyReleaseEvent(Platform::Sdl2Application::KeyEvent &event)
 {
     handleActions(event.key(), false);
+
+    controlOverview(event.key(), false);
+}
+
+void Viewer::mouseMoveEvent(Platform::Sdl2Application::MouseMoveEvent &event)
+{
+    auto &overview = renderer->getOverview();
+    if (!overview.enabled)
+        return;
+
+    constexpr float sensitivity = 0.075;
+    const auto horizontalMove = float(event.relativePosition().x());
+    const auto verticalMove = -float(event.relativePosition().y());
+
+    const auto yRotation = Deg(horizontalMove);
+    overview.root->rotateYLocal(-sensitivity * yRotation);
+
+    const auto verticalRotation = sensitivity * verticalMove;
+    auto newRotation = overview.verticalRotation + verticalRotation;
+    newRotation = std::min(newRotation, 89.0f);
+    newRotation = std::max(newRotation, -89.0f);
+
+    const auto rotationDelta = newRotation - overview.verticalRotation;
+    const auto xRotation = Deg(rotationDelta);
+    overview.verticalTilt->rotateXLocal(xRotation);
+    overview.verticalRotation = newRotation;
+
+    overview.saveTransformation();
+
+    event.setAccepted();
+    redraw();
 }
 
 MAGNUM_APPLICATION_MAIN(Viewer)

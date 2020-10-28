@@ -84,14 +84,14 @@ public:
 };
 
 
-Football::Football(const std::string &name, Env &env, Env::EnvState &envState)
+FootballScenario::FootballScenario(const std::string &name, Env &env, Env::EnvState &envState)
 : DefaultScenario(name, env, envState)
 , vg{*this}
 , gridLayoutComponent{*this, envState.rng}
 {
 }
 
-void Football::reset()
+void FootballScenario::reset()
 {
     vg.reset(env, envState);
 
@@ -108,19 +108,19 @@ void Football::reset()
     footballObject = &object;
 }
 
-std::vector<VoxelCoords> Football::agentStartingPositions()
+std::vector<VoxelCoords> FootballScenario::agentStartingPositions()
 {
     return gridLayoutComponent.startingPositions(vg.grid);
 }
 
-void Football::addEpisodeDrawables(DrawablesMap &drawables)
+void FootballScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
     gridLayoutComponent.addLayoutDrawables(drawables, envState, vg.grid, false);
 
     drawables[DrawableType::Sphere].emplace_back(footballObject, rgb(ColorRgb::ORANGE));
 }
 
-void Football::step()
+void FootballScenario::step()
 {
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto a = envState.currAction[i];

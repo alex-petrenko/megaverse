@@ -1,5 +1,4 @@
 #include <Corrade/Containers/GrowableArray.h>
-#include <Corrade/Containers/Optional.h>
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -8,12 +7,12 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Trade/MeshData.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Primitives/Icosphere.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Shaders/Flat.h>
-#include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
@@ -126,7 +125,9 @@ public:
 
     GL::Framebuffer * getFramebuffer() { return &framebuffer; }
 
-    void toggleOverviewMode() { overviewMode = !overviewMode; }
+    void toggleDebugMode() { withDebugDraw = !withDebugDraw; }
+
+    Overview & getOverview() { return overview; }
 
 public:
     std::unique_ptr<WindowlessContext> windowlessContextPtr{nullptr};
@@ -154,9 +155,8 @@ public:
     BulletIntegration::DebugDraw debugDraw{NoCreate};
 
     bool withOverviewCamera = false;
-    bool overviewMode = false;
-    Magnum::SceneGraph::Camera3D *overviewCamera;
-    Object3D *overviewCameraObject;
+
+    Overview overview;
 };
 
 
@@ -165,6 +165,7 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, Rend
     , framebufferSize{w, h}
     , framebuffer{Magnum::Range2Di{{}, framebufferSize}}
     , withDebugDraw{withDebugDraw}
+    , withOverviewCamera{withDebugDraw}
 {
     assert(!envs.empty());
 
@@ -250,20 +251,6 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, Rend
         for (auto &e : envs)
             e->getPhysics().bWorld.setDebugDrawer(&debugDraw);
     }
-
-
-    if (withOverviewCamera) {
-        overviewCameraObject = &(envs[0]->getScene().addChild<Object3D>());
-        overviewCameraObject->rotateX(-40.0_degf);
-        overviewCameraObject->rotateY(225.0_degf);
-        overviewCameraObject->translate(Magnum::Vector3{0.8f, 10.0f, 0.8f});
-
-        overviewCamera = &(overviewCameraObject->addFeature<SceneGraph::Camera3D>());
-
-        overviewCamera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-                      .setProjectionMatrix(Matrix4::perspectiveProjection(105.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
-                      .setViewport(GL::defaultFramebuffer.viewport().size());
-    }
 }
 
 MagnumEnvRenderer::Impl::~Impl()
@@ -317,6 +304,27 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
             sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(sphereInstanceData, color, envDrawables[envIndex]);
         }
     }
+
+    if (withOverviewCamera && envIndex == 0) {
+        overview.root = &env.getScene().addChild<Object3D>();
+        overview.root->rotateYLocal(225.0_degf);
+        overview.root->translateLocal(Magnum::Vector3{0.1f, 20.0f, 0.1f});
+
+        overview.verticalTilt = &overview.root->addChild<Object3D>();
+        overview.verticalTilt->rotateXLocal(-40.0_degf);
+        overview.verticalRotation = -40.0f;
+
+        overview.camera = &(overview.verticalTilt->addFeature<SceneGraph::Camera3D>());
+
+        overview.camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
+                       .setProjectionMatrix(Matrix4::perspectiveProjection(110.0_degf, 128.0f / 72.0f, 0.1f, 150.0f))
+                       .setViewport(GL::defaultFramebuffer.viewport().size());
+
+        if (overview.rootTransformation != Matrix4{} || overview.verticalTiltTransformation != Matrix4{})
+            overview.restoreTransformation();
+        else
+            overview.saveTransformation();
+    }
 }
 
 void MagnumEnvRenderer::Impl::preDraw(Env &, int)
@@ -335,8 +343,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     arrayResize(sphereInstanceData, 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
-    if (withOverviewCamera && overviewMode)
-        activeCameraPtr = overviewCamera;
+    if (withOverviewCamera && overview.enabled)
+        activeCameraPtr = overview.camera;
 
     // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
     activeCameraPtr->draw(envDrawables[envIndex]);
@@ -447,7 +455,12 @@ Magnum::GL::Framebuffer *MagnumEnvRenderer::getFramebuffer()
     return pimpl->getFramebuffer();
 }
 
-void MagnumEnvRenderer::toggleOverviewMode()
+void MagnumEnvRenderer::toggleDebugMode()
 {
-    pimpl->toggleOverviewMode();
+    pimpl->toggleDebugMode();
+}
+
+Overview & VoxelWorld::MagnumEnvRenderer::getOverview()
+{
+    return pimpl->getOverview();
 }

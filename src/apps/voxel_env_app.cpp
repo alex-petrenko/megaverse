@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
-        envs.emplace_back(std::make_unique<Env>("TowerBuilding", numAgentsPerEnv, params));
+        envs.emplace_back(std::make_unique<Env>("Obstacles", numAgentsPerEnv, params));
         envs[i]->seed(42 + i);
     }
 

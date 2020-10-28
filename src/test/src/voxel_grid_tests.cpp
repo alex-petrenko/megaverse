@@ -2,6 +2,8 @@
 
 #include <util/voxel_grid.hpp>
 
+#include <env/voxel_state.hpp>
+
 
 using namespace VoxelWorld;
 
@@ -50,4 +52,13 @@ TEST(voxelGrid, perf)
         for (int y = 0; y < 100; ++y)
             for (int z = 0; z < 100; ++z)
                 vg.set({x, y, z}, {x + y + z, "42"});
+}
+
+TEST(voxelGrid, voxelState)
+{
+    VoxelGrid<VoxelState> vg{0, {0, 0, 0}, 1};
+
+    vg.set({0, 1, 2}, VoxelState{});
+
+    TLOG(INFO) << sizeof(vg) << " " << sizeof(*vg.get({0, 1, 2}));
 }

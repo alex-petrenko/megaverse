@@ -15,6 +15,33 @@
 namespace VoxelWorld
 {
 
+struct Overview
+{
+public:
+    void saveTransformation()
+    {
+        rootTransformation = root->transformation();
+        verticalTiltTransformation = verticalTilt->transformation();
+    }
+
+    void restoreTransformation()
+    {
+        root->setTransformation(rootTransformation);
+        verticalTilt->setTransformation(verticalTiltTransformation);
+    }
+
+public:
+    // TODO: we can use only one object, but this works for now
+    Object3D *root{}, *verticalTilt{};
+
+    Magnum::SceneGraph::Camera3D *camera{};
+    bool enabled = false;
+
+    float verticalRotation = 0.0f;
+
+    Magnum::Matrix4 rootTransformation{}, verticalTiltTransformation{};
+};
+
 class MagnumEnvRenderer : public EnvRenderer
 {
 public:
@@ -38,7 +65,10 @@ public:
 
     Magnum::GL::Framebuffer *getFramebuffer();
 
-    void toggleOverviewMode();
+    void toggleDebugMode();
+
+    Overview & getOverview();
+
 
 private:
     struct Impl;

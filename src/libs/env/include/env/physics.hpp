@@ -60,7 +60,7 @@ public:
     {
         //bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
 
-        const auto m = transformationMatrix();
+        const auto m = absoluteTransformationMatrix();
         const auto s = m.scaling();
         const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
 

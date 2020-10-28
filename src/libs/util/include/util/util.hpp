@@ -40,6 +40,13 @@ inline float frand(Rng &rng)
     return std::uniform_real_distribution<float>{0, 1}(rng);
 }
 
+template<typename CONTAINER_T>
+auto randomSample(const CONTAINER_T &container, Rng &rng)
+{
+    const auto idx = randRange(0, container.size(), rng);
+    return container[idx];
+}
+
 template<typename T>
 void endianSwap(T *x)
 {

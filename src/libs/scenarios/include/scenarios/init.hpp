@@ -3,6 +3,7 @@
 #include <env/scenario.hpp>
 
 #include <scenarios/scenario_football.hpp>
+#include <scenarios/scenario_obstacles.hpp>
 #include <scenarios/scenario_tower_building.hpp>
 
 
@@ -23,7 +24,8 @@ void scenariosGlobalInit()
     initialized = true;
 
     registerScenario<TowerBuilding>("TowerBuilding");
-    registerScenario<Football>("Football");
+    registerScenario<ObstaclesScenario>("Obstacles");
+    registerScenario<FootballScenario>("Football");
 }
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Magnum/Math/Vector.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
@@ -8,8 +9,10 @@
 namespace VoxelWorld
 {
 
-typedef Magnum::SceneGraph::Object<Magnum::SceneGraph::MatrixTransformation3D> Object3D;
-typedef Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D> Scene3D;
+using Object3D = Magnum::SceneGraph::Object<Magnum::SceneGraph::MatrixTransformation3D>;
+using Scene3D = Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D>;
+
+using Radians = Magnum::Math::Rad<Magnum::Float>;
 
 
 template<typename T>
@@ -26,6 +29,19 @@ inline Magnum::Color3 toRgbf(unsigned long long value)
             Magnum::UnsignedByte(value >> 16), Magnum::UnsignedByte(value >> 8), Magnum::UnsignedByte(value)
         }
     );
+}
+
+}
+
+namespace Magnum::Math
+{
+
+template<std::size_t size, class T> inline Vector<size, int> lround(const Vector<size, T>& a)
+{
+    Vector<size, int> out{Magnum::NoInit};
+    for(std::size_t i = 0; i != size; ++i)
+        out[i] = std::lround(a[i]);
+    return out;
 }
 
 }

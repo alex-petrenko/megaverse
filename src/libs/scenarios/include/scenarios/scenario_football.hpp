@@ -8,10 +8,10 @@
 namespace VoxelWorld
 {
 
-class Football : public DefaultScenario
+class FootballScenario : public DefaultScenario
 {
 public:
-    explicit Football(const std::string &name, Env &env, Env::EnvState &envState);
+    explicit FootballScenario(const std::string &name, Env &env, Env::EnvState &envState);
 
     // Scenario interface
     void reset() override;

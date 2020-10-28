@@ -1,13 +1,18 @@
 #pragma once
 
+#include <vector>
+
 #include <util/voxel_grid.hpp>
 
 #include <env/scenario_component.hpp>
+
+#include <scenarios/component_voxel_grid.hpp>
 
 
 namespace VoxelWorld
 {
 
+// TODO: remove. Use room types instead
 enum class LayoutType
 {
     Empty,
@@ -15,20 +20,6 @@ enum class LayoutType
     Walls,
     Pit,
     Towers,
-};
-
-
-struct BoundingBox
-{
-    VoxelCoords min, max;
-
-    void addPoint(VoxelCoords v)
-    {
-        if (v.x() <= min.x() && v.y() <= min.y() && v.z() <= min.z())
-            min = v;
-        else if (v.x() >= max.x() && v.y() >= max.y() && v.z() >= max.z())
-            max = v;
-    }
 };
 
 
@@ -57,6 +48,8 @@ public:
     std::vector<VoxelCoords> objectSpawnPositions(const VoxelGrid<VoxelState> &grid);
 
     void addLayoutDrawables(DrawablesMap &drawables, Env::EnvState &envState, VoxelGrid<VoxelState> &grid, bool withExit);
+
+    void addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType);
 
 private:
     Rng &rng;

@@ -8,6 +8,7 @@
 #include <util/tiny_logger.hpp>
 
 #include <scenarios/component_grid_layout.hpp>
+#include <scenarios/component_voxel_grid.hpp>
 
 
 using namespace VoxelWorld;
@@ -18,24 +19,8 @@ using namespace VoxelWorld;
 namespace
 {
 
-Magnum::Vector3i directions[] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-
-
-struct CoordRange
-{
-    int min, max;
-};
-
-
-CoordRange startEndCoord(int bboxMin, int bboxMax, int direction)
-{
-    if (direction == 1)
-        return {bboxMax + 1, bboxMax + 1};
-    else if (direction == -1)
-        return {bboxMin - 1, bboxMin - 1};
-    else
-        return {bboxMin, bboxMax};
-}
+// TODO: we probably don't need that
+const Magnum::Vector3i directions[] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
 std::vector<VoxelCoords> getFreeVoxels(const VoxelGrid<VoxelState> &grid, int length, int width, int startY)
 {
@@ -46,7 +31,7 @@ std::vector<VoxelCoords> getFreeVoxels(const VoxelGrid<VoxelState> &grid, int le
             for (int y = startY; y > 0; --y) {
                 const VoxelCoords coords{x, y - 1, z};
                 const auto v = grid.get(coords);
-                if (v && v->solid) {
+                if (v && v->solid()) {
                     res.emplace_back(x, y, z);
                     break;
                 }
@@ -65,7 +50,7 @@ class GridLayoutComponent::GridLayoutImpl
 public:
     explicit GridLayoutImpl(int numAgents, Rng &rng)
         : numAgents{numAgents}
-          , rng{rng}
+        , rng{rng}
     {
     }
 
@@ -77,7 +62,7 @@ public:
 
     virtual void generate(VoxelGrid<VoxelState> &grid) = 0;
 
-    virtual std::vector<BoundingBox> extractPrimitives(VoxelGrid<VoxelState> &grid) = 0;
+    virtual Boxes extractPrimitives(VoxelGrid<VoxelState> &grid) = 0;
 
     virtual BoundingBox levelExit(const VoxelGrid<VoxelState> &grid) = 0;
 
@@ -144,7 +129,7 @@ public:
         for (auto it : gridHashMap) {
             const auto &coord = it.first;
             const auto &voxel = it.second;
-            if (!voxel.solid || visited.count(coord)) {
+            if (!voxel.solid() || visited.count(coord)) {
                 // already processed this voxel
                 continue;
             }
@@ -174,7 +159,7 @@ public:
                                 for (auto z = zlim.min; z <= zlim.max; ++z) {
                                     const VoxelCoords coords{x, y, z};
                                     const auto v = grid.get(coords);
-                                    if (!v || !v->solid || visited.count(coords)) {
+                                    if (!v || !v->solid() || visited.count(coords)) {
                                         // we could not expand in this direction
                                         canExpand = false;
                                         goto afterLoop;
@@ -493,7 +478,7 @@ public:
             bool fits = true;
             for (int z = v.z(); z < v.z() + exitPadWidth; ++z) {
                 const auto voxel = grid.get({v.x(), v.y(), z});
-                if (voxel && voxel->solid) {
+                if (voxel && voxel->solid()) {
                     fits = false;
                     break;
                 }
@@ -689,7 +674,7 @@ std::vector<VoxelCoords> GridLayoutComponent::objectSpawnPositions(const VoxelGr
     return generator->objectSpawnPositions(grid);
 }
 
-void VoxelWorld::GridLayoutComponent::addLayoutDrawables(
+void GridLayoutComponent::addLayoutDrawables(
     DrawablesMap &drawables, Env::EnvState &envState, VoxelGrid<VoxelState> &grid, bool withExitPad
 )
 {
@@ -794,6 +779,42 @@ void VoxelWorld::GridLayoutComponent::addLayoutDrawables(
             zoneObject.translate(zonePos);
 
             drawables[DrawableType::Box].emplace_back(&zoneObject, rgb(ColorRgb::BUILDING_ZONE));
+        }
+    }
+}
+
+void GridLayoutComponent::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType)
+{
+    if (voxelType == VOXEL_EMPTY)
+        return;
+
+    for (auto box : boxes) {
+        const auto bboxMin = box.min, bboxMax = box.max;
+        auto scale = Magnum::Vector3{
+            float(bboxMax.x() - bboxMin.x() + 1) / 2,
+            float(bboxMax.y() - bboxMin.y() + 1) / 2,
+            float(bboxMax.z() - bboxMin.z() + 1) / 2,
+        };
+
+        auto translation = Magnum::Vector3{
+            float((bboxMin.x() + bboxMax.x())) / 2 + 0.5f,
+            float((bboxMin.y() + bboxMax.y())) / 2 + 0.5f,
+            float((bboxMin.z() + bboxMax.z())) / 2 + 0.5f
+        };
+
+        auto &layoutBox = envState.scene->addChild<Object3D>();
+        layoutBox.scale(scale).translate(translation);
+
+        if (voxelType & VOXEL_OPAQUE)
+            drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::LAYOUT));
+
+        if (voxelType & VOXEL_SOLID) {
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), scale.y(), scale.z()});
+            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+
+            collisionBox.syncPose();
+
+            collisionShapes.emplace_back(std::move(bBoxShape));
         }
     }
 }

@@ -30,6 +30,7 @@ enum class ColorRgb
     DARK_GREY = 0x555555,
     VERY_DARK_GREY = 0x222222,
     WHITE = 0xffffff,
+    RED = 0xff0000,
 
     LAYOUT = WHITE,
     AGENT_EYES = VERY_DARK_GREY,

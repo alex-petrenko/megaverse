@@ -122,7 +122,7 @@ public:
         return coords;
     }
 
-    const HashMap getHashMap() const
+    const HashMap & getHashMap() const
     {
         return grid;
     }
