@@ -83,6 +83,8 @@ public:
 
         nextPlatformAnchor = &root->addChild<Object3D>();
         nextPlatformAnchor->translateLocal({float(length), 0, 0});
+
+        boundingBoxDirty = true;
     }
 
     virtual void addWalls()
@@ -95,6 +97,37 @@ public:
             wallBoxes.emplace_back(MagnumAABB{*root, {0, 0, 0, length, height, 1}});
         if (walls & WALLS_WEST)
             wallBoxes.emplace_back(MagnumAABB{*root, {0, 0, width - 1, length, height, width}});
+
+        boundingBoxDirty = true;
+    }
+
+    virtual BoundingBox platformBoundingBox()
+    {
+        if (!boundingBoxDirty)
+            return outerBoundingBox;
+
+        if (!layoutBoxes.empty())
+            outerBoundingBox = layoutBoxes.front().boundingBox();
+        else if (!wallBoxes.empty())
+            outerBoundingBox = wallBoxes.front().boundingBox();
+        else
+            outerBoundingBox = BoundingBox{};
+
+        boundingBoxDirty = false;
+
+        for (auto &boxes : {layoutBoxes, wallBoxes})
+            for (auto &box : boxes) {
+                const auto bb = box.boundingBox();
+                outerBoundingBox.addPoint(bb.min);
+                outerBoundingBox.addPoint(bb.max);
+            }
+
+        return outerBoundingBox;
+    }
+
+    virtual bool collidesWith(Platform &other)
+    {
+        return platformBoundingBox().collidesWith(other.platformBoundingBox());
     }
 
 public:
@@ -109,6 +142,9 @@ public:
     std::map<TerrainType, std::vector<MagnumAABB>> terrainBoxes;
 
     Object3D *nextPlatformAnchor{}, *root{};
+
+    bool boundingBoxDirty = true;
+    BoundingBox outerBoundingBox;
 };
 
 class EmptyPlatform : public Platform
@@ -122,11 +158,12 @@ public:
 
     void init() override
     {
-        length = randRange(4, 15, rng);
+        length = randRange(4, 14, rng);
         if (width == -1)
-            width = randRange(4, 14, rng);
+            width = randRange(4, 12, rng);
 
-        height = randRange(3, 7, rng);
+        // height = randRange(3, 7, rng);
+        height = 4;
     }
 
     void generate() override
@@ -140,7 +177,7 @@ class WallPlatform : public EmptyPlatform
 {
 public:
     explicit WallPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-    : EmptyPlatform{parent, rng, walls}
+    : EmptyPlatform{parent, rng, walls, w}
     {
     }
 
@@ -148,7 +185,7 @@ public:
     {
         EmptyPlatform::init();
 
-        wallHeight = randRange(1, height, rng);
+        wallHeight = randRange(1, std::min(3, height - 1), rng);
         height = randRange(wallHeight + 2, wallHeight + 5, rng);
     }
 
@@ -171,7 +208,7 @@ class LavaPlatform : public EmptyPlatform
 {
 public:
     explicit LavaPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : EmptyPlatform{parent, rng, walls}
+        : EmptyPlatform{parent, rng, walls, w}
     {
     }
 
@@ -179,28 +216,25 @@ public:
     {
         EmptyPlatform::generate();
 
-        const auto lavaX = randRange(1, length, rng);
-        const auto lavaLength = randRange(1, length - lavaX + 1, rng);
+        const auto lavaLength = randRange(2, std::min(4, length - 1), rng);
+        const auto lavaX = randRange(1, length - lavaLength, rng);
 
         MagnumAABB lava{*root, {lavaX, 1, 1, lavaX + lavaLength, 2, width - 1}};
         terrainBoxes[TERRAIN_LAVA].emplace_back(lava);
     }
 };
 
-class StepPlatform : public Platform
+class StepPlatform : public EmptyPlatform
 {
 public:
     explicit StepPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : Platform{parent, rng, walls}
+        : EmptyPlatform{parent, rng, walls, w}
     {
-        width = w;
     }
 
     void init() override
     {
-        length = randRange(4, 15, rng);
-        if (width == -1)
-            width = randRange(4, 18, rng);
+        EmptyPlatform::init();
 
         stepHeight = randRange(1, 4, rng);
         height = randRange(stepHeight + 3, stepHeight + 5, rng);
@@ -227,12 +261,55 @@ private:
     int stepHeight{};
 };
 
+
+class GapPlatform : public EmptyPlatform
+{
+public:
+    explicit GapPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
+        : EmptyPlatform{parent, rng, walls, w}
+    {
+    }
+
+    void init() override
+    {
+        EmptyPlatform::init();
+
+        gap = randRange(2, std::min(4, length - 1), rng);
+        gapX = randRange(1, length - gap, rng);
+    }
+
+    void generate() override
+    {
+        MagnumAABB floorStart{*root, {0, 0, 0, gapX, 1, width}};
+        MagnumAABB floorEnd{*root, {gapX + gap, 0, 0, length, 1, width}};
+
+        layoutBoxes.emplace_back(floorStart);
+        layoutBoxes.emplace_back(floorEnd);
+
+        nextPlatformAnchor = &root->addChild<Object3D>();
+        nextPlatformAnchor->translateLocal({float(length), 0, 0});
+
+        addWalls();
+    }
+
+private:
+    int gap{}, gapX{};
+};
+
 class StartPlatform : public EmptyPlatform
 {
 public:
     explicit StartPlatform(Object3D *parent, Rng &rng, int w = -1)
     : EmptyPlatform{parent, rng, WALLS_SOUTH | WALLS_EAST | WALLS_WEST, w}
     {
+    }
+
+    void init() override
+    {
+        EmptyPlatform::init();
+
+        assert(length < maxLength);
+        assert(width < maxWidth);
     }
 
     std::vector<VoxelCoords> generateMovableBoxes(int numObjects)
@@ -274,7 +351,7 @@ public:
     }
 
 private:
-    constexpr static int maxLength = 10, maxWidth = 20;
+    constexpr static int maxLength = 21, maxWidth = 21;
 
     int occupancy[maxLength][maxWidth] = {{0}};
 };
@@ -305,19 +382,21 @@ public:
         length = l, width = w;
     }
 
-    void init() override { height = 6; }
+    void init() override { height = 4; }
 };
 
 
 std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, int width)
 {
-    enum { EMPTY, WALL, LAVA, STEP };
-    const static std::vector<int> supportedPlatforms = {EMPTY, WALL, LAVA, STEP};
+    enum { EMPTY, WALL, LAVA, STEP, GAP };
+    const static std::vector<int> supportedPlatforms = {EMPTY, WALL, LAVA, STEP, GAP};
     const auto platformType = randomSample(supportedPlatforms, rng);
 
     switch (platformType) {
         case STEP:
             return std::make_unique<StepPlatform>(parent, rng, walls, width);
+        case GAP:
+            return std::make_unique<GapPlatform>(parent, rng, walls, width);
         case LAVA:
             return std::make_unique<LavaPlatform>(parent, rng, walls, width);
         case WALL:
@@ -343,88 +422,105 @@ void ObstaclesScenario::reset()
     agentSpawnPositions.clear(), objectSpawnPositions.clear(), terrain.clear();
 
     const bool drawWalls = randRange(0, 2, envState.rng);
+    std::vector<std::unique_ptr<Platform>> platforms;
 
-    std::vector<std::unique_ptr<Platform>> platforms, transitionPlatforms;
-    int numPlatforms = randRange(2, 5, envState.rng);
+    StartPlatform *startPlatform = nullptr;
 
-    enum { STRAIGHT, TURN_LEFT, TURN_RIGHT };
+    for (int attempt = 0; attempt < 20; ++attempt) {
+        platforms.clear();
 
-    static const std::vector<int> orientations = {STRAIGHT, TURN_LEFT, TURN_RIGHT};
+        int numPlatforms = randRange(2, 10, envState.rng);
 
-    std::unique_ptr<Object3D> root = std::make_unique<Object3D>(nullptr);
+        enum { STRAIGHT, TURN_LEFT, TURN_RIGHT };
 
-    auto startPlatformPtr = std::make_unique<StartPlatform>(root.get(), envState.rng);
-    startPlatformPtr->init();
-    startPlatformPtr->generate();
-    StartPlatform &startPlatform = *startPlatformPtr;
-    platforms.emplace_back(std::move(startPlatformPtr));
+        static const std::vector<int> orientations = {STRAIGHT, TURN_LEFT, TURN_RIGHT};
 
-    int requiredWidth = startPlatform.width;
+        levelRoot = std::make_unique<Object3D>(nullptr);
 
-    for (int i = 0; i < numPlatforms; ++i) {
-        auto &previousPlatform = *platforms.back();
+        auto startPlatformPtr = std::make_unique<StartPlatform>(levelRoot.get(), envState.rng);
+        startPlatformPtr->init(), startPlatformPtr->generate();
+        startPlatform = startPlatformPtr.get();
+        platforms.emplace_back(std::move(startPlatformPtr));
+        int requiredWidth = startPlatform->width;
 
-        auto orientation = randomSample(orientations, envState.rng);
-        requiredWidth = orientation == STRAIGHT ? requiredWidth : -1;
+        Platform *previousPlatform = startPlatform;
 
-        platforms.emplace_back(makePlatform(previousPlatform.nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, requiredWidth));
-        auto &platform = platforms.back();
+        for (int i = 0; i < numPlatforms; ++i) {
+            auto orientation = randomSample(orientations, envState.rng);
+            requiredWidth = orientation == STRAIGHT ? requiredWidth : -1;
 
-        platform->init();
-        platform->generate();
+            platforms.emplace_back(makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, requiredWidth));
+            auto platform = platforms.back().get();
 
-        switch (orientation) {
-            case STRAIGHT:
-                break;
-            case TURN_LEFT:
-                platform->rotateCCW(previousPlatform.width);
-                break;
-            case TURN_RIGHT:
-                platform->rotateCW(previousPlatform.width);
-                break;
-            default: break;
+            platform->init(), platform->generate();
+
+            switch (orientation) {
+                case STRAIGHT:
+                    break;
+                case TURN_LEFT:
+                    platform->rotateCCW(previousPlatform->width);
+                    break;
+                case TURN_RIGHT:
+                    platform->rotateCW(previousPlatform->width);
+                    break;
+                default:
+                    break;
+            }
+
+            if (orientation != STRAIGHT) {
+                int walls = WALLS_NORTH;
+                walls |= orientation == TURN_LEFT ? WALLS_WEST : WALLS_EAST;
+                const int w = previousPlatform->width, l = platform->width - 1;
+
+                platforms.emplace_back(std::make_unique<TransitionPlatform>(previousPlatform->nextPlatformAnchor, envState.rng, walls, l, w));
+                auto transitionPlatform = platforms.back().get();
+
+                transitionPlatform->init();
+                transitionPlatform->generate();
+            }
+
+            previousPlatform = platform;
+            requiredWidth = platform->width;
         }
 
-        // TODO: check if intersects with previous rooms
+        auto exitPlatformPtr = std::make_unique<ExitPlatform>(previousPlatform->nextPlatformAnchor, envState.rng, requiredWidth);
+        exitPlatformPtr->init(), exitPlatformPtr->generate();
+        platforms.emplace_back(std::move(exitPlatformPtr));
 
-        if (orientation != STRAIGHT) {
-            int walls = WALLS_NORTH;
-            walls |= orientation == TURN_LEFT ? WALLS_WEST : WALLS_EAST;
-            const int w = previousPlatform.width, l = platform->width - 1;
-
-            transitionPlatforms.emplace_back(std::make_unique<TransitionPlatform>(previousPlatform.nextPlatformAnchor, envState.rng, walls, l, w));
-            auto &transitionPlatform = *transitionPlatforms.back();
-
-            transitionPlatform.init();
-            transitionPlatform.generate();
+        // don't check collisions with self and with the previous platforms (there might be overlap)
+        bool selfCollision = false;
+        for (int j = 0; j < int(platforms.size()) && !selfCollision; ++j) {
+            for (int k = 0; k < j - 2; ++k) {
+                if (platforms[j]->collidesWith(*platforms[k])) {
+                    TLOG(INFO) << "Platform " << j << " collides with " << k;
+                    selfCollision = true;
+                    break;
+                }
+            }
         }
 
-        requiredWidth = platform->width;
+        if (selfCollision)
+            TLOG(INFO) << "Self collision! Attempt " << attempt << " regenerate!";
+        else {
+            break;
+        }
     }
 
-    auto &previousPlatform = *platforms.back();
-    auto exitPlatformPtr = std::make_unique<ExitPlatform>(previousPlatform.nextPlatformAnchor, envState.rng, requiredWidth);
-    exitPlatformPtr->init();
-    exitPlatformPtr->generate();
-    platforms.emplace_back(std::move(exitPlatformPtr));
 
-    TLOG(INFO) << "Platforms " << platforms.size();
+    for (auto &p : platforms) {
+        for (auto &bb : p->layoutBoxes)
+            vg.addBoundingBox(bb.boundingBox(), VOXEL_OPAQUE | VOXEL_SOLID);
+        for (auto &bb : p->wallBoxes)
+            vg.addBoundingBox(bb.boundingBox(), VOXEL_SOLID | (drawWalls ? VOXEL_OPAQUE : 0));
 
-    for (auto platformsList : {&platforms, &transitionPlatforms})
-        for (auto &p : *platformsList) {
-            for (auto &bb : p->layoutBoxes)
-                vg.addBoundingBox(bb.boundingBox(), VOXEL_OPAQUE | VOXEL_SOLID);
-            for (auto &bb : p->wallBoxes)
-                vg.addBoundingBox(bb.boundingBox(), VOXEL_SOLID | (drawWalls ? VOXEL_OPAQUE : 0));
+        for (auto &[k, v] : p->terrainBoxes)
+            for (auto &bb : v) {
+                terrain[k].emplace_back(bb.boundingBox());
+                vg.addTerrainBoundingBox(bb.boundingBox(), TERRAIN_EXIT);
+            }
+    }
 
-            for (auto &[k, v] : p->terrainBoxes)
-                for (auto &bb : v) {
-                    terrain[k].emplace_back(bb.boundingBox());
-                    vg.addTerrainBoundingBox(bb.boundingBox(), TERRAIN_EXIT);
-                }
-        }
-
-    agentSpawnPositions = startPlatform.agentSpawnPoints(env.getNumAgents());
+    agentSpawnPositions = startPlatform->agentSpawnPoints(env.getNumAgents());
 }
 
 void ObstaclesScenario::step()

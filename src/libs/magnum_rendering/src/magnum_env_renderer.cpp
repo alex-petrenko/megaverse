@@ -256,7 +256,8 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, Rend
 MagnumEnvRenderer::Impl::~Impl()
 {
     TLOG(INFO) << __PRETTY_FUNCTION__;
-    ctx->makeCurrent();
+    if (windowlessContextPtr)
+        windowlessContextPtr->makeCurrent();
 }
 
 RenderingContext * MagnumEnvRenderer::Impl::initContext(RenderingContext *ctx)

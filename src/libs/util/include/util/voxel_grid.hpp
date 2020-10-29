@@ -28,7 +28,7 @@ template <> struct hash<VoxelWorld::VoxelCoords>
     std::size_t operator()(const VoxelWorld::VoxelCoords &voxel) const noexcept
     {
         constexpr auto res = VoxelWorld::maxGridResolution;
-        return size_t(res * res * voxel.x() + res * voxel.y() + voxel.z());
+        return size_t(res * res * (voxel.x() + 500) + res * (voxel.y() + 500) + (voxel.z() + 500));
     }
 };
 

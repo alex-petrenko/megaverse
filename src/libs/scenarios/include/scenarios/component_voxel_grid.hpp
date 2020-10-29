@@ -26,12 +26,16 @@ struct BoundingBox
     {
     }
 
-    void addPoint(VoxelCoords v)
+    void addPoint(const VoxelCoords &v)
     {
-        if (v.x() <= min.x() && v.y() <= min.y() && v.z() <= min.z())
-            min = v;
-        else if (v.x() >= max.x() && v.y() >= max.y() && v.z() >= max.z())
-            max = v;
+        if (v.x() < min.x()) min.x() = v.x();
+        if (v.x() > max.x()) max.x() = v.x();
+
+        if (v.y() < min.y()) min.y() = v.y();
+        if (v.y() > max.y()) max.y() = v.y();
+
+        if (v.z() < min.z()) min.z() = v.z();
+        if (v.z() > max.z()) max.z() = v.z();
     }
 
     void sort()
@@ -41,6 +45,19 @@ struct BoundingBox
         if (min.x() > max.x()) std::swap(min.x(), max.x());
         if (min.y() > max.y()) std::swap(min.y(), max.y());
         if (min.z() > max.z()) std::swap(min.z(), max.z());
+    }
+
+    bool collidesWith(const BoundingBox &other) const
+    {
+        // we're looking for an axis with no overlap
+        if (max.x() <= other.min.x()) return false;
+        if (min.x() >= other.max.x()) return false;
+        if (max.y() <= other.min.y()) return false;
+        if (min.y() >= other.max.y()) return false;
+        if (max.z() <= other.min.z()) return false;
+        if (min.z() >= other.max.z()) return false;
+
+        return true;
     }
 
 public:

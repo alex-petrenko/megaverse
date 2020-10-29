@@ -164,11 +164,11 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 2;  // to test vectorized env interface
-    const int numAgentsPerEnv = 4;
-    const int numSimulationThreads = 2;
+    const int numEnvs = 20;  // to test vectorized env interface
+    const int numAgentsPerEnv = 2;
+    const int numSimulationThreads = 20;
 
-    FloatParams params{{Str::episodeLengthSec, 1.0f}};
+    FloatParams params{{Str::episodeLengthSec, 100.0f}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {

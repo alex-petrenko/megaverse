@@ -41,6 +41,8 @@ private:
 
     std::vector<VoxelCoords> agentSpawnPositions, objectSpawnPositions;
     std::map<TerrainType, std::vector<BoundingBox>> terrain;
+
+    std::unique_ptr<Object3D> levelRoot;
 };
 
 }

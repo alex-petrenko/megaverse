@@ -10,11 +10,9 @@
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
-#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/Version.h>
 #include <Magnum/GL/Framebuffer.h>
-#include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/Timeline.h>
 
@@ -87,8 +85,6 @@ Viewer::Viewer(const Arguments& arguments):
 
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
-
-    setCursor(Cursor::HiddenLocked);
 
     const int numAgents = 2;
     // const auto scenarioName = "TowerBuilding";
@@ -269,6 +265,7 @@ void Viewer::keyPressEvent(KeyEvent& event)
             break;
         case KeyEvent::Key::O:
             renderer->getOverview().enabled = !renderer->getOverview().enabled;
+            setCursor(renderer->getOverview().enabled ? Cursor::HiddenLocked : Cursor::Arrow);
             break;
         case KeyEvent::Key::Enter:
             renderer->toggleDebugMode();
@@ -285,7 +282,6 @@ void Viewer::keyPressEvent(KeyEvent& event)
 void Viewer::keyReleaseEvent(Platform::Sdl2Application::KeyEvent &event)
 {
     handleActions(event.key(), false);
-
     controlOverview(event.key(), false);
 }
 
