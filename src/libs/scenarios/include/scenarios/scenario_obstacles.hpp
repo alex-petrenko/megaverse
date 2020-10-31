@@ -30,6 +30,8 @@ public:
 
     float trueObjective() const override { return 0; }//TODO
 
+    float episodeLengthSec() const override;
+
 private:
     void addTerrain(DrawablesMap &drawables, TerrainType type, const BoundingBox &bb);
 
@@ -43,6 +45,7 @@ private:
     std::map<TerrainType, std::vector<BoundingBox>> terrain;
 
     std::unique_ptr<Object3D> levelRoot;
+    int numPlatforms{};
 };
 
 }

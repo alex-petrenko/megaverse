@@ -43,9 +43,6 @@ Env::Env(const std::string &scenarioName, int numAgents, FloatParams customFloat
     scenario->initializeDefaultParameters();
     scenario->setCustomParameters(customFloatParams);
 
-    // what does this really do?
-    state.physics.bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-
     // empty list of drawables for each supported drawable type
     for (int drawableType = int(DrawableType::First); drawableType < int(DrawableType::NumTypes); ++drawableType)
         drawables[DrawableType(drawableType)] = std::vector<SceneObjectInfo>{};
@@ -196,8 +193,7 @@ std::vector<Magnum::Color3> Env::getPalette() const
 
 float Env::episodeLengthSec() const
 {
-    const auto episodeLengthSec = scenario->getFloatParams().at(Str::episodeLengthSec);
-    return episodeLengthSec;
+    return scenario->episodeLengthSec();
 }
 
 float Env::trueObjective() const

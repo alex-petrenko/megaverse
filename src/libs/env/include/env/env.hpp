@@ -93,6 +93,14 @@ public:
      */
     struct EnvPhysics
     {
+        EnvPhysics()
+        {
+            // what does this really do?
+            bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(&ghostPairCallback);
+        }
+
+        btGhostPairCallback ghostPairCallback;
+
         btDbvtBroadphase bBroadphase;
         btSequentialImpulseConstraintSolver bConstraintSolver;
         btDefaultCollisionConfiguration bCollisionConfiguration;
@@ -129,6 +137,8 @@ public:
         }
 
     public:
+        EnvPhysics physics;
+
         // Basic environment info
         bool done = false;
         float currEpisodeSec = 0;
@@ -137,13 +147,11 @@ public:
         std::vector<Action> currAction;
         std::vector<float> lastReward, totalReward;
 
-        Agents agents;
-
         std::unique_ptr<Scene3D> scene;
 
-        Rng rng{std::random_device{}()};
+        Agents agents;
 
-        EnvPhysics physics;
+        Rng rng{std::random_device{}()};
     };
 
 public:

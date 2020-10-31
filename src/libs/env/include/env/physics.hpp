@@ -29,10 +29,8 @@ public:
             bShape->calculateLocalInertia(mass, bInertia);
 
         // Bullet rigid body setup
-        auto *motionState = new Magnum::BulletIntegration::MotionState{
-            *this};  // motion state will update the Object3D transformation
-        bRigidBody.emplace(
-            btRigidBody::btRigidBodyConstructionInfo{mass, &motionState->btMotionState(), bShape, bInertia});
+        auto *motionState = new Magnum::BulletIntegration::MotionState{*this};  // motion state will update the Object3D transformation
+        bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{mass, &motionState->btMotionState(), bShape, bInertia});
         bRigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
 //        bRigidBody->forceActivationState(DISABLE_DEACTIVATION);  // do we need this?
         bWorld.addRigidBody(bRigidBody.get());

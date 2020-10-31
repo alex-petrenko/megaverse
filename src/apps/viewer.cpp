@@ -88,7 +88,7 @@ Viewer::Viewer(const Arguments& arguments):
 
     const int numAgents = 2;
     // const auto scenarioName = "TowerBuilding";
-    // const auto scenarioName = "Football";
+//    const auto scenarioName = "Football";
     const auto scenarioName = "Obstacles";
 
     auto env = std::make_unique<Env>(scenarioName, numAgents);

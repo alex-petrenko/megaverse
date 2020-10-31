@@ -429,7 +429,7 @@ void ObstaclesScenario::reset()
     for (int attempt = 0; attempt < 20; ++attempt) {
         platforms.clear();
 
-        int numPlatforms = randRange(2, 10, envState.rng);
+        numPlatforms = randRange(2, 10, envState.rng);
 
         enum { STRAIGHT, TURN_LEFT, TURN_RIGHT };
 
@@ -541,8 +541,6 @@ void ObstaclesScenario::step()
         envState.done = true;
         // TODO reward
     }
-
-//    TLOG(INFO) << numAgentsAtExit;
 }
 
 void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
@@ -586,4 +584,10 @@ ColorRgb ObstaclesScenario::terrainColor(TerrainType type)
     };
 
     return colors.at(type);
+}
+
+float ObstaclesScenario::episodeLengthSec() const
+{
+    const auto minDuration = Scenario::episodeLengthSec();
+    return std::max(minDuration, float(numPlatforms) * 20);
 }

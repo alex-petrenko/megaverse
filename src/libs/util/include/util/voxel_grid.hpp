@@ -11,7 +11,7 @@ namespace VoxelWorld
 
 using VoxelCoords = Magnum::Vector3i;
 
-constexpr int maxGridResolution = 1'000;
+constexpr int maxGridResolution = 1'024, logMaxGridResolution = 10, maxAbsVoxelCoord = maxGridResolution / 2;
 
 }
 
@@ -27,8 +27,11 @@ template <> struct hash<VoxelWorld::VoxelCoords>
 {
     std::size_t operator()(const VoxelWorld::VoxelCoords &voxel) const noexcept
     {
-        constexpr auto res = VoxelWorld::maxGridResolution;
-        return size_t(res * res * (voxel.x() + 500) + res * (voxel.y() + 500) + (voxel.z() + 500));
+        constexpr auto shift = VoxelWorld::logMaxGridResolution;
+        constexpr auto offset = VoxelWorld::maxAbsVoxelCoord;
+        const int x = voxel.x() + offset, y = voxel.y() + offset, z = voxel.z() + offset;
+
+        return size_t((x << (2 * shift)) + (y << shift) + z);
     }
 };
 

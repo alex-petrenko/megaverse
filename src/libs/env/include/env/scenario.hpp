@@ -124,6 +124,15 @@ public:
     virtual float trueObjective() const = 0;
 
     /**
+     * @return episode duration in seconds, this can be overridden
+     */
+    virtual float episodeLengthSec() const
+    {
+        const auto episodeLengthSec = getFloatParams().at(Str::episodeLengthSec);
+        return episodeLengthSec;
+    }
+
+    /**
      * @param agentIdx
      * @return current reward shaping for the agent
      */
@@ -150,7 +159,7 @@ public:
         fp[Str::verticalLookLimitRad] = 0.0f;
     }
 
-    virtual const FloatParams & getFloatParams() { return floatParams; }
+    virtual const FloatParams & getFloatParams() const { return floatParams; }
 
     /**
      * This default behavior should typically be sufficient, although can also be overridden.

@@ -164,9 +164,9 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 20;  // to test vectorized env interface
-    const int numAgentsPerEnv = 2;
-    const int numSimulationThreads = 20;
+    const int numEnvs = 1;  // to test vectorized env interface
+    const int numAgentsPerEnv = 1;
+    const int numSimulationThreads = 1;
 
     FloatParams params{{Str::episodeLengthSec, 100.0f}};
 
