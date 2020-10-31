@@ -99,23 +99,10 @@ class VoxelEnv(gym.Env):
         self.env.reset()
         return self.observations()
 
-    # def set_agent_actions(self, env_i, agent_i, actions):
-    #     action_idx = 0
-    #     action_mask = 0
-    #     spaces = self.action_space.spaces
-    #     for i, action in enumerate(actions):
-    #         if action > 0:
-    #             action_mask = action_mask | (1 << (action_idx + action))
-    #         num_non_idle_actions = spaces[i].n - 1
-    #         action_idx += num_non_idle_actions
-    #
-    #     self.env.set_action_mask(env_i, agent_i, action_mask)
-
     def step(self, actions):
         action_idx = 0
         for env_i in range(self.num_envs):
             for agent_i in range(self.num_agents_per_env):
-                # self.set_agent_actions(env_i, agent_i, actions[action_idx])
                 self.env.set_actions(env_i, agent_i, actions[action_idx])
                 action_idx += 1
 

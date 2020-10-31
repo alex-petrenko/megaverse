@@ -1,7 +1,6 @@
 #include <set>
 
 #include <Magnum/Math/Angle.h>
-#include <Magnum/Math/Matrix4.h>
 
 #include <scenarios/scenario_obstacles.hpp>
 

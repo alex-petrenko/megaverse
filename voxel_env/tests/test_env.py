@@ -14,7 +14,7 @@ def sample_actions(e):
 
 def make_env(num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
     """Making env with a default scenario name."""
-    return VoxelEnv("TowerBuilding", num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
+    return VoxelEnv('Obstacles', num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
 
 
 class TestEnv(TestCase):
@@ -86,6 +86,7 @@ class TestEnv(TestCase):
 
     @staticmethod
     def performance_num_envs(n, n_steps=5000):
+        print(f'Performance {n} {n_steps}')
         envs = [make_env(1, 1, 1, use_vulkan=True) for _ in range(n)]
         for e in envs:
             e.seed(42)
@@ -114,10 +115,10 @@ class TestEnv(TestCase):
         fps2 = self.performance_num_envs(2)
         fps4 = self.performance_num_envs(4)
 
-        print(fps1, fps2, fps4)
+        # print(fps1, fps2, fps4)
 
     def test_reward_shaping(self):
-        e = make_env(num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
+        e = VoxelEnv('TowerBuilding', num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
         default_reward_shaping = e.get_default_reward_shaping()
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(0))
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(1))

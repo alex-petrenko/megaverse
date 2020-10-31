@@ -32,7 +32,7 @@ bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 20'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 200000'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
-        envs.emplace_back(std::make_unique<Env>("Obstacles", numAgentsPerEnv, params));
+        envs.emplace_back(std::make_unique<Env>("TowerBuilding", numAgentsPerEnv, params));
         envs[i]->seed(42 + i);
     }
 
