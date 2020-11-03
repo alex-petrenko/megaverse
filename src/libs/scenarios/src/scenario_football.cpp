@@ -4,6 +4,25 @@
 using namespace VoxelWorld;
 
 
+class FootballScenario::FootballLayout : public EmptyPlatform
+{
+public:
+    FootballLayout(Object3D *parent, Rng &rng, int walls)
+    : EmptyPlatform{parent, rng, walls}
+    {
+    }
+
+    void init() override
+    {
+        length = randRange(8, 14, rng);
+        if (width == -1)
+            width = randRange(8, 12, rng);
+
+         height = randRange(3, 7, rng);
+    }
+};
+
+
 // TODO: refactor this?
 class DynamicRigidBody : public Object3D
 {
@@ -87,16 +106,17 @@ public:
 FootballScenario::FootballScenario(const std::string &name, Env &env, Env::EnvState &envState)
 : DefaultScenario(name, env, envState)
 , vg{*this}
-, gridLayoutComponent{*this, envState.rng}
+, gridLayoutComponent{*this}
+, platformsComponent{*this}
 {
 }
+
+FootballScenario::~FootballScenario() = default;
 
 void FootballScenario::reset()
 {
     vg.reset(env, envState);
-
-    gridLayoutComponent.init(env.getNumAgents(), LayoutType::Empty);
-    gridLayoutComponent.generate(vg.grid);
+    platformsComponent.reset(env, envState);
 
     collisionShape = std::make_unique<btSphereShape>(1.0);
 
@@ -106,16 +126,22 @@ void FootballScenario::reset()
     object.syncPose();
 
     footballObject = &object;
+
+    layout = std::make_unique<FootballLayout>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL);
+    layout->init(), layout->generate();
+    vg.addPlatform(*layout, true);
 }
 
 std::vector<VoxelCoords> FootballScenario::agentStartingPositions()
 {
-    return gridLayoutComponent.startingPositions(vg.grid);
+    return layout->agentSpawnPoints(env.getNumAgents());
 }
 
 void FootballScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    gridLayoutComponent.addLayoutDrawables(drawables, envState, vg.grid, false);
+    auto boundingBoxesByType = vg.toBoundingBoxes();
+    for (auto &[voxelType, bb] : boundingBoxesByType)
+        gridLayoutComponent.addBoundingBoxes(drawables, envState, bb, voxelType);
 
     drawables[DrawableType::Sphere].emplace_back(footballObject, rgb(ColorRgb::ORANGE));
 }

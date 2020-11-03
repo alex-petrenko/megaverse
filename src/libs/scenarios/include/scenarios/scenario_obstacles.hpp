@@ -1,18 +1,14 @@
 #pragma once
 
+#include <scenarios/platforms.hpp>
 #include <scenarios/scenario_default.hpp>
+#include <scenarios/component_platforms.hpp>
 #include <scenarios/component_voxel_grid.hpp>
 #include <scenarios/component_grid_layout.hpp>
 
 
 namespace VoxelWorld
 {
-
-enum TerrainType
-{
-    TERRAIN_EXIT = 1,
-    TERRAIN_LAVA = 1 << 1,
-};
 
 class ObstaclesScenario : public DefaultScenario
 {
@@ -33,18 +29,12 @@ public:
     float episodeLengthSec() const override;
 
 private:
-    void addTerrain(DrawablesMap &drawables, TerrainType type, const BoundingBox &bb);
-
-    static ColorRgb terrainColor(TerrainType type) ;
-
-private:
     VoxelGridComponent<VoxelState> vg;
     GridLayoutComponent gridLayout;
+    PlatformsComponent platformsComponent;
 
     std::vector<VoxelCoords> agentSpawnPositions, objectSpawnPositions;
-    std::map<TerrainType, std::vector<BoundingBox>> terrain;
 
-    std::unique_ptr<Object3D> levelRoot;
     int numPlatforms{};
 };
 

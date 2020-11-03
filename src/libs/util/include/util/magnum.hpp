@@ -31,6 +31,8 @@ inline Magnum::Color3 toRgbf(unsigned long long value)
     );
 }
 
+inline Magnum::Math::Deg<Magnum::Float> degrees(double value) { return Magnum::Math::Deg<Magnum::Float>(Magnum::Float(value)); }
+
 }
 
 namespace Magnum::Math

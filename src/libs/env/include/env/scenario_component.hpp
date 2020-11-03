@@ -20,7 +20,7 @@ public:
 
     virtual ~ScenarioComponent() = default;
 
-private:
+public:
     virtual void reset(Env &, Env::EnvState &) {}
 
     virtual void step(Env &, Env::EnvState &) {}

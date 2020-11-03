@@ -14,7 +14,7 @@ class VoxelEnv(gym.Env):
 
         self.scenario_name = scenario_name
 
-        # set_voxel_env_log_level(2)
+        set_voxel_env_log_level(2)
 
         self.img_w = 128
         self.img_h = 72

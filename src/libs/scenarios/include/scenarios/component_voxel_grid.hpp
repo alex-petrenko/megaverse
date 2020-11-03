@@ -6,63 +6,11 @@
 
 #include <env/scenario_component.hpp>
 
+#include <scenarios/platforms.hpp>
+
 
 namespace VoxelWorld
 {
-
-
-struct BoundingBox
-{
-    BoundingBox() = default;
-
-    BoundingBox(const VoxelCoords &min, const VoxelCoords &max)
-    : min{min}, max{max}
-    {
-    }
-
-    BoundingBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ)
-    : min{minX, minY, minZ}
-    , max{maxX, maxY, maxZ}
-    {
-    }
-
-    void addPoint(const VoxelCoords &v)
-    {
-        if (v.x() < min.x()) min.x() = v.x();
-        if (v.x() > max.x()) max.x() = v.x();
-
-        if (v.y() < min.y()) min.y() = v.y();
-        if (v.y() > max.y()) max.y() = v.y();
-
-        if (v.z() < min.z()) min.z() = v.z();
-        if (v.z() > max.z()) max.z() = v.z();
-    }
-
-    void sort()
-    {
-        // sort the min/max vertices after the transformation
-        // this only works for rotations in 90-degree increments
-        if (min.x() > max.x()) std::swap(min.x(), max.x());
-        if (min.y() > max.y()) std::swap(min.y(), max.y());
-        if (min.z() > max.z()) std::swap(min.z(), max.z());
-    }
-
-    bool collidesWith(const BoundingBox &other) const
-    {
-        // we're looking for an axis with no overlap
-        if (max.x() <= other.min.x()) return false;
-        if (min.x() >= other.max.x()) return false;
-        if (max.y() <= other.min.y()) return false;
-        if (min.y() >= other.max.y()) return false;
-        if (max.z() <= other.min.z()) return false;
-        if (min.z() >= other.max.z()) return false;
-
-        return true;
-    }
-
-public:
-    VoxelCoords min, max;
-};
 
 struct CoordRange
 {
@@ -97,6 +45,18 @@ public:
     }
 
     void reset(Env &, Env::EnvState &) override { grid.clear(); }
+
+    void addPlatform(const Platform &p, bool drawWalls = true)
+    {
+        for (auto &bb : p.layoutBoxes)
+            addBoundingBox(bb.boundingBox(), VOXEL_OPAQUE | VOXEL_SOLID);
+        for (auto &bb : p.wallBoxes)
+            addBoundingBox(bb.boundingBox(), VOXEL_SOLID | (drawWalls ? VOXEL_OPAQUE : 0));
+
+        for (auto &[terrainType, v] : p.terrainBoxes)
+            for (auto &bb : v)
+                addTerrainBoundingBox(bb.boundingBox(), terrainType);
+    }
 
     template<typename... Args>
     void addBoundingBox(const BoundingBox &bb, Args&&... args)

@@ -107,7 +107,6 @@ public:
 
         } else {
             // picking up an object
-
             const auto &pickup = agent->interactLocation()->absoluteTransformation().translation();
             VoxelCoords voxel{int(pickup.x()), int(pickup.y()), int(pickup.z())};
             VoxelCoords voxelAbove{voxel.x(), voxel.y() + 1, voxel.z()};

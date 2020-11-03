@@ -32,7 +32,7 @@ bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 200000'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 20'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -164,9 +164,9 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 1;  // to test vectorized env interface
-    const int numAgentsPerEnv = 1;
-    const int numSimulationThreads = 1;
+    const int numEnvs = 2;  // to test vectorized env interface
+    const int numAgentsPerEnv = 2;
+    const int numSimulationThreads = 2;
 
     FloatParams params{{Str::episodeLengthSec, 100.0f}};
 
