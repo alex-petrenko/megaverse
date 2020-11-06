@@ -1,4 +1,4 @@
-# sapphire-rl
+# voxel-rl
 
 ```
 1) Clone the repo
