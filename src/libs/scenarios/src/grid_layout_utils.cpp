@@ -1,13 +1,9 @@
 #include <queue>
 
-#include <cassert>
-#include <unordered_set>
-
-#include <util/util.hpp>
 #include <util/magnum.hpp>
 #include <util/tiny_logger.hpp>
 
-#include <scenarios/component_grid_layout.hpp>
+#include <scenarios/grid_layout_utils.hpp>
 #include <scenarios/component_voxel_grid.hpp>
 
 
@@ -19,30 +15,6 @@ using namespace VoxelWorld;
 
 //namespace
 //{
-//
-//// TODO: we probably don't need that
-//const Magnum::Vector3i directions[] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-//
-//std::vector<VoxelCoords> getFreeVoxels(const VoxelGrid<VoxelState> &grid, int length, int width, int startY)
-//{
-//    std::vector<VoxelCoords> res;
-//
-//    for (int x = 1; x < length - 1; ++x)
-//        for (int z = 1; z < width - 1; ++z) {
-//            for (int y = startY; y > 0; --y) {
-//                const VoxelCoords coords{x, y - 1, z};
-//                const auto v = grid.get(coords);
-//                if (v && v->solid()) {
-//                    res.emplace_back(x, y, z);
-//                    break;
-//                }
-//            }
-//        }
-//
-//    return res;
-//}
-//
-//}
 //
 //// Layout generators
 //
@@ -633,7 +605,7 @@ using namespace VoxelWorld;
 //}
 
 // TODO: add different types of layouts
-void GridLayoutComponent::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType)
+void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType)
 {
     if (voxelType == VOXEL_EMPTY)
         return;
@@ -664,12 +636,12 @@ void GridLayoutComponent::addBoundingBoxes(DrawablesMap &drawables, Env::EnvStat
 
             collisionBox.syncPose();
 
-            collisionShapes.emplace_back(std::move(bBoxShape));
+            envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
         }
     }
 }
 
-void GridLayoutComponent::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb)
+void VoxelWorld::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb)
 {
     const auto scale = Vector3(bb.max.x() - bb.min.x(), 1.0, bb.max.z() - bb.min.z());
 
@@ -683,32 +655,5 @@ void GridLayoutComponent::addTerrain(DrawablesMap &drawables, Env::EnvState &env
         terrainObject.translate(pos);
 
         drawables[DrawableType::Box].emplace_back(&terrainObject, rgb(terrainColor(type)));
-    }
-}
-
-void GridLayoutComponent::addInteractiveObjects(DrawablesMap &drawables, Env::EnvState &envState, const std::vector<VoxelCoords> &objectPositions, VoxelGrid<VoxelState> &grid)
-{
-    const auto objSize = 0.39f;
-    auto objScale = Magnum::Vector3{objSize, objSize, objSize};
-
-    for (const auto &movableObject : objectPositions) {
-        const auto pos = movableObject;
-        auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f};
-
-        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{0.45f, 0.5f, 0.45f});
-
-        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
-        object.scale(objScale).translate(translation);
-        object.setCollisionOffset({0.0f, -0.1f, 0.0f});
-        object.syncPose();
-
-        drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::MOVABLE_BOX));
-
-        collisionShapes.emplace_back(std::move(bBoxShape));
-
-        // TODO: this should probably be done elsewhere?
-        VoxelState voxelState{false};
-        voxelState.obj = &object;
-        grid.set(pos, voxelState);
     }
 }

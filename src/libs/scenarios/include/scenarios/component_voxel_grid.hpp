@@ -64,7 +64,7 @@ public:
         for (int x = bb.min.x(); x < bb.max.x(); ++x)
             for (int y = bb.min.y(); y < bb.max.y(); ++y)
                 for (int z = bb.min.z(); z < bb.max.z(); ++z)
-                    grid.set({x, y, z}, VoxelT(std::forward<Args>(args)...));
+                    grid.set({x, y, z}, makeVoxel<VoxelT>(std::forward<Args>(args)...));
     }
 
     template<typename... Args>

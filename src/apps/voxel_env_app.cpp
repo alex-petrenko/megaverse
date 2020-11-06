@@ -22,17 +22,19 @@
 using namespace VoxelWorld;
 
 
-constexpr int delayMs = 1000 / 15;
+constexpr int delayMs = 20;  // 1000 / 15;
+
+constexpr ConstStr scenario = "Collect";
 
 constexpr bool useVulkan = true;
 
-constexpr bool viz = false;
-constexpr bool hires = false;
+constexpr bool viz = true;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 20'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 8'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -164,15 +166,15 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 2;  // to test vectorized env interface
-    const int numAgentsPerEnv = 2;
-    const int numSimulationThreads = 2;
+    const int numEnvs = 1;  // to test vectorized env interface
+    const int numAgentsPerEnv = 1;
+    const int numSimulationThreads = 1;
 
     FloatParams params{{Str::episodeLengthSec, 100.0f}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
-        envs.emplace_back(std::make_unique<Env>("TowerBuilding", numAgentsPerEnv, params));
+        envs.emplace_back(std::make_unique<Env>(scenario, numAgentsPerEnv, params));
         envs[i]->seed(42 + i);
     }
 

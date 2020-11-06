@@ -41,7 +41,6 @@ std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, in
 ObstaclesScenario::ObstaclesScenario(const std::string &name, Env &env, Env::EnvState &envState)
 : DefaultScenario(name, env, envState)
 , vg{*this}
-, gridLayout{*this}
 , platformsComponent{*this}
 {
 }
@@ -167,13 +166,13 @@ void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
     auto boundingBoxesByType = vg.toBoundingBoxes();
 
     for (auto &[voxelType, bb] : boundingBoxesByType)
-        gridLayout.addBoundingBoxes(drawables, envState, bb, voxelType);
+        addBoundingBoxes(drawables, envState, bb, voxelType);
 
     // add terrains
     for (auto &platform : platformsComponent.platforms)
         for (auto &[terrainType, boxes] : platform->terrainBoxes)
             for (auto &bb : boxes)
-                gridLayout.addTerrain(drawables, envState, terrainType, bb.boundingBox());
+                addTerrain(drawables, envState, terrainType, bb.boundingBox());
 }
 
 float ObstaclesScenario::episodeLengthSec() const

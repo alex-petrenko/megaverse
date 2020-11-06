@@ -7,6 +7,11 @@
 namespace VoxelWorld
 {
 
+struct VoxelWithPhysicsObjects : public VoxelState
+{
+    RigidBody *physicsObject = nullptr;
+};
+
 class ObjectStackingCallbacks
 {
 public:
@@ -15,6 +20,10 @@ public:
     virtual void pickedObject(int agentIdx, const VoxelCoords &voxel, Object3D *obj) = 0;
 };
 
+/**
+ * @tparam VoxelT has to have the field "physicsObject"
+ * SFINAE check or C++20 concepts check would be nice here.
+ */
 template<typename VoxelT>
 class ObjectStackingComponent : public ScenarioComponent
 {
@@ -86,8 +95,8 @@ public:
                 }
 
                 // placing object on the ground (or another object)
-                VoxelT voxelState{false};
-                voxelState.obj = obj;
+                VoxelT voxelState;
+                voxelState.physicsObject = obj;
                 grid.set(voxel, voxelState);
 
                 obj->setParent(envState.scene.get());
@@ -107,17 +116,17 @@ public:
 
         } else {
             // picking up an object
-            const auto &pickup = agent->interactLocation()->absoluteTransformation().translation();
+            const auto pickup = agent->interactLocation()->absoluteTransformation().translation();
             VoxelCoords voxel{int(pickup.x()), int(pickup.y()), int(pickup.z())};
             VoxelCoords voxelAbove{voxel.x(), voxel.y() + 1, voxel.z()};
 
             int pickupHeight = 0, maxPickupHeight = 1;
             while (pickupHeight <= maxPickupHeight) {
                 auto voxelPtr = grid.get(voxel), voxelAbovePtr = grid.get(voxelAbove);
-                bool hasObjectAbove = voxelAbovePtr && voxelAbovePtr->obj;
+                bool hasObjectAbove = voxelAbovePtr && voxelAbovePtr->physicsObject;
 
-                if (voxelPtr && voxelPtr->obj && !hasObjectAbove) {
-                    auto obj = voxelPtr->obj;
+                if (voxelPtr && voxelPtr->physicsObject && !hasObjectAbove) {
+                    auto obj = voxelPtr->physicsObject;
                     obj->toggleCollision();
 
                     obj->setParent(agent);
@@ -143,6 +152,32 @@ public:
 
                 ++pickupHeight;
             }
+        }
+    }
+
+    void addDrawablesAndCollisions(DrawablesMap &drawables, Env::EnvState &envState, const std::vector<VoxelCoords> &objectPositions)
+    {
+        const auto objSize = 0.39f;
+        auto objScale = Magnum::Vector3{objSize, objSize, objSize};
+
+        for (const auto &movableObject : objectPositions) {
+            const auto pos = movableObject;
+            auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f};
+
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{0.45f, 0.5f, 0.45f});
+
+            auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+            object.scale(objScale).translate(translation);
+            object.setCollisionOffset({0.0f, -0.1f, 0.0f});
+            object.syncPose();
+
+            drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::MOVABLE_BOX));
+
+            envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+
+            VoxelT voxelState;
+            voxelState.physicsObject = &object;
+            grid.set(pos, voxelState);
         }
     }
 

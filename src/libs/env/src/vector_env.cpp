@@ -110,7 +110,7 @@ void VectorEnv::reset()
 {
     // reset renderer on the main thread
     for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
-        envs[envIdx]->reset();
+        envs[envIdx]->reset(); // TODO parallelize
         renderer.reset(*envs[envIdx], envIdx);
     }
 }

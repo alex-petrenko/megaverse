@@ -1,26 +1,26 @@
-#include <v4r.hpp>
-#include <v4r/debug.hpp>
+#include <memory>
+#include <vector>
+
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
 
-#include <v4r_rendering/v4r_env_renderer.hpp>
-
-#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Primitives/Axis.h>
-#include <Magnum/Primitives/Plane.h>
 #include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Trade/MeshData.h>
-#include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
-#include <util/tiny_logger.hpp>
+#include <Magnum/SceneGraph/AbstractObject.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include <memory>
-#include <vector>
+#include <v4r.hpp>
+#include <v4r/debug.hpp>
+
+#include <util/tiny_logger.hpp>
+
+#include <v4r_rendering/v4r_env_renderer.hpp>
+
 
 using namespace std;
 using namespace Magnum;
@@ -48,6 +48,13 @@ private:
         _renderEnv.updateInstanceTransform(_instanceID, glm::make_mat4(transformation.data()));
     }
 
+public:
+    void updateAbsoluteTransformation()
+    {
+        _renderEnv.updateInstanceTransform(_instanceID, glm::make_mat4(object().absoluteTransformationMatrix().data()));
+    }
+
+private:
     v4r::Environment &_renderEnv;
     uint32_t _instanceID;
 };
@@ -111,7 +118,7 @@ public:
     // Fake camera for only object transformations
     std::vector<SceneGraph::Camera3D *> fakeCameras;
 
-    v4r::RenderDoc rdoc;
+//    v4r::RenderDoc rdoc;
 
     std::map<DrawableType, int> meshIndices;
 };
@@ -133,9 +140,9 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
     loader(renderer.makeLoader()),
     cmdStream(renderer.makeCommandStream()),
     renderEnvs(),
-    framebufferSize(w, h),
+    framebufferSize(w, h)
     // cpuFrames(),
-    rdoc()
+    // rdoc()
 {
     // Need to reserve numAgents here so references remain stable
     envs.reserve(size_t(batchSize(envs)));
@@ -185,6 +192,8 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
         auto cubeMesh = Primitives::cubeSolid();
         meshIndices[DrawableType::Box] = int(meshes.size());
         meshes.emplace_back(convertMesh(cubeMesh));
+
+        // TODO cone, sphere
     }
 
     // Materials
@@ -273,7 +282,24 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
         renderEnv.setCameraView(view);
     }
 
-    fakeCameras[envIdx]->draw(envDrawables[envIdx]);
+    // this does extra work (e.g. multiplications by the fake identity camera transformation)
+//    fakeCameras[envIdx]->draw(envDrawables[envIdx]);
+
+    // Collapsing the scene graph transformations "manually", somehow this is barely faster, if at all
+    std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>> objects;
+    objects.reserve(envDrawables[envIdx].size());
+
+    for (size_t i = 0; i < envDrawables[envIdx].size(); ++i) {
+        auto &object = envDrawables[envIdx][i].object();
+        objects.emplace_back(object);
+    }
+
+    SceneGraph::AbstractObject3D::setClean(objects);
+
+    for (size_t i = 0; i < envDrawables[envIdx].size(); ++i) {
+        auto &drawable = dynamic_cast<V4RDrawable &>(envDrawables[envIdx][i]);
+        drawable.updateAbsoluteTransformation();
+    }
 }
 
 void V4REnvRenderer::Impl::draw(Envs &)

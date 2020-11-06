@@ -62,6 +62,7 @@ enum class DrawableType
     Box = 0,
     Capsule = 1,
     Sphere = 2,
+    Cone = 3,
 
     NumTypes,
 };
@@ -99,6 +100,11 @@ public:
             bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(&ghostPairCallback);
         }
 
+        void reset()
+        {
+            collisionShapes.clear();
+        }
+
         btGhostPairCallback ghostPairCallback;
 
         btDbvtBroadphase bBroadphase;
@@ -106,6 +112,8 @@ public:
         btDefaultCollisionConfiguration bCollisionConfiguration;
         btCollisionDispatcher bCollisionDispatcher{&bCollisionConfiguration};
         btDiscreteDynamicsWorld bWorld{&bCollisionDispatcher, &bBroadphase, &bConstraintSolver, &bCollisionConfiguration};
+
+        std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
     };
 
     /**
@@ -134,6 +142,8 @@ public:
             scene = std::make_unique<Scene3D>();
 
             agents.clear();
+
+            physics.reset();
         }
 
     public:

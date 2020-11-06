@@ -106,7 +106,6 @@ public:
 FootballScenario::FootballScenario(const std::string &name, Env &env, Env::EnvState &envState)
 : DefaultScenario(name, env, envState)
 , vg{*this}
-, gridLayoutComponent{*this}
 , platformsComponent{*this}
 {
 }
@@ -141,7 +140,7 @@ void FootballScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
     auto boundingBoxesByType = vg.toBoundingBoxes();
     for (auto &[voxelType, bb] : boundingBoxesByType)
-        gridLayoutComponent.addBoundingBoxes(drawables, envState, bb, voxelType);
+        addBoundingBoxes(drawables, envState, bb, voxelType);
 
     drawables[DrawableType::Sphere].emplace_back(footballObject, rgb(ColorRgb::ORANGE));
 }

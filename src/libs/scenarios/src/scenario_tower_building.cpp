@@ -113,7 +113,6 @@ TowerBuilding::TowerBuilding(const std::string &name, Env &env, Env::EnvState &e
 : DefaultScenario{name, env, envState}
 , vg{*this}
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
-, gridLayoutComponent{*this}
 , platformsComponent{*this}
 , agentState(size_t(env.getNumAgents()))
 {
@@ -133,7 +132,6 @@ void TowerBuilding::reset()
 {
     objectStackingComponent.reset(env, envState);
     vg.reset(env, envState);
-    gridLayoutComponent.reset(env, envState);
     platformsComponent.reset(env, envState);
 
     std::fill(agentState.begin(), agentState.end(), AgentState{});
@@ -157,13 +155,13 @@ void TowerBuilding::addEpisodeDrawables(DrawablesMap &drawables)
 
     auto boundingBoxesByType = vg.toBoundingBoxes();
     for (auto &[voxelType, bb] : boundingBoxesByType)
-        gridLayoutComponent.addBoundingBoxes(drawables, envState, bb, voxelType);
+        addBoundingBoxes(drawables, envState, bb, voxelType);
 
     for (auto &[terrainType, boxes] : platform->terrainBoxes)
         for (auto &bb : boxes)
-            gridLayoutComponent.addTerrain(drawables, envState, terrainType, bb.boundingBox());
+            addTerrain(drawables, envState, terrainType, bb.boundingBox());
 
-    gridLayoutComponent.addInteractiveObjects(drawables, envState, platform->objectSpawnPositions(), vg.grid);
+    objectStackingComponent.addDrawablesAndCollisions(drawables, envState, platform->objectSpawnPositions());
 }
 
 void TowerBuilding::step()

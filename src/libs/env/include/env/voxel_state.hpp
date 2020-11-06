@@ -21,20 +21,19 @@ struct VoxelState
     {
     }
 
-    explicit VoxelState(int voxelType, int terrain = 0)
-    : voxelType(voxelType)
-    , terrain(terrain)
-    {
-    }
-
     bool solid() const { return voxelType & VOXEL_SOLID; }
     bool opaque() const { return voxelType & VOXEL_OPAQUE; }
 
 public:
     uint8_t voxelType{}, terrain{};
-
-    // TODO: more flexible mechanism? E.g. linked list of objects
-    RigidBody *obj = nullptr;
 };
+
+template<typename VoxelT>
+auto makeVoxel(int type, int terrain = 0)
+{
+    VoxelT v;
+    v.voxelType = type, v.terrain = terrain;
+    return v;
+}
 
 }

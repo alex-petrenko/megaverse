@@ -2,6 +2,7 @@
 
 #include <env/scenario.hpp>
 
+#include <scenarios/scenario_collect.hpp>
 #include <scenarios/scenario_football.hpp>
 #include <scenarios/scenario_obstacles.hpp>
 #include <scenarios/scenario_tower_building.hpp>
@@ -26,6 +27,7 @@ void scenariosGlobalInit()
     registerScenario<TowerBuilding>("TowerBuilding");
     registerScenario<ObstaclesScenario>("Obstacles");
     registerScenario<FootballScenario>("Football");
+    registerScenario<CollectScenario>("Collect");
 }
 
 }

@@ -34,6 +34,7 @@ enum {
     WALLS_WEST = 1 << 2,
     WALLS_EAST = 1 << 3,
 
+    WALLS_NONE = 0,
     WALLS_ALL = WALLS_SOUTH | WALLS_NORTH | WALLS_EAST | WALLS_WEST,
 };
 
@@ -213,9 +214,6 @@ public:
 
     virtual std::vector<VoxelCoords> agentSpawnPoints(int numAgents)
     {
-        assert(length < maxLength);
-        assert(width < maxWidth);
-
         std::vector<VoxelCoords> spawnPoints;
         std::set<std::pair<int, int>> used;
 
@@ -228,7 +226,7 @@ public:
                 if (used.count({x, z}))
                     continue;
 
-                y = ++occupancy[x][z];
+                y = ++occupancy[{x, z}];
                 spawnPoints.emplace_back(x, y, z);
                 used.emplace(x, z);
                 break;
@@ -254,8 +252,7 @@ public:
     bool boundingBoxDirty = true;
     BoundingBox outerBoundingBox;
 
-    constexpr static int maxLength = 21, maxWidth = 21;
-    int occupancy[maxLength][maxWidth] = {{0}};
+    std::map<std::pair<int, int>, int> occupancy;
 };
 
 class EmptyPlatform : public Platform
@@ -418,9 +415,6 @@ public:
     void init() override
     {
         EmptyPlatform::init();
-
-        assert(length < maxLength);
-        assert(width < maxWidth);
     }
 
     std::vector<VoxelCoords> generateMovableBoxes(int numObjects)
@@ -430,7 +424,7 @@ public:
         for (int i = 0; i < numObjects; ++i) {
             const int x = randRange(1, length, rng);
             const int z = randRange(1, width - 1, rng);
-            const int y = ++occupancy[x][z];
+            const int y = ++occupancy[{x, z}];
             boxes.emplace_back(x, y, z);
         }
 

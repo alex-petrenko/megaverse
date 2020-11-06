@@ -6,7 +6,7 @@
 #include <scenarios/scenario_default.hpp>
 #include <scenarios/component_platforms.hpp>
 #include <scenarios/component_voxel_grid.hpp>
-#include <scenarios/component_grid_layout.hpp>
+#include <scenarios/grid_layout_utils.hpp>
 #include <scenarios/component_object_stacking.hpp>
 
 
@@ -53,9 +53,8 @@ private:
     void addCollectiveReward(int agentIdx, float rewardDelta) const;
 
 private:
-    VoxelGridComponent<VoxelState> vg;
-    ObjectStackingComponent<VoxelState> objectStackingComponent;
-    GridLayoutComponent gridLayoutComponent;
+    VoxelGridComponent<VoxelWithPhysicsObjects> vg;
+    ObjectStackingComponent<VoxelWithPhysicsObjects> objectStackingComponent;
     PlatformsComponent platformsComponent;
 
     int highestTower = 0;

@@ -3,7 +3,7 @@
 #include <scenarios/scenario_default.hpp>
 #include <scenarios/component_platforms.hpp>
 #include <scenarios/component_voxel_grid.hpp>
-#include <scenarios/component_grid_layout.hpp>
+#include <scenarios/grid_layout_utils.hpp>
 
 
 namespace VoxelWorld
@@ -32,7 +32,6 @@ public:
 
 private:
     VoxelGridComponent<VoxelState> vg;
-    GridLayoutComponent gridLayoutComponent;
     PlatformsComponent platformsComponent;
 
     std::unique_ptr<btSphereShape> collisionShape;

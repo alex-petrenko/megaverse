@@ -3,14 +3,12 @@
 #include <env/const.hpp>
 
 
-namespace VoxelWorld
-{
-
-namespace Str
+namespace VoxelWorld::Str
 {
     ConstStr teamSpirit = "teamSpirit",
              pickedUpObject = "pickedUpObject",
              visitedBuildingZoneWithObject = "visitedBuildingZoneWithObject";
-}
 
+    ConstStr collectSingle = "collectSingle",
+             collectAll = "collectAll";
 }

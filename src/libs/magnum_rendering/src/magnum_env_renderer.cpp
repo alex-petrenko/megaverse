@@ -11,9 +11,8 @@
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Primitives/Icosphere.h>
+#include <Magnum/Primitives/Cone.h>
 #include <Magnum/Shaders/Phong.h>
-#include <Magnum/Shaders/Flat.h>
-#include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/MeshTools/Compile.h>
@@ -137,8 +136,8 @@ public:
 
     std::vector<SceneGraph::DrawableGroup3D> envDrawables;
 
-    GL::Buffer boxInstanceBuffer{NoCreate}, capsuleInstanceBuffer{NoCreate}, sphereInstanceBuffer{NoCreate};
-    Containers::Array<InstanceData> boxInstanceData, capsuleInstanceData, sphereInstanceData;
+    GL::Buffer boxInstanceBuffer{NoCreate}, capsuleInstanceBuffer{NoCreate}, sphereInstanceBuffer{NoCreate}, coneInstanceBuffer{NoCreate};
+    Containers::Array<InstanceData> boxInstanceData, capsuleInstanceData, sphereInstanceData, coneInstanceData;
 
     Shaders::Phong shader{NoCreate};
     Shaders::Phong shaderInstanced{NoCreate};
@@ -146,7 +145,7 @@ public:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh boxMesh, capsuleMesh, sphereMesh;
+    GL::Mesh boxMesh, capsuleMesh, sphereMesh, coneMesh;
 
     std::vector<std::vector<Containers::Array<uint8_t>>> agentFrames;
     std::vector<std::vector<std::unique_ptr<MutableImageView2D>>> agentImageViews;
@@ -237,6 +236,15 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, Rend
             Shaders::Phong::NormalMatrix{},
             Shaders::Phong::Color3{}
         );
+
+        coneMesh = MeshTools::compile(Primitives::coneSolid(1, 6, 0.5f));
+        coneInstanceBuffer = GL::Buffer{};
+        coneMesh.addVertexBufferInstanced(
+            coneInstanceBuffer, 1, 0,
+            Shaders::Phong::TransformationMatrix{},
+            Shaders::Phong::NormalMatrix{},
+            Shaders::Phong::Color3{}
+        );
     }
 
     // drawables
@@ -260,18 +268,18 @@ MagnumEnvRenderer::Impl::~Impl()
         windowlessContextPtr->makeCurrent();
 }
 
-RenderingContext * MagnumEnvRenderer::Impl::initContext(RenderingContext *ctx)
+RenderingContext * MagnumEnvRenderer::Impl::initContext(RenderingContext *context)
 {
-    if (ctx) {
+    if (context) {
         // we're given a rendering context
     } else {
         // don't have an active rendering context, let's create one
         TLOG(INFO) << windowlessContextPtr.get();
         windowlessContextPtr = std::make_unique<WindowlessContext>();
-        ctx = windowlessContextPtr.get();
+        context = windowlessContextPtr.get();
     }
 
-    return ctx;
+    return context;
 }
 
 void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
@@ -284,6 +292,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
         arrayResize(boxInstanceData, 0);
         arrayResize(capsuleInstanceData, 0);
         arrayResize(sphereInstanceData, 0);
+        arrayResize(coneInstanceData, 0);
     }
 
     // drawables
@@ -303,6 +312,11 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
         for (const auto &sceneObjectInfo : drawables.at(DrawableType::Sphere)) {
             const auto &color = sceneObjectInfo.color;
             sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(sphereInstanceData, color, envDrawables[envIndex]);
+        }
+
+        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Cone)) {
+            const auto &color = sceneObjectInfo.color;
+            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(coneInstanceData, color, envDrawables[envIndex]);
         }
     }
 
@@ -342,6 +356,7 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     arrayResize(boxInstanceData, 0);
     arrayResize(capsuleInstanceData, 0);
     arrayResize(sphereInstanceData, 0);
+    arrayResize(coneInstanceData, 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
     if (withOverviewCamera && overview.enabled)
@@ -368,6 +383,12 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
         sphereInstanceBuffer.setData(sphereInstanceData, GL::BufferUsage::DynamicDraw);
         sphereMesh.setInstanceCount(Int(sphereInstanceData.size()));
         shaderInstanced.draw(sphereMesh);
+    }
+
+    if (!coneInstanceData.empty()) {
+        coneInstanceBuffer.setData(coneInstanceData, GL::BufferUsage::DynamicDraw);
+        coneMesh.setInstanceCount(Int(coneInstanceData.size()));
+        shaderInstanced.draw(coneMesh);
     }
 
     // Bullet debug draw
