@@ -2,15 +2,17 @@
 
 #include <scenarios/platforms.hpp>
 #include <scenarios/scenario_default.hpp>
+#include <scenarios/grid_layout_utils.hpp>
 #include <scenarios/component_platforms.hpp>
 #include <scenarios/component_voxel_grid.hpp>
-#include <scenarios/grid_layout_utils.hpp>
+#include <scenarios/component_fall_detection.hpp>
+#include <scenarios/component_object_stacking.hpp>
 
 
 namespace VoxelWorld
 {
 
-class ObstaclesScenario : public DefaultScenario
+class ObstaclesScenario : public DefaultScenario, public ObjectStackingCallbacks, public FallDetectionCallbacks
 {
 public:
     explicit ObstaclesScenario(const std::string &name, Env &env, Env::EnvState &envState);
@@ -28,9 +30,15 @@ public:
 
     float episodeLengthSec() const override;
 
+    void agentTouchedLava(int agentIdx);
+
+    void agentFell(int agentIdx) override;
+
 private:
-    VoxelGridComponent<VoxelState> vg;
+    VoxelGridComponent<VoxelWithPhysicsObjects> vg;
     PlatformsComponent platformsComponent;
+    ObjectStackingComponent<VoxelWithPhysicsObjects> objectStackingComponent;
+    FallDetectionComponent<VoxelWithPhysicsObjects> fallDetection;
 
     std::vector<VoxelCoords> agentSpawnPositions, objectSpawnPositions;
 

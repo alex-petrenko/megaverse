@@ -123,14 +123,12 @@ void CollectScenario::createLandscape()
 
 void CollectScenario::step()
 {
-    for (int i = 0; i < env.getNumAgents(); ++i) {
-        const auto a = envState.currAction[i];
-        if (!!(a & Action::Interact))
-            objectStackingComponent.onInteractAction(i, envState);
+    objectStackingComponent.step(env, envState);
 
+    for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto agent = envState.agents[i];
         auto t = agent->absoluteTransformation().translation();
-        VoxelCoords voxel{t};
+        VoxelCoords voxel = toVoxel(t);
         auto voxelPtr = vg.grid.get(voxel);
         if (voxelPtr && voxelPtr->rewardObject) {
             TLOG(INFO) << "Reward " << voxelPtr->reward;

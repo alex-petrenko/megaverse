@@ -7,6 +7,8 @@
 #include <util/util.hpp>
 #include <util/magnum.hpp>
 #include <util/voxel_grid.hpp>
+#include <util/math_utils.hpp>
+#include <util/tiny_logger.hpp>
 
 #include <scenarios/const.hpp>
 
@@ -226,7 +228,8 @@ public:
                 if (used.count({x, z}))
                     continue;
 
-                y = ++occupancy[{x, z}];
+                y = occupancy[{x, z}] + 1;
+                occupancy[{x, z}] += 2;
                 spawnPoints.emplace_back(x, y, z);
                 used.emplace(x, z);
                 break;
@@ -234,6 +237,38 @@ public:
         }
 
         return spawnPoints;
+    }
+
+    virtual int requiresMovableBoxesToTraverse() { return 0; }
+
+    virtual std::vector<VoxelCoords> generateMovableBoxes(int numBoxesToGenerate)
+    {
+        std::vector<VoxelCoords> boxes;
+        constexpr int maxAttempts = 10;
+
+        for (int i = 0; i < numBoxesToGenerate; ++i) {
+            for (int attempt = 0; attempt < 10; ++attempt) {
+                const int x = randRange(1, length - 1, rng);
+                const int z = randRange(1, width - 1, rng);
+                if (occupancy[{x, z}] < 2 || attempt >= maxAttempts - 1) {
+                    const int y = ++occupancy[{x, z}];
+                    boxes.emplace_back(x, y, z);
+                    break;
+                }
+            }
+        }
+
+        return adjustTransformation(boxes);
+    }
+
+    std::vector<VoxelCoords> adjustTransformation(std::vector<VoxelCoords> &coords) const
+    {
+        for (auto &c : coords) {
+            Magnum::Vector3 v{c.x() + 0.5f, c.y() + 0.5f, c.z() + 0.5f};
+            c = toVoxel(root->absoluteTransformation().transformPoint(v));
+        }
+
+        return coords;
     }
 
 public:
@@ -266,12 +301,12 @@ public:
 
     void init() override
     {
-        length = randRange(4, 14, rng);
+        length = randRange(4, 10, rng);
         if (width == -1)
-            width = randRange(4, 12, rng);
+            width = randRange(5, 9, rng);
 
         // height = randRange(3, 7, rng);
-        height = 4;
+        height = 5;
     }
 
     void generate() override
@@ -293,8 +328,8 @@ public:
     {
         EmptyPlatform::init();
 
-        wallHeight = randRange(1, std::min(3, height - 1), rng);
-        height = randRange(wallHeight + 2, wallHeight + 5, rng);
+        wallHeight = randRange(1, 5, rng);
+        height = randRange(wallHeight + 4, wallHeight + 6, rng);
     }
 
     void generate() override
@@ -306,7 +341,14 @@ public:
 
         MagnumAABB wall{*root, {wallX, 1, 1, wallX + wallThickness, 1 + wallHeight, width - 1}};
         layoutBoxes.emplace_back(wall);
+
+        // this way we won't generate boxes on top of the wall (for the most part)
+        for (int x = wallX; x < wallX + wallThickness; ++x)
+            for (int z = 1; z < width; ++z)
+                occupancy[{x, z}] = wallHeight;
     }
+
+    int requiresMovableBoxesToTraverse() override { return triangularNumber(wallHeight - 1); }
 
 private:
     int wallHeight{};
@@ -324,12 +366,17 @@ public:
     {
         EmptyPlatform::generate();
 
-        const auto lavaLength = randRange(2, std::min(4, length - 1), rng);
+        lavaLength = randRange(2, std::min(4, length - 1), rng);
         const auto lavaX = randRange(1, length - lavaLength, rng);
 
         MagnumAABB lava{*root, {lavaX, 1, 1, lavaX + lavaLength, 2, width - 1}};
         terrainBoxes[TERRAIN_LAVA].emplace_back(lava);
     }
+
+    int requiresMovableBoxesToTraverse() override { return std::max(0, std::min(2, lavaLength - 2)); }
+
+private:
+    int lavaLength{};
 };
 
 class StepPlatform : public EmptyPlatform
@@ -363,7 +410,14 @@ public:
         nextPlatformAnchor->translateLocal({float(length), float(stepHeight), 0});
 
         addWalls();
+
+        // this way we won't generate boxes on top of the step (for the most part)
+        for (int x = stepX + 1; x < length; ++x)
+            for (int z = 1; z < width; ++z)
+                occupancy[{x, z}] = stepHeight;
     }
+
+    int requiresMovableBoxesToTraverse() override { return triangularNumber(stepHeight - 1); }
 
 private:
     int stepHeight{};
@@ -382,7 +436,7 @@ public:
     {
         EmptyPlatform::init();
 
-        gap = randRange(2, std::min(4, length - 1), rng);
+        gap = randRange(2, std::min(6, length - 1), rng);
         gapX = randRange(1, length - gap, rng);
     }
 
@@ -398,6 +452,28 @@ public:
         nextPlatformAnchor->translateLocal({float(length), 0, 0});
 
         addWalls();
+    }
+
+    int requiresMovableBoxesToTraverse() override { return triangularNumber(std::max(0, gap - 2)); }
+
+    std::vector<VoxelCoords> generateMovableBoxes(int numBoxesToGenerate) override
+    {
+        std::vector<VoxelCoords> boxes, candidates;
+
+        for (int x = 0; x < length; ++x)
+            for (int z = 1; z < width - 1; ++z) {
+                if (x >= gapX && x < gapX + gap)
+                    continue;
+                candidates.emplace_back(x, 1, z);
+            }
+
+        for (int i = 0; i < numBoxesToGenerate; ++i) {
+            const auto v = randomSample(candidates, rng);
+            const int y = ++occupancy[{v.x(), v.z()}];
+            boxes.emplace_back(v.x(), y, v.z());
+        }
+
+        return adjustTransformation(boxes);
     }
 
 private:
@@ -416,20 +492,6 @@ public:
     {
         EmptyPlatform::init();
     }
-
-    std::vector<VoxelCoords> generateMovableBoxes(int numObjects)
-    {
-        std::vector<VoxelCoords> boxes;
-
-        for (int i = 0; i < numObjects; ++i) {
-            const int x = randRange(1, length, rng);
-            const int z = randRange(1, width - 1, rng);
-            const int y = ++occupancy[{x, z}];
-            boxes.emplace_back(x, y, z);
-        }
-
-        return boxes;
-    }
 };
 
 class ExitPlatform : public EmptyPlatform
@@ -444,7 +506,7 @@ public:
     {
         EmptyPlatform::generate();
 
-        MagnumAABB exit{*root, {length - 3, 1, 1, length - 1, 2, width - 1}};
+        MagnumAABB exit{*root, {length - 3, 1, 1, length - 1, 3, width - 1}};
         terrainBoxes[TERRAIN_EXIT].emplace_back(exit);
     }
 };
@@ -458,7 +520,7 @@ public:
         length = l, width = w;
     }
 
-    void init() override { height = 4; }
+    void init() override { height = 5; }
 };
 
 }

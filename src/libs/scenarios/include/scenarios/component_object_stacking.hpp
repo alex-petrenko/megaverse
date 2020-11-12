@@ -15,9 +15,9 @@ struct VoxelWithPhysicsObjects : public VoxelState
 class ObjectStackingCallbacks
 {
 public:
-    virtual bool canPlaceObject(int agentIdx, const VoxelCoords &voxel, Object3D *obj) = 0;
-    virtual void placedObject(int agentIdx, const VoxelCoords &voxel, Object3D *obj) = 0;
-    virtual void pickedObject(int agentIdx, const VoxelCoords &voxel, Object3D *obj) = 0;
+    virtual bool canPlaceObject(int /*agentIdx*/, const VoxelCoords &, Object3D * /*obj*/) { return true; }
+    virtual void placedObject(int /*agentIdx*/, const VoxelCoords &, Object3D * /*obj*/) {}
+    virtual void pickedObject(int /*agentIdx*/, const VoxelCoords &, Object3D * /*obj*/) {}
 };
 
 /**
@@ -41,6 +41,15 @@ public:
         std::fill(carryingObject.begin(), carryingObject.end(), nullptr);
     }
 
+    void step(Env &env, Env::EnvState &envState) override
+    {
+        for (int i = 0; i < env.getNumAgents(); ++i) {
+            const auto a = envState.currAction[i];
+            if (!!(a & Action::Interact))
+                onInteractAction(i, envState);
+        }
+    }
+
     Object3D * agentCarryingObject(int agentIdx) const
     {
         return carryingObject[agentIdx];
@@ -55,9 +64,9 @@ public:
         // putting object on the ground
         if (carryingObject[agentIdx]) {
             auto obj = carryingObject[agentIdx];
-            auto t = obj->absoluteTransformation().translation();
+            const auto t = obj->absoluteTransformation().translation();
 
-            VoxelCoords voxel{t};
+            VoxelCoords voxel = toVoxel(t);
             auto voxelPtr = grid.get(voxel);
 
             bool collidesWithAgent = false;
@@ -67,7 +76,7 @@ public:
                     continue;
 
                 const auto agentTransformation = a->transformation().translation();
-                VoxelCoords c{agentTransformation};
+                VoxelCoords c = toVoxel(agentTransformation);
 
                 if (voxel == c) {
                     collidesWithAgent = true;
@@ -75,14 +84,15 @@ public:
                 }
             }
 
-            if (!voxelPtr && !collidesWithAgent && callbacks.canPlaceObject(agentIdx, voxel, obj)) {
+            const bool empty = !voxelPtr || (voxelPtr->empty() && !voxelPtr->physicsObject);
+            if (empty && !collidesWithAgent && callbacks.canPlaceObject(agentIdx, voxel, obj)) {
                 // voxel in front of us is empty, can place the object
                 // the object should be on the ground or on top of another object
                 // descend on y axis until we find ground
 
                 while (true) {
                     VoxelCoords voxelBelow{voxel.x(), voxel.y() - 1, voxel.z()};
-                    if (voxelBelow.y() < 0) {
+                    if (voxelBelow.y() < -30) {
                         // this is the lowest level we support
                         break;
                     }
@@ -117,7 +127,7 @@ public:
         } else {
             // picking up an object
             const auto pickup = agent->interactLocation()->absoluteTransformation().translation();
-            VoxelCoords voxel{int(pickup.x()), int(pickup.y()), int(pickup.z())};
+            VoxelCoords voxel = lround(floor(pickup));
             VoxelCoords voxelAbove{voxel.x(), voxel.y() + 1, voxel.z()};
 
             int pickupHeight = 0, maxPickupHeight = 1;

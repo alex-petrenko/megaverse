@@ -153,6 +153,8 @@ void TowerBuilding::addEpisodeDrawables(DrawablesMap &drawables)
 {
     // TODO: repeating code, reuse? Move to platform component
 
+
+
     auto boundingBoxesByType = vg.toBoundingBoxes();
     for (auto &[voxelType, bb] : boundingBoxesByType)
         addBoundingBoxes(drawables, envState, bb, voxelType);
@@ -166,17 +168,15 @@ void TowerBuilding::addEpisodeDrawables(DrawablesMap &drawables)
 
 void TowerBuilding::step()
 {
-    for (int i = 0; i < env.getNumAgents(); ++i) {
-        const auto a = envState.currAction[i];
-        if (!!(a & Action::Interact))
-            objectStackingComponent.onInteractAction(i, envState);
+    objectStackingComponent.step(env, envState);
 
+    for (int i = 0; i < env.getNumAgents(); ++i) {
         // reward shaping: give agents reward for visiting bulding zone while carrying the object
         if (objectStackingComponent.agentCarryingObject(i)) {
             const auto &agent = envState.agents[i];
             const auto t = agent->transformation().translation();
 
-            VoxelCoords voxel{t};
+            VoxelCoords voxel = toVoxel(t);
             if (isInBuildingZone(voxel)) {
                 if (!agentState[i].visitedBuildingZoneWithObject) {
                     envState.lastReward[i] += rewardShaping[i].at(Str::visitedBuildingZoneWithObject);

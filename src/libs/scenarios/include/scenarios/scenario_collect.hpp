@@ -39,11 +39,6 @@ public:
 
     float trueObjective() const override { return cumulativeReward; }
 
-    // Callbacks
-    bool canPlaceObject(int, const VoxelCoords &, Object3D *) override { return true; }
-    void placedObject(int, const VoxelCoords &, Object3D *) override {}
-    void pickedObject(int, const VoxelCoords &, Object3D *) override {}
-
 private:
     VoxelGridComponent<VoxelCollect> vg;
     ObjectStackingComponent<VoxelCollect> objectStackingComponent;

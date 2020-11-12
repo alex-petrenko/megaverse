@@ -17,7 +17,7 @@ namespace
 std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, int width)
 {
     enum { EMPTY, WALL, LAVA, STEP, GAP };
-    const static std::vector<int> supportedPlatforms = {EMPTY, WALL, LAVA, STEP, GAP};
+    const static std::vector<int> supportedPlatforms = {WALL, LAVA, STEP, GAP};
     const auto platformType = randomSample(supportedPlatforms, rng);
 
     switch (platformType) {
@@ -42,6 +42,8 @@ ObstaclesScenario::ObstaclesScenario(const std::string &name, Env &env, Env::Env
 : DefaultScenario(name, env, envState)
 , vg{*this}
 , platformsComponent{*this}
+, objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
+, fallDetection{*this, vg.grid, *this}
 {
 }
 
@@ -49,6 +51,9 @@ void ObstaclesScenario::reset()
 {
     vg.reset(env, envState);
     platformsComponent.reset(env, envState);
+    objectStackingComponent.reset(env, envState);
+    fallDetection.reset(env, envState);
+
     agentSpawnPositions.clear(), objectSpawnPositions.clear();
 
     auto &platforms = platformsComponent.platforms;
@@ -61,7 +66,7 @@ void ObstaclesScenario::reset()
     for (int attempt = 0; attempt < 20; ++attempt) {
         platforms.clear();
 
-        numPlatforms = randRange(2, 10, envState.rng);
+        numPlatforms = randRange(2, 8, envState.rng);
 
         static const std::vector<int> orientations = {ORIENTATION_STRAIGHT, ORIENTATION_TURN_LEFT, ORIENTATION_TURN_RIGHT};
 
@@ -139,19 +144,41 @@ void ObstaclesScenario::reset()
 
     assert(startPlatform);
     agentSpawnPositions = startPlatform->agentSpawnPoints(env.getNumAgents());
+    fallDetection.agentInitialPositions = agentSpawnPositions;
+
+    // generating movable boxes
+    std::vector<int> numBoxes(platforms.size());
+    for (int i = 1; i < int(platforms.size()); ++i) {
+        const auto n = platforms[i]->requiresMovableBoxesToTraverse();
+        for (int box = 0; box < n; ++box) {
+            const auto platformIdx = randRange(std::max(0, i - 2), i, envState.rng);
+            ++numBoxes[platformIdx];
+        }
+    }
+
+    for (int i = 0; i < int(platforms.size()); ++i) {
+        const auto coords = platforms[i]->generateMovableBoxes(numBoxes[i]);
+        objectSpawnPositions.insert(objectSpawnPositions.end(), coords.cbegin(), coords.cend());
+    }
 }
 
 void ObstaclesScenario::step()
 {
+    objectStackingComponent.step(env, envState);
+    fallDetection.step(env, envState);
+
     int numAgentsAtExit = 0;
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
         const auto &t = agent->absoluteTransformation().translation();
         const auto voxel = vg.grid.getCoords(t);
+
         if (vg.grid.hasVoxel(voxel)) {
             const auto terrainType = vg.grid.get(voxel)->terrain;
             if (terrainType & TERRAIN_EXIT)
                 ++numAgentsAtExit;
+            else if (terrainType & TERRAIN_LAVA)
+                agentTouchedLava(i);
         }
     }
 
@@ -173,10 +200,23 @@ void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
         for (auto &[terrainType, boxes] : platform->terrainBoxes)
             for (auto &bb : boxes)
                 addTerrain(drawables, envState, terrainType, bb.boundingBox());
+
+    objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectSpawnPositions);
 }
 
 float ObstaclesScenario::episodeLengthSec() const
 {
     const auto minDuration = Scenario::episodeLengthSec();
-    return std::max(minDuration, float(numPlatforms) * 20);
+    return std::max(minDuration, float(numPlatforms) * 30);
+}
+
+void ObstaclesScenario::agentFell(int agentIdx)
+{
+    // TODO reward
+}
+
+void ObstaclesScenario::agentTouchedLava(int agentIdx)
+{
+    fallDetection.resetAgent(agentIdx, envState.agents[agentIdx]);
+    agentFell(agentIdx);
 }

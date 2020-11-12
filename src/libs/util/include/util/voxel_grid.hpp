@@ -13,6 +13,11 @@ using VoxelCoords = Magnum::Vector3i;
 
 constexpr int maxGridResolution = 1'024, logMaxGridResolution = 10, maxAbsVoxelCoord = maxGridResolution / 2;
 
+inline VoxelCoords toVoxel(const Magnum::Vector3 &v)
+{
+    return lround(floor(v));
+}
+
 }
 
 //bool operator==(const VoxelCoords &lhs, const VoxelCoords &rhs)
@@ -99,7 +104,7 @@ public:
     }
 
     /**
-     * Override the voxel state in the particulwar voxel.
+     * Override the voxel state in the particular voxel.
      * @param coords
      * @param state
      */
@@ -121,7 +126,7 @@ public:
     VoxelCoords getCoords(const Magnum::Vector3 &v)
     {
         const auto coordsFloat = (v - origin) / voxelSize;
-        const auto coords = Magnum::Vector3i(coordsFloat);
+        const auto coords = toVoxel(coordsFloat);
         return coords;
     }
 

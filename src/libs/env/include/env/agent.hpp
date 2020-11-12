@@ -45,6 +45,8 @@ public:
 
     virtual void jump() = 0;
 
+    virtual void teleport(const btVector3 &position) = 0;
+
     virtual float getAgentHeight() = 0;
 
     virtual Magnum::SceneGraph::Camera3D * getCamera() = 0;
@@ -92,6 +94,8 @@ public:
     void accelerate(const btVector3 &acc, btScalar frameDuration) override;
 
     void jump() override;
+
+    void teleport(const btVector3 &position) override;
 
     float getAgentHeight() override { return agentHeight; }
 

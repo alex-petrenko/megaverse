@@ -22,6 +22,7 @@ struct VoxelState
     }
 
     bool solid() const { return voxelType & VOXEL_SOLID; }
+    bool empty() const { return !solid(); }
     bool opaque() const { return voxelType & VOXEL_OPAQUE; }
 
 public:

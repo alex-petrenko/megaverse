@@ -157,6 +157,11 @@ void DefaultKinematicAgent::jump()
         bCharacter->jump(btVector3(0, 6.2, 0));
 }
 
+void DefaultKinematicAgent::teleport(const btVector3 &position)
+{
+    bCharacter->warp(position);
+}
+
 bool DefaultKinematicAgent::onGround() const
 {
     return bCharacter->onGround();
