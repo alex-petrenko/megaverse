@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(voxel-rl)
 
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL)

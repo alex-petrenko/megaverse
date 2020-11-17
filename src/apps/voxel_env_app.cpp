@@ -24,12 +24,13 @@ using namespace VoxelWorld;
 
 constexpr int delayMs = 20;  // 1000 / 15;
 
-constexpr ConstStr scenario = "Collect";
+//constexpr ConstStr scenario = "Collect";
+constexpr ConstStr scenario = "Obstacles";
 
 constexpr bool useVulkan = true;
 
-constexpr bool viz = true;
-constexpr bool hires = true;
+constexpr bool viz = false;
+constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;

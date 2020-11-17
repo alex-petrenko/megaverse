@@ -5,6 +5,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
+#include <util/magnum.hpp>
+
 
 namespace VoxelWorld
 {
