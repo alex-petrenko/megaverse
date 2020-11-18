@@ -95,7 +95,7 @@ public:
     /**
      * @return vector with starting positions of the agents.
      */
-    virtual std::vector<VoxelCoords> agentStartingPositions() = 0;
+    virtual std::vector<Magnum::Vector3> agentStartingPositions() = 0;
 
     /**
      * Called by the env to generate the agent objects for the episode.
@@ -198,6 +198,8 @@ protected:
 
     // reward shaping schemes for every agent in the env
     std::vector<RewardShaping> rewardShaping;
+
+
 };
 
 }

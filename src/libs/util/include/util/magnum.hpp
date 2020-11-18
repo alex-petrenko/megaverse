@@ -46,4 +46,16 @@ template<std::size_t size, class T> inline Vector<size, int> lround(const Vector
     return out;
 }
 
+template<typename CONTAINER_T>
+std::vector<Magnum::Vector3> toFloat(const CONTAINER_T &vectors)
+{
+    std::vector<Magnum::Vector3> result;
+    result.reserve(vectors.size());
+
+    for (const auto &v : vectors)
+        result.emplace_back(v);
+
+    return result;
+}
+
 }

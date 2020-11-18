@@ -514,6 +514,7 @@ void KinematicCharacterController::warp(const btVector3& origin)
     xform.setIdentity();
     xform.setOrigin(origin);
     m_ghostObject->setWorldTransform(xform);
+    horizontalVelocity.setValue(0, 0, 0);
 }
 
 void KinematicCharacterController::preStep(btCollisionWorld* collisionWorld)
@@ -523,7 +524,6 @@ void KinematicCharacterController::preStep(btCollisionWorld* collisionWorld)
 
     m_currentOrientation = m_ghostObject->getWorldTransform().getRotation();
     m_targetOrientation = m_currentOrientation;
-    //	printf("m_targetPosition=%f,%f,%f\n",m_targetPosition[0],m_targetPosition[1],m_targetPosition[2]);
 }
 
 void KinematicCharacterController::playerStep(btCollisionWorld* collisionWorld, btScalar dt)

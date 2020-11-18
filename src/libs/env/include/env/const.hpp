@@ -26,11 +26,13 @@ enum class ColorRgb
     LIGHT_GREEN = 0x50c878,
     BLUE = 0x2eb5d0,
     LIGHT_BLUE = 0xadd8e6,
+    DARK_BLUE = 0x3a7fa6,
     ORANGE = 0xffa351,
     DARK_GREY = 0x555555,
     VERY_DARK_GREY = 0x222222,
     WHITE = 0xffffff,
     RED = 0xff0000,
+    LIGHT_ORANGE = 0xffa770,
 
     LAYOUT = WHITE,
     AGENT_EYES = VERY_DARK_GREY,
@@ -43,7 +45,7 @@ enum class ColorRgb
 
 const ColorRgb allColors[] = {
     ColorRgb::YELLOW, ColorRgb::GREEN, ColorRgb::LIGHT_GREEN, ColorRgb::BLUE, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
-    ColorRgb::DARK_GREY, ColorRgb::VERY_DARK_GREY, ColorRgb::WHITE,
+    ColorRgb::DARK_GREY, ColorRgb::VERY_DARK_GREY, ColorRgb::WHITE, ColorRgb::LIGHT_ORANGE, ColorRgb::DARK_BLUE,
 };
 const int numColors = ARR_LENGTH(allColors);
 

@@ -31,6 +31,13 @@ using namespace Magnum::Math::Literals;
 using namespace VoxelWorld;
 
 
+//    const auto scenarioName = "TowerBuilding";
+//    const auto scenarioName = "Football";
+//    const auto scenarioName = "Obstacles";
+//const auto scenarioName = "Collect";
+const auto scenarioName = "Sokoban";
+
+
 class Viewer: public Platform::Application
 {
 public:
@@ -87,10 +94,6 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
     const int numAgents = 2;
-//    const auto scenarioName = "TowerBuilding";
-//    const auto scenarioName = "Football";
-    const auto scenarioName = "Obstacles";
-//    const auto scenarioName = "Collect";
 
     auto env = std::make_unique<Env>(scenarioName, numAgents);
 //    env->seed(42);

@@ -61,10 +61,10 @@ public:
      * @param voxelSize scale of one voxel
      */
     explicit VoxelGrid(size_t voxelCount, const Magnum::Vector3 &origin, float voxelSize)
-        : voxelCount{voxelCount}
-          , grid{voxelCount}
-          , origin{origin}
-          , voxelSize{voxelSize} {}
+    : voxelCount{voxelCount}
+    , grid{voxelCount}
+    , origin{origin}
+    , voxelSize{voxelSize} {}
 
     /**
      * Reset the grid (empty).
@@ -87,7 +87,7 @@ public:
      * @param coords location in voxel grid.
      * @return pointer to VoxelState at the "coords" location, or nullptr if nothing is there.
      */
-    const VoxelState *get(const VoxelCoords &coords) const
+    const VoxelState * get(const VoxelCoords &coords) const
     {
         auto voxelIt = grid.find(coords);
         if (voxelIt == grid.end())
@@ -96,13 +96,23 @@ public:
         return &(voxelIt->second);
     }
 
-    VoxelState *get(const VoxelCoords &coords)
+    VoxelState * get(const VoxelCoords &coords)
     {
         auto voxelIt = grid.find(coords);
         if (voxelIt == grid.end())
             return nullptr;
 
         return &(voxelIt->second);
+    }
+
+    const VoxelState * getWithVector(const Magnum::Vector3 &v) const
+    {
+        return get(getCoords(v));
+    }
+
+    VoxelState * getWithVector(const Magnum::Vector3 &v)
+    {
+        return get(getCoords(v));
     }
 
     /**
@@ -136,6 +146,8 @@ public:
     {
         return grid;
     }
+
+    float getVoxelSize() const { return voxelSize; }
 
 private:
     size_t voxelCount;

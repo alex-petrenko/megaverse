@@ -12,10 +12,11 @@ std::vector<std::string> splitString(const std::string &s, const std::string &d)
 
     char *cStr = new char[s.size() + 1];
     strcpy(cStr, s.c_str());
-    char *token = strtok(cStr, d.c_str());
+    char *strtokPtr = nullptr;
+    char *token = strtok_r(cStr, d.c_str(), &strtokPtr);
     while (token) {
         result.emplace_back(token);
-        token = strtok(nullptr, d.c_str());
+        token = strtok_r(nullptr, d.c_str(), &strtokPtr);
     }
 
     delete[] cStr;

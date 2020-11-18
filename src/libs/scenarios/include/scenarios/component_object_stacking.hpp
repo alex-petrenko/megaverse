@@ -66,7 +66,7 @@ public:
             auto obj = carryingObject[agentIdx];
             const auto t = obj->absoluteTransformation().translation();
 
-            VoxelCoords voxel = toVoxel(t);
+            VoxelCoords voxel = grid.getCoords(t);
             auto voxelPtr = grid.get(voxel);
 
             bool collidesWithAgent = false;
@@ -76,7 +76,7 @@ public:
                     continue;
 
                 const auto agentTransformation = a->transformation().translation();
-                VoxelCoords c = toVoxel(agentTransformation);
+                VoxelCoords c = grid.getCoords(agentTransformation);
 
                 if (voxel == c) {
                     collidesWithAgent = true;

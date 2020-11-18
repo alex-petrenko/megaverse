@@ -1,8 +1,9 @@
 #pragma once
 
 #include <scenarios/scenario_default.hpp>
-#include <scenarios/component_voxel_grid.hpp>
 #include <scenarios/grid_layout_utils.hpp>
+#include <scenarios/component_voxel_grid.hpp>
+#include <scenarios/component_fall_detection.hpp>
 #include <scenarios/component_object_stacking.hpp>
 
 
@@ -16,11 +17,8 @@ struct VoxelCollect : public VoxelWithPhysicsObjects
 };
 
 
-class CollectScenario : public DefaultScenario, public ObjectStackingCallbacks
+class CollectScenario : public DefaultScenario, public ObjectStackingCallbacks, public FallDetectionCallbacks
 {
-private:
-    class CollectLayout;
-
 public:
     explicit CollectScenario(const std::string &name, Env &env, Env::EnvState &envState);
 
@@ -33,7 +31,7 @@ public:
 
     void step() override;
 
-    std::vector<VoxelCoords> agentStartingPositions() override;
+    std::vector<Magnum::Vector3> agentStartingPositions() override;
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
@@ -42,8 +40,10 @@ public:
 private:
     VoxelGridComponent<VoxelCollect> vg;
     ObjectStackingComponent<VoxelCollect> objectStackingComponent;
+    FallDetectionComponent<VoxelCollect> fallDetection;
 
-    std::vector<VoxelCoords> agentPositions, objectPositions, rewardPositions;
+    std::vector<VoxelCoords> objectPositions, rewardPositions;
+    std::vector<Magnum::Vector3> agentPositions;
 
     int numPositiveRewards = 0, positiveRewardsCollected = 0;
     float cumulativeReward = 0;

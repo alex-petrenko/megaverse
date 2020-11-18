@@ -214,9 +214,9 @@ public:
         return platformBoundingBox().collidesWith(other.platformBoundingBox());
     }
 
-    virtual std::vector<VoxelCoords> agentSpawnPoints(int numAgents)
+    virtual std::vector<Magnum::Vector3> agentSpawnPoints(int numAgents)
     {
-        std::vector<VoxelCoords> spawnPoints;
+        std::vector<Magnum::Vector3> spawnPoints;
         std::set<std::pair<int, int>> used;
 
         for (int i = 0; i < numAgents; ++i) {

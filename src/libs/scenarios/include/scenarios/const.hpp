@@ -11,4 +11,9 @@ namespace VoxelWorld::Str
 
     ConstStr collectSingle = "collectSingle",
              collectAll = "collectAll";
+
+    ConstStr sokobanBoxOnTarget = "sokobanBoxOnTarget",
+             sokobanBoxLeavesTarget = "sokobanBoxLeavesTarget",
+             sokobanAllBoxesOnTarget = "sokobanAllBoxesOnTarget";
+
 }

@@ -45,9 +45,9 @@ public:
 
         std::shuffle(spawnCandidates.begin(), spawnCandidates.end(), rng);
 
-        agentSpawnCoords = std::vector<VoxelCoords>(
+        agentSpawnCoords = toFloat(std::vector<VoxelCoords>(
             spawnCandidates.begin(), spawnCandidates.begin() + std::min(numAgents, int(spawnCandidates.size()))
-        );
+        ));
         auto spawnIdx = int(agentSpawnCoords.size());
 
         const auto maxRandomObjects = std::min(int(spawnCandidates.size()) - numAgents, 25);
@@ -87,7 +87,7 @@ public:
         terrainBoxes[TERRAIN_BUILDING_ZONE].emplace_back(buildingZone);
     }
 
-    std::vector<VoxelCoords> agentSpawnPoints(int /*numAgents*/) override
+    std::vector<Magnum::Vector3> agentSpawnPoints(int /*numAgents*/) override
     {
         return agentSpawnCoords;
     }
@@ -99,7 +99,7 @@ public:
     }
 
 private:
-    std::vector<VoxelCoords> agentSpawnCoords;
+    std::vector<Magnum::Vector3> agentSpawnCoords;
     std::vector<VoxelCoords> objectSpawnCoords;
 
     int buildZoneLength{}, buildZoneWidth{}, materialsLength{}, materialsWidth{};
@@ -144,7 +144,7 @@ void TowerBuilding::reset()
     buildingZone = platform->terrainBoxes[TERRAIN_BUILDING_ZONE].front().boundingBox();
 }
 
-std::vector<VoxelCoords> TowerBuilding::agentStartingPositions()
+std::vector<Magnum::Vector3> TowerBuilding::agentStartingPositions()
 {
     return platform->agentSpawnPoints(env.getNumAgents());
 }
@@ -152,8 +152,6 @@ std::vector<VoxelCoords> TowerBuilding::agentStartingPositions()
 void TowerBuilding::addEpisodeDrawables(DrawablesMap &drawables)
 {
     // TODO: repeating code, reuse? Move to platform component
-
-
 
     auto boundingBoxesByType = vg.toBoundingBoxes();
     for (auto &[voxelType, bb] : boundingBoxesByType)
@@ -176,7 +174,7 @@ void TowerBuilding::step()
             const auto &agent = envState.agents[i];
             const auto t = agent->transformation().translation();
 
-            VoxelCoords voxel = toVoxel(t);
+            VoxelCoords voxel = vg.grid.getCoords(t);
             if (isInBuildingZone(voxel)) {
                 if (!agentState[i].visitedBuildingZoneWithObject) {
                     envState.lastReward[i] += rewardShaping[i].at(Str::visitedBuildingZoneWithObject);

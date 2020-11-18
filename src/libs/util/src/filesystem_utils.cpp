@@ -1,5 +1,8 @@
+#include <filesystem>
+
 #include <util/filesystem_utils.hpp>
 
+namespace fs = std::filesystem;
 
 namespace VoxelWorld
 {
@@ -22,10 +25,21 @@ size_t readAllBytes(std::ifstream &stream, std::vector<char> &buffer)
         return 0;
 }
 
-bool fileExists(const std::string filename)
+bool fileExists(const std::string& filename)
 {
     std::ifstream f(filename);
     return f.good();
+}
+
+// TODO: this crashes on GCC 8.4 due to some obscure linking error (let's just wait for a new compiler I guess lol)
+std::vector<std::string> listFilesInDirectory(const std::string &dir)
+{
+    std::vector<std::string> result;
+
+    for (const auto & entry : fs::directory_iterator(dir))
+        result.emplace_back(entry.path().string());
+
+    return result;
 }
 
 }

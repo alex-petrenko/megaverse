@@ -1,0 +1,59 @@
+#pragma once
+
+#include <scenarios/scenario_default.hpp>
+#include <scenarios/grid_layout_utils.hpp>
+#include <scenarios/component_voxel_grid.hpp>
+#include <scenarios/component_fall_detection.hpp>
+#include <scenarios/component_object_stacking.hpp>
+
+
+namespace VoxelWorld
+{
+
+struct SokobanLevel
+{
+    std::vector<std::string> rows;
+};
+
+
+class SokobanScenario : public DefaultScenario
+{
+public:
+    explicit SokobanScenario(const std::string &name, Env &env, Env::EnvState &envState);
+
+    ~SokobanScenario() override;
+
+    // Scenario interface
+    void reset() override;
+
+    void step() override;
+
+    void reloadLevels();
+
+    void createLayout();
+
+    std::vector<Magnum::Vector3> agentStartingPositions() override;
+
+    void addEpisodeDrawables(DrawablesMap &drawables) override;
+
+    float trueObjective() const override { return solved; }
+
+private:
+    std::string boxobanLevelsDir{};
+    std::vector<std::string> allSokobanLevelFiles{};
+    constexpr static ConstStr levelSet = "unfiltered", levelSplit = "train";  // TODO: make configurable
+
+    std::vector<SokobanLevel> levels;
+    SokobanLevel currLevel;
+    int length = 0, width = 0;
+
+    VoxelGridComponent<VoxelWithPhysicsObjects> vg;
+    const float voxelSize = 2;
+
+    std::vector<Magnum::Vector3> agentPositions;
+    std::vector<VoxelCoords> boxesCoords;
+
+    bool solved = false;
+};
+
+}

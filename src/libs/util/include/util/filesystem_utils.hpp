@@ -45,6 +45,8 @@ size_t readAllBytes(const std::string &filename, std::vector<char> &buffer);
 size_t readAllBytes(std::ifstream &stream, std::vector<char> &buffer);
 
 /// Actually checks if file is accessible.
-bool fileExists(const std::string filename);
+bool fileExists(const std::string &filename);
+
+std::vector<std::string> listFilesInDirectory(const std::string &dir);
 
 }

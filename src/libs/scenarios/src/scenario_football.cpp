@@ -131,7 +131,7 @@ void FootballScenario::reset()
     vg.addPlatform(*layout, true);
 }
 
-std::vector<VoxelCoords> FootballScenario::agentStartingPositions()
+std::vector<Magnum::Vector3> FootballScenario::agentStartingPositions()
 {
     return layout->agentSpawnPoints(env.getNumAgents());
 }

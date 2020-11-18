@@ -35,7 +35,7 @@ public:
 
     void step() override;
 
-    std::vector<VoxelCoords> agentStartingPositions() override;
+    std::vector<Magnum::Vector3> agentStartingPositions() override;
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 

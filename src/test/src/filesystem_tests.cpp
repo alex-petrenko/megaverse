@@ -1,6 +1,11 @@
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
+#include <util/tiny_logger.hpp>
 #include <util/filesystem_utils.hpp>
+
+namespace fs = std::filesystem;
 
 
 namespace VoxelWorld

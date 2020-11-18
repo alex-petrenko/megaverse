@@ -605,7 +605,7 @@ using namespace VoxelWorld;
 //}
 
 // TODO: add different types of layouts
-void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType)
+void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, float voxelSize)
 {
     if (voxelType == VOXEL_EMPTY)
         return;
@@ -616,13 +616,13 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
             float(bboxMax.x() - bboxMin.x() + 1) / 2,
             float(bboxMax.y() - bboxMin.y() + 1) / 2,
             float(bboxMax.z() - bboxMin.z() + 1) / 2,
-        };
+        } * voxelSize;
 
         auto translation = Magnum::Vector3{
             float((bboxMin.x() + bboxMax.x())) / 2 + 0.5f,
             float((bboxMin.y() + bboxMax.y())) / 2 + 0.5f,
             float((bboxMin.z() + bboxMax.z())) / 2 + 0.5f
-        };
+        } * voxelSize;
 
         auto &layoutBox = envState.scene->addChild<Object3D>();
         layoutBox.scale(scale).translate(translation);

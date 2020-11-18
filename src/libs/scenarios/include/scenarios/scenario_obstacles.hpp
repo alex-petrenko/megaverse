@@ -22,7 +22,7 @@ public:
 
     void step() override;
 
-    std::vector<VoxelCoords> agentStartingPositions() override { return agentSpawnPositions; }
+    std::vector<Magnum::Vector3> agentStartingPositions() override { return agentSpawnPositions; }
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
@@ -40,7 +40,8 @@ private:
     ObjectStackingComponent<VoxelWithPhysicsObjects> objectStackingComponent;
     FallDetectionComponent<VoxelWithPhysicsObjects> fallDetection;
 
-    std::vector<VoxelCoords> agentSpawnPositions, objectSpawnPositions;
+    std::vector<VoxelCoords> objectSpawnPositions;
+    std::vector<Magnum::Vector3> agentSpawnPositions;
 
     int numPlatforms{};
 };

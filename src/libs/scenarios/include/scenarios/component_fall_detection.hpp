@@ -43,18 +43,19 @@ public:
     void resetAgent(int agentIdx, AbstractAgent *a)
     {
         auto p = agentInitialPositions[agentIdx];
-        auto v = grid.get(p);
+        auto v = grid.getWithVector(p);
         while (v && !v->empty() && p.y() < 1000) {
             ++p.y();
-            v = grid.get(p);
+            v = grid.getWithVector(p);
         }
 
-        a->teleport(btVector3{p.x() + 0.5f, p.y() + 0.5f, p.z() + 0.5f});
+        const float halfVoxel = grid.getVoxelSize() / 2;
+        a->teleport(btVector3{p.x() + halfVoxel, p.y() + halfVoxel, p.z() + halfVoxel});
     }
 
 public:
     VoxelGrid<VoxelT> &grid;
-    std::vector<VoxelCoords> agentInitialPositions;
+    std::vector<Magnum::Vector3> agentInitialPositions;
     FallDetectionCallbacks &callbacks;
     int fallThreshold = -20;
 };

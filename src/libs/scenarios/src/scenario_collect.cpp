@@ -11,6 +11,7 @@ CollectScenario::CollectScenario(const std::string &name, Env &env, Env::EnvStat
 : DefaultScenario(name, env, envState)
 , vg{*this}
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
+, fallDetection{*this, vg.grid, *this}
 {
     std::map<std::string, float> rewardShapingScheme{
         {Str::collectSingle, 1.0f},
@@ -27,10 +28,13 @@ void CollectScenario::reset()
 {
     vg.reset(env, envState);
     objectStackingComponent.reset(env, envState);
+    fallDetection.reset(env, envState);
 
     numPositiveRewards = positiveRewardsCollected = 0;
 
     createLandscape();
+
+    fallDetection.agentInitialPositions = agentPositions;
 }
 
 void CollectScenario::createLandscape()
@@ -90,7 +94,8 @@ void CollectScenario::createLandscape()
     std::shuffle(spawnPositions.begin(), spawnPositions.end(), rng);
 
     int offset = 0;
-    agentPositions = std::vector<VoxelCoords>(spawnPositions.begin() + offset, spawnPositions.begin() + offset + env.getNumAgents());
+    auto agentIntPositions = std::vector<VoxelCoords>(spawnPositions.begin() + offset, spawnPositions.begin() + offset + env.getNumAgents());
+    agentPositions = toFloat(agentIntPositions);
     offset += env.getNumAgents();
 
     int numRewards = randRange(1, int(lround(0.05 * width * length)) + 2, rng);
@@ -124,11 +129,12 @@ void CollectScenario::createLandscape()
 void CollectScenario::step()
 {
     objectStackingComponent.step(env, envState);
+    fallDetection.step(env, envState);
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto agent = envState.agents[i];
         auto t = agent->absoluteTransformation().translation();
-        VoxelCoords voxel = toVoxel(t);
+        VoxelCoords voxel = vg.grid.getCoords(t);
         auto voxelPtr = vg.grid.get(voxel);
         if (voxelPtr && voxelPtr->rewardObject) {
             TLOG(INFO) << "Reward " << voxelPtr->reward;
@@ -153,7 +159,7 @@ void CollectScenario::step()
     }
 }
 
-std::vector<VoxelCoords> CollectScenario::agentStartingPositions()
+std::vector<Magnum::Vector3> CollectScenario::agentStartingPositions()
 {
     return agentPositions;
 }
