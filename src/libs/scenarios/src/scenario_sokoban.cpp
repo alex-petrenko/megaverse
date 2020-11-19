@@ -114,6 +114,7 @@ void SokobanScenario::reset()
     solved = false;
     agentPositions.clear(), boxesCoords.clear();
     length = width = 0;
+    numBoxes = numBoxesOnGoal = 0;
 
     if (levels.empty())
         reloadLevels();
@@ -155,14 +156,24 @@ void SokobanScenario::createLayout()
             if (row[z] == GOAL_CELL || row[z] == PLAYER_ON_GOAL)
                 g.set({x, 1, z}, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_EMPTY, SOKO_GOAL));
 
-            if (row[z] == BOX_CELL || row[z] == BOX_ON_GOAL)
+            if (row[z] == BOX_CELL || row[z] == BOX_ON_GOAL) {
                 boxesCoords.emplace_back(x, 1, z);
+                ++numBoxes;
+            }
         }
     }
 }
 
 void SokobanScenario::step()
 {
+    if (numBoxesOnGoal == numBoxes) {
+        TLOG(INFO) << "Done!";
+        solved = envState.done = true;
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            envState.lastReward[i] += rewardShaping[i].at(Str::sokobanAllBoxesOnTarget);  // TODO: team spirit rewards?
+    }
+
+    // moving the boxes logic
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto a = envState.currAction[i];
         auto &agent = envState.agents[i];
@@ -170,24 +181,49 @@ void SokobanScenario::step()
         if (!!(a & Action::Interact)) {
             auto t = agent->interactLocation()->absoluteTransformation().translation();
             auto voxel = vg.grid.getWithVector(t);
+
             if (voxel && voxel->physicsObject) {
-                auto agentPos = vg.grid.getCoords(agent->absoluteTransformation().translation());
-                auto boxPos = vg.grid.getCoords(t);
-                auto deltaPos = boxPos - agentPos;
-                auto desiredPos = boxPos + deltaPos;
+                const auto boxPos = vg.grid.getCoords(t);
+                const auto agentPos = vg.grid.getCoords(agent->absoluteTransformation().translation());
+                const auto dist = manhattanDistance(agentPos, boxPos);
 
-                if (!vg.grid.hasVoxel(desiredPos))
-                    vg.grid.set(desiredPos, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_EMPTY));
+                if (dist == 1) {
+                    // only move the box if we are in the adjacent cell
+                    auto deltaPos = boxPos - agentPos;
+                    auto desiredPos = boxPos + deltaPos;
 
-                auto desiredPosVoxel = vg.grid.get(desiredPos);
-                if (desiredPosVoxel->terrain != SOKO_WALL && !desiredPosVoxel->physicsObject) {
-                    desiredPosVoxel->physicsObject = voxel->physicsObject;
-                    desiredPosVoxel->physicsObject->parent()->translate(Magnum::Vector3{deltaPos} * voxelSize);
-                    desiredPosVoxel->physicsObject->syncPose();
-                    voxel->physicsObject = nullptr;
+                    bool occupied = false;
+                    for (int j = 0; j < env.getNumAgents(); ++j)
+                        if (vg.grid.getCoords(envState.agents[j]->absoluteTransformation().translation()) == desiredPos) {
+                            occupied = true;
+                            break;
+                        }
+
+                    if (!occupied) {
+                        if (!vg.grid.hasVoxel(desiredPos))
+                            vg.grid.set(desiredPos, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_EMPTY));
+
+                        auto desiredPosVoxel = vg.grid.get(desiredPos);
+                        if (desiredPosVoxel->terrain != SOKO_WALL && !desiredPosVoxel->physicsObject) {
+                            desiredPosVoxel->physicsObject = voxel->physicsObject;
+                            desiredPosVoxel->physicsObject->parent()->translate(Magnum::Vector3{deltaPos} * voxelSize);
+                            desiredPosVoxel->physicsObject->syncPose();
+                            voxel->physicsObject = nullptr;
+
+                            // moved the box
+                            if (voxel->terrain != SOKO_GOAL && desiredPosVoxel->terrain == SOKO_GOAL) {
+                                // moved the box to the goal position
+                                ++numBoxesOnGoal;
+                                envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxOnTarget);
+                            } else if (voxel->terrain == SOKO_GOAL && desiredPosVoxel->terrain != SOKO_GOAL) {
+                                // moved the box from the goal position - penalty
+                                --numBoxesOnGoal;
+                                envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxLeavesTarget);
+                            }
+                        } else
+                            TLOG(INFO) << "Can't move!";
+                    }
                 }
-                else
-                    TLOG(INFO) << "Can't move!";
             }
         }
     }

@@ -36,7 +36,13 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return solved; }
+    float trueObjective() const override { return float(solved); }
+
+    void initializeDefaultParameters() override
+    {
+        DefaultScenario::initializeDefaultParameters();
+        floatParams[Str::episodeLengthSec] = 80.0f;
+    }
 
 private:
     std::string boxobanLevelsDir{};
@@ -52,6 +58,7 @@ private:
 
     std::vector<Magnum::Vector3> agentPositions;
     std::vector<VoxelCoords> boxesCoords;
+    int numBoxes = 0, numBoxesOnGoal = 0;
 
     bool solved = false;
 };

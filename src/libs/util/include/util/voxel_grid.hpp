@@ -20,6 +20,12 @@ inline VoxelCoords toVoxel(const Magnum::Vector3 &v)
     return lround(floor(v));
 }
 
+inline int manhattanDistance(const VoxelCoords &a, const VoxelCoords &b)
+{
+    const auto delta = a - b;
+    return std::abs(delta.x()) + std::abs(delta.y()) + std::abs(delta.z());
+}
+
 }
 
 //bool operator==(const VoxelCoords &lhs, const VoxelCoords &rhs)
