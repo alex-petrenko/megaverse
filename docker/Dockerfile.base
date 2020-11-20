@@ -6,12 +6,24 @@ ENV LC_ALL=C.UTF-8 LANG=C.UTF-8
 RUN apt-get update || true && apt-get install -y \
     wget curl git \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
-    python3 python3-pip \
+    python3 python3-pip cmake \
+    && wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add - \
+    && wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.154-bionic.list https://packages.lunarg.com/vulkan/1.2.154/lunarg-vulkan-1.2.154-bionic.list \
+    && apt update || true && apt install vulkan-sdk \
+    && apt install libbullet-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN cd /usr/bin \
     && ln -s python3 python \
     && ln -s pip3 pip
+
+RUN mkdir ~/lib \
+    && cd ~/lib \
+    && git clone https://github.com/opencv/opencv.git \
+    && cd cd opencv \
+    && mkdir build \
+    && cmake -D CMAKE_BUILD_TYPE=Release .. \
+    && make -j4
 
 WORKDIR /workspace

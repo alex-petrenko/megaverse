@@ -7,7 +7,7 @@ VERSION = $(shell git rev-parse --short HEAD)
 DATE = $(shell date +%F)
 export TAG=$(BRANCH)-$(VERSION)-$(DATE)
 
-.PHONY: pull build up push shell
+.PHONY: pull build up push shell docker-bash
 
 pull-%:
 	docker-compose pull $(subst pull-,,$@)
@@ -23,4 +23,7 @@ push-%:
 
 shell:
 	@echo TAG=$(TAG) BASE_TAG=$(BASE_TAG)
+
+docker-bash:
+	docker-compose run --it --rm dev bash
 
