@@ -1,0 +1,24 @@
+version: "3.3"
+
+services:
+
+# base
+  base:
+    image: "${REPO}-base:${BASE_TAG}"
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+
+# dev
+  dev:
+    image: "${REPO}-dev:${BASE_TAG}"
+    depends_on:
+      - base
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+      args:
+        REPO: ${REPO}
+        BASE_TAG: ${BASE_TAG}
+    volumes:
+      - ".:/workspace"
