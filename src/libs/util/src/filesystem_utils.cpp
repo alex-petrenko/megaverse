@@ -1,8 +1,4 @@
-#include <filesystem>
-
 #include <util/filesystem_utils.hpp>
-
-namespace fs = std::filesystem;
 
 namespace VoxelWorld
 {
@@ -32,14 +28,14 @@ bool fileExists(const std::string& filename)
 }
 
 // TODO: this crashes on GCC 8.4 due to some obscure linking error (let's just wait for a new compiler I guess lol)
-std::vector<std::string> listFilesInDirectory(const std::string &dir)
-{
-    std::vector<std::string> result;
-
-    for (const auto & entry : fs::directory_iterator(dir))
-        result.emplace_back(entry.path().string());
-
-    return result;
-}
+//std::vector<std::string> listFilesInDirectory(const std::string &dir)
+//{
+//    std::vector<std::string> result;
+//
+//    for (const auto & entry : fs::directory_iterator(dir))
+//        result.emplace_back(entry.path().string());
+//
+//    return result;
+//}
 
 }

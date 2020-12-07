@@ -35,7 +35,8 @@ using namespace VoxelWorld;
 //    const auto scenarioName = "Football";
 //    const auto scenarioName = "Obstacles";
 //const auto scenarioName = "Collect";
-const auto scenarioName = "Sokoban";
+//const auto scenarioName = "Sokoban";
+const auto scenarioName = "BoxAGone";
 
 
 class Viewer: public Platform::Application

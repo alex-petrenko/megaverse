@@ -26,6 +26,7 @@ CollectScenario::~CollectScenario() = default;
 
 void CollectScenario::reset()
 {
+    // TODO: auto-reset components??
     vg.reset(env, envState);
     objectStackingComponent.reset(env, envState);
     fallDetection.reset(env, envState);

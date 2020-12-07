@@ -21,7 +21,6 @@ TEST(voxelGrid, basic)
 
     VoxelCoords coords{1, 2, 3};
     EXPECT_EQ(coords, VoxelCoords(1, 2, 3));  // make sure operator== works
-    EXPECT_EQ(std::hash<VoxelCoords>{}(coords), 1002003);
 
     EXPECT_EQ(vg.getCoords({1.5, 2.3, 3.2}), coords);
 

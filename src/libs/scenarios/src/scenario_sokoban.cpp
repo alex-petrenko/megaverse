@@ -6,6 +6,7 @@
 
 #include <scenarios/scenario_sokoban.hpp>
 
+
 using namespace VoxelWorld;
 using namespace Magnum::Math::Literals;
 
@@ -78,7 +79,7 @@ SokobanScenario::SokobanScenario(const std::string &name, Env &env, Env::EnvStat
 
     if (allSokobanLevelFiles.empty())
         TLOG(FATAL) << "Could not find any Boxoban levels. Set envvar BOXOBAN_LEVELS or put unzipped Boxoban folder "
-                       "containing unfiltered/medium/hard level splits into ~/datasets";
+                       "(named boxoban) containing unfiltered/medium/hard level splits into ~/datasets";
 
     TLOG(INFO) << allSokobanLevelFiles.size() << " boxoban level files found";
 }

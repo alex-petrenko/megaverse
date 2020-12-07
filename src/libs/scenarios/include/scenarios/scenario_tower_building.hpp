@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <env/scenario.hpp>
 
 #include <scenarios/scenario_default.hpp>
