@@ -111,8 +111,9 @@ Viewer::Viewer(const Arguments& arguments):
     ctx = std::make_unique<WindowRenderingContext>();
 
     auto viewport = GL::defaultFramebuffer.viewport();
-    renderer = std::make_unique<MagnumEnvRenderer>(envs, viewport.sizeX(), viewport.sizeY(), withDebugDraw, ctx.get());
+    renderer = std::make_unique<MagnumEnvRenderer>(envs, viewport.sizeX(), viewport.sizeY(), withDebugDraw, true, ctx.get());
     renderer->reset(*envs[activeEnv], activeEnv);
+    renderer->toggleDebugMode();
 
     timeline.start();
     setSwapInterval(0);
@@ -205,11 +206,10 @@ void Viewer::controlOverview(const KeyEvent::Key &key, bool addAction)
     auto a = Action::Idle;
 
     switch(key) {
-        case KeyEvent::Key::NumEight: a = Action::Forward; break;
-        case KeyEvent::Key::NumTwo:
-        case KeyEvent::Key::NumFive: a = Action::Backward; break;
-        case KeyEvent::Key::NumFour: a = Action::Left; break;
-        case KeyEvent::Key::NumSix: a = Action::Right; break;
+        case KeyEvent::Key::U: a = Action::Forward; break;
+        case KeyEvent::Key::J: a = Action::Backward; break;
+        case KeyEvent::Key::H: a = Action::Left; break;
+        case KeyEvent::Key::K: a = Action::Right; break;
         default: break;
     }
 

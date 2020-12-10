@@ -103,7 +103,7 @@ private:
 struct MagnumEnvRenderer::Impl
 {
 public:
-    explicit Impl(Envs &envs, int w, int h, bool withDebugDraw = false, RenderingContext *ctx = nullptr);
+    explicit Impl(Envs &envs, int w, int h, bool withDebugDraw = false, bool withOverview = false, RenderingContext *ctx = nullptr);
 
     ~Impl();
 
@@ -159,12 +159,12 @@ public:
 };
 
 
-MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, RenderingContext *ctx)
-    : ctx{initContext(ctx)}
-    , framebufferSize{w, h}
-    , framebuffer{Magnum::Range2Di{{}, framebufferSize}}
-    , withDebugDraw{withDebugDraw}
-    , withOverviewCamera{withDebugDraw}
+MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, bool withOverview, RenderingContext *ctx)
+: ctx{initContext(ctx)}
+, framebufferSize{w, h}
+, framebuffer{Magnum::Range2Di{{}, framebufferSize}}
+, withDebugDraw{withDebugDraw}
+, withOverviewCamera{withOverview}
 {
     assert(!envs.empty());
 
@@ -434,9 +434,9 @@ const uint8_t * MagnumEnvRenderer::Impl::getObservation(int envIdx, int agentIdx
     return agentFrames[envIdx][agentIdx].data();
 }
 
-MagnumEnvRenderer::MagnumEnvRenderer(Envs &envs, int w, int h, bool withDebugDraw, RenderingContext *ctx)
+MagnumEnvRenderer::MagnumEnvRenderer(Envs &envs, int w, int h, bool withDebugDraw, bool withOverview, RenderingContext *ctx)
 {
-    pimpl = std::make_unique<Impl>(envs, w, h, withDebugDraw, ctx);
+    pimpl = std::make_unique<Impl>(envs, w, h, withDebugDraw, withOverview, ctx);
 }
 
 MagnumEnvRenderer::~MagnumEnvRenderer() = default;

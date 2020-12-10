@@ -46,7 +46,7 @@ class MagnumEnvRenderer : public EnvRenderer
 {
 public:
     explicit MagnumEnvRenderer(
-        Envs &envs, int w, int h, bool withDebugDraw = false, RenderingContext *ctx = nullptr
+        Envs &envs, int w, int h, bool withDebugDraw = false, bool withOverview = false, RenderingContext *ctx = nullptr
     );
 
     ~MagnumEnvRenderer() override;

@@ -641,13 +641,13 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
     }
 }
 
-void VoxelWorld::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb)
+void VoxelWorld::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb, float voxelSize)
 {
-    const auto scale = Vector3(bb.max.x() - bb.min.x(), 1.0, bb.max.z() - bb.min.z());
+    const auto scale = Vector3(bb.max.x() - bb.min.x(), 1.0, bb.max.z() - bb.min.z()) * voxelSize;
 
     if (scale.x() > 0) {
         // otherwise we don't draw anything
-        const auto pos = Magnum::Vector3(bb.min.x() + scale.x() / 2, bb.min.y(), bb.min.z() + scale.z() / 2);
+        const auto pos = Magnum::Vector3(bb.min.x() * voxelSize + scale.x() / 2, bb.min.y() * voxelSize, bb.min.z() * voxelSize + scale.z() / 2);
 
         auto &terrainObject = envState.scene->addChild<Object3D>(envState.scene.get());
         terrainObject.scale({0.5, 0.025, 0.5}).scale(scale);
