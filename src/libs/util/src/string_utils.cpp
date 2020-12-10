@@ -1,4 +1,5 @@
 #include <cstring>
+#include <algorithm>
 
 #include <util/string_utils.hpp>
 
@@ -37,6 +38,13 @@ bool endsWith(const std::string &s, const std::string &t)
     if (t.empty())
         return true;
     return s.find(t) == s.size() - t.size();
+}
+
+std::string toLower(const std::string &input)
+{
+    auto s = input;
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
+    return s;
 }
 
 }

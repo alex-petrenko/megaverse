@@ -26,7 +26,8 @@ constexpr int delayMs = 20;  // 1000 / 15;
 
 //constexpr ConstStr scenario = "Collect";
 //constexpr ConstStr scenario = "Obstacles";
-constexpr ConstStr scenario = "Sokoban";
+//constexpr ConstStr scenario = "Sokoban";
+constexpr ConstStr scenario = "BoxAGone";
 
 constexpr bool useVulkan = true;
 

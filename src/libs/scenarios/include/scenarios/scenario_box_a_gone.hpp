@@ -55,7 +55,7 @@ public:
     void initializeDefaultParameters() override
     {
         auto &fp = floatParams;
-        fp[Str::episodeLengthSec] = 80.0f;
+        fp[Str::episodeLengthSec] = 600.0f;
         fp[Str::verticalLookLimitRad] = 0.75f;
     }
 

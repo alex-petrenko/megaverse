@@ -5,6 +5,7 @@
 #include <string>
 
 #include <util/tiny_logger.hpp>
+#include <util/string_utils.hpp>
 
 #include <env/env.hpp>
 #include <env/const.hpp>
@@ -42,14 +43,16 @@ public:
     static void registerScenario(const std::string &scenarioName, FactoryFunc factoryFunc)
     {
         auto &scenarioRegistry = getScenarioRegistry();
-        scenarioRegistry[scenarioName] = factoryFunc;
-        TLOG(INFO) << "Scenario " << scenarioName << " registered!";
+        const auto scenarioNameLowercase = toLower(scenarioName);
+        scenarioRegistry[scenarioNameLowercase] = factoryFunc;
+        TLOG(INFO) << "Scenario " << scenarioNameLowercase << " registered!";
         TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
         TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
     }
 
     static ScenarioPtr create(const std::string &scenarioName, Env &env, Env::EnvState &envState)
     {
+        const auto scenarioNameLowercase = toLower(scenarioName);
         const auto &scenarioRegistry = getScenarioRegistry();
 
         TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
@@ -57,12 +60,12 @@ public:
         for (const auto &[k,v]: scenarioRegistry)
             TLOG(INFO) << k;
 
-        if (!scenarioRegistry.count(scenarioName))
-            TLOG(FATAL) << "Unknown scenario " << scenarioName << ". Did you register the scenario in scenariosGlobalInit()?";
+        if (!scenarioRegistry.count(scenarioNameLowercase))
+            TLOG(FATAL) << "Unknown scenario " << scenarioNameLowercase << ". Did you register the scenario in scenariosGlobalInit()?";
 
-        const auto factoryFunc = scenarioRegistry.at(scenarioName);
+        const auto factoryFunc = scenarioRegistry.at(scenarioNameLowercase);
 
-        return factoryFunc(scenarioName, env, envState);
+        return factoryFunc(scenarioNameLowercase, env, envState);
     }
 
     template<typename ScenarioType>

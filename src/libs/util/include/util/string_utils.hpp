@@ -14,6 +14,7 @@ bool startsWith(const std::string &s, const std::string &t);
 
 bool endsWith(const std::string &s, const std::string &t);
 
+std::string toLower(const std::string &s);
 
 template<typename T>
 T stringTo(const std::string &s, bool &ok)

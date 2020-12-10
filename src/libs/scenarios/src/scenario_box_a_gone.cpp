@@ -36,6 +36,7 @@ BoxAGoneScenario::BoxAGoneScenario(const std::string &name, Env &env, Env::EnvSt
     std::map<std::string, float> rewardShapingScheme{
         {Str::boxagoneTouchedFloor,  -0.1f},
         {Str::boxagonePerStepReward, 0.01f},
+        {Str::boxagoneLastManStanding, 0.05f},
     };
     for (int i = 0; i < env.getNumAgents(); ++i)
         rewardShaping[i] = rewardShapingScheme;
@@ -101,20 +102,23 @@ void BoxAGoneScenario::reset()
 void BoxAGoneScenario::step()
 {
     int agentsTouchingFloor = 0;
+    int doesNotTouchFloorIdx = -1;
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
         const auto &t = agent->absoluteTransformation().translation();
         const auto coords = vg.grid.getCoords(t);
 
-        const bool touchesFloor = coords.y() < 4;
+        const bool touchesFloor = coords.y() < 3;
 
         if (touchesFloor) {
             envState.lastReward[i] += rewardShaping[i].at(Str::boxagoneTouchedFloor);
             ++agentsTouchingFloor;
         }
-        else
+        else {
             envState.lastReward[i] += rewardShaping[i].at(Str::boxagonePerStepReward);
+            doesNotTouchFloorIdx = i;
+        }
 
         auto voxel = vg.grid.get(coords);
         if (voxel && voxel->disappearingPlatform && agent->onGround()) {
@@ -171,6 +175,10 @@ void BoxAGoneScenario::step()
             ++iter;
         }
     }
+
+    if (agentsTouchingFloor == env.getNumAgents() - 1 && env.getNumAgents() > 1)
+        if (doesNotTouchFloorIdx >= 0)
+            envState.lastReward[doesNotTouchFloorIdx] += rewardShaping[doesNotTouchFloorIdx].at(Str::boxagoneLastManStanding);
 
     if (agentsTouchingFloor >= env.getNumAgents())
         envState.done = true;  // TODO: true reward

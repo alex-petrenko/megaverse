@@ -17,5 +17,6 @@ namespace VoxelWorld::Str
              sokobanAllBoxesOnTarget = "sokobanAllBoxesOnTarget";
 
     ConstStr boxagoneTouchedFloor = "boxagoneTouchedFloor",
-             boxagonePerStepReward = "boxagonePerStepReward";
+             boxagonePerStepReward = "boxagonePerStepReward",
+             boxagoneLastManStanding = "boxagoneLastManStanding";
 }
