@@ -2,7 +2,7 @@
 
 #include <scenarios/platforms.hpp>
 #include <scenarios/scenario_default.hpp>
-#include <scenarios/grid_layout_utils.hpp>
+#include <scenarios/layout_utils.hpp>
 #include <scenarios/component_platforms.hpp>
 #include <scenarios/component_voxel_grid.hpp>
 #include <scenarios/component_fall_detection.hpp>

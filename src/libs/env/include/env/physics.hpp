@@ -56,16 +56,16 @@ public:
     /* needed after changing the pose from Magnum side */
     void syncPose()
     {
-        //bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
+        bRigidBody->setWorldTransform(btTransform(absoluteTransformationMatrix()));
 
-        const auto m = absoluteTransformationMatrix();
-        const auto s = m.scaling();
-        const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
-
-        auto t = collisionOffset * Magnum::Matrix4::translation(m.translation()) * invS *
-                 Magnum::Matrix4::translation(-m.translation()) * m;
-
-        bRigidBody->setWorldTransform(btTransform(t));
+//        const auto m = absoluteTransformationMatrix();
+//        const auto s = m.scaling();
+//        const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
+//
+//        auto t = collisionOffset * Magnum::Matrix4::translation(m.translation()) * invS *
+//                 Magnum::Matrix4::translation(-m.translation()) * m;
+//
+//        bRigidBody->setWorldTransform(btTransform(t));
     }
 
     void toggleCollision()

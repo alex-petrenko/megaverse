@@ -4,9 +4,10 @@
 
 #include <scenarios/scenario_sokoban.hpp>
 #include <scenarios/scenario_collect.hpp>
-#include <scenarios/scenario_box_a_gone.hpp>
 #include <scenarios/scenario_football.hpp>
 #include <scenarios/scenario_obstacles.hpp>
+#include <scenarios/scenario_hex_memory.hpp>
+#include <scenarios/scenario_box_a_gone.hpp>
 #include <scenarios/scenario_tower_building.hpp>
 
 
@@ -26,12 +27,13 @@ void scenariosGlobalInit()
         return;
     initialized = true;
 
-    registerScenario<TowerBuilding>("TowerBuilding");
+    registerScenario<TowerBuildingScenario>("TowerBuilding");
     registerScenario<ObstaclesScenario>("Obstacles");
     registerScenario<FootballScenario>("Football");
     registerScenario<CollectScenario>("Collect");
     registerScenario<SokobanScenario>("Sokoban");
     registerScenario<BoxAGoneScenario>("BoxAGone");
+    registerScenario<HexMemoryScenario>("HexMemory");
 }
 
 }

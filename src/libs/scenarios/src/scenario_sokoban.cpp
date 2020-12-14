@@ -167,6 +167,8 @@ void SokobanScenario::createLayout()
 
 void SokobanScenario::step()
 {
+    // TODO: in multi-agent envs they can push each other and move unmovable boxes. Fix
+
     if (numBoxesOnGoal == numBoxes) {
         TLOG(INFO) << "Done!";
         solved = envState.done = true;
@@ -221,8 +223,7 @@ void SokobanScenario::step()
                                 --numBoxesOnGoal;
                                 envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxLeavesTarget);
                             }
-                        } else
-                            TLOG(INFO) << "Can't move!";
+                        }
                     }
                 }
             }

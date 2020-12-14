@@ -60,7 +60,7 @@ void BoxAGoneScenario::reset()
     platform->init(), platform->generate();
     vg.addPlatform(*platform, true);
 
-    const int numLevels = randRange(3, 5, envState.rng);
+    const int numLevels = randRange(2, 4, envState.rng);
 
     const static std::vector<ColorRgb> colors{ColorRgb::ORANGE, ColorRgb::BLUE, ColorRgb::VIOLET};
     const static auto numColors = colors.size();

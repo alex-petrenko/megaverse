@@ -31,8 +31,8 @@ constexpr ConstStr scenario = "BoxAGone";
 
 constexpr bool useVulkan = true;
 
-constexpr bool viz = true;
-constexpr bool hires = true;
+constexpr bool viz = false;
+constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
