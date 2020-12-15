@@ -14,7 +14,7 @@ using namespace VoxelWorld;
 namespace
 {
 
-std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, int width)
+std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int width)
 {
     enum { EMPTY, WALL, LAVA, STEP, GAP };
     const static std::vector<int> supportedPlatforms = {WALL, LAVA, STEP, GAP};
@@ -22,16 +22,16 @@ std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, in
 
     switch (platformType) {
         case STEP:
-            return std::make_unique<StepPlatform>(parent, rng, walls, width);
+            return std::make_unique<StepPlatform>(parent, rng, walls, params, width);
         case GAP:
-            return std::make_unique<GapPlatform>(parent, rng, walls, width);
+            return std::make_unique<GapPlatform>(parent, rng, walls, params, width);
         case LAVA:
-            return std::make_unique<LavaPlatform>(parent, rng, walls, width);
+            return std::make_unique<LavaPlatform>(parent, rng, walls, params, width);
         case WALL:
-            return std::make_unique<WallPlatform>(parent, rng, walls, width);
+            return std::make_unique<WallPlatform>(parent, rng, walls, params, width);
         case EMPTY:
         default:
-            return std::make_unique<EmptyPlatform>(parent, rng, walls, width);
+            return std::make_unique<EmptyPlatform>(parent, rng, walls, params, width);
     }
 }
 
@@ -66,11 +66,15 @@ void ObstaclesScenario::reset()
     for (int attempt = 0; attempt < 20; ++attempt) {
         platforms.clear();
 
-        numPlatforms = randRange(2, 8, envState.rng);
+        numPlatforms = randRange(
+            int(lround(floatParams[Str::obstaclesMinNumPlatforms])),
+            int(lround(floatParams[Str::obstaclesMaxNumPlatforms])) + 1,
+            envState.rng
+        );
 
         static const std::vector<int> orientations = {ORIENTATION_STRAIGHT, ORIENTATION_TURN_LEFT, ORIENTATION_TURN_RIGHT};
 
-        auto startPlatformPtr = std::make_unique<StartPlatform>(platformsComponent.levelRoot.get(), envState.rng);
+        auto startPlatformPtr = std::make_unique<StartPlatform>(platformsComponent.levelRoot.get(), envState.rng, floatParams);
         startPlatformPtr->init(), startPlatformPtr->generate();
         int requiredWidth = startPlatformPtr->width;
 
@@ -83,7 +87,7 @@ void ObstaclesScenario::reset()
             auto orientation = randomSample(orientations, envState.rng);
             requiredWidth = orientation == ORIENTATION_STRAIGHT ? requiredWidth : -1;
 
-            platformsComponent.addPlatform(makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, requiredWidth));
+            platformsComponent.addPlatform(makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth));
             auto platform = platforms.back().get();
 
             platform->init(), platform->generate();
@@ -106,7 +110,7 @@ void ObstaclesScenario::reset()
                 walls |= orientation == ORIENTATION_TURN_LEFT ? WALLS_WEST : WALLS_EAST;
                 const int w = previousPlatform->width, l = platform->width - 1;
 
-                platformsComponent.addPlatform(std::make_unique<TransitionPlatform>(previousPlatform->nextPlatformAnchor, envState.rng, walls, l, w));
+                platformsComponent.addPlatform(std::make_unique<TransitionPlatform>(previousPlatform->nextPlatformAnchor, envState.rng, walls, floatParams, l, w));
                 auto transitionPlatform = platforms.back().get();
 
                 transitionPlatform->init();
@@ -117,7 +121,7 @@ void ObstaclesScenario::reset()
             requiredWidth = platform->width;
         }
 
-        auto exitPlatformPtr = std::make_unique<ExitPlatform>(previousPlatform->nextPlatformAnchor, envState.rng, requiredWidth);
+        auto exitPlatformPtr = std::make_unique<ExitPlatform>(previousPlatform->nextPlatformAnchor, envState.rng, floatParams, requiredWidth);
         exitPlatformPtr->init(), exitPlatformPtr->generate();
         platformsComponent.addPlatform(std::move(exitPlatformPtr));
 

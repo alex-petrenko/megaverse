@@ -8,8 +8,8 @@ using namespace VoxelWorld;
 class TowerBuildingScenario::TowerBuildingPlatform : public EmptyPlatform
 {
 public:
-    explicit TowerBuildingPlatform(Object3D *parent, Rng &rng, int walls, int numAgents)
-    : EmptyPlatform(parent, rng, walls)
+    explicit TowerBuildingPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int numAgents)
+    : EmptyPlatform(parent, rng, walls, params)
     , numAgents{numAgents}
     {
     }
@@ -137,7 +137,7 @@ void TowerBuildingScenario::reset()
     std::fill(agentState.begin(), agentState.end(), AgentState{});
     previousReward.clear();
 
-    platform = std::make_unique<TowerBuildingPlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, env.getNumAgents());
+    platform = std::make_unique<TowerBuildingPlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
     vg.addPlatform(*platform, true);
 

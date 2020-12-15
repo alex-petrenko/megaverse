@@ -34,6 +34,14 @@ public:
 
     void agentFell(int agentIdx) override;
 
+    void initializeDefaultParameters() override
+    {
+        DefaultScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::verticalLookLimitRad] = 0.2f;
+    }
+
 private:
     VoxelGridComponent<VoxelWithPhysicsObjects> vg;
     PlatformsComponent platformsComponent;
@@ -44,6 +52,61 @@ private:
     std::vector<Magnum::Vector3> agentSpawnPositions;
 
     int numPlatforms{};
+};
+
+class ObstaclesEasyScenario : public ObstaclesScenario
+{
+public:
+    explicit ObstaclesEasyScenario(const std::string &name, Env &env, Env::EnvState &envState)
+    : ObstaclesScenario(name, env, envState)
+    {
+    }
+
+    void initializeDefaultParameters() override
+    {
+        ObstaclesScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::obstaclesMinNumPlatforms] = 1;
+        fp[Str::obstaclesMaxNumPlatforms] = 2;
+
+        fp[Str::obstaclesMinGap] = 1;
+        fp[Str::obstaclesMaxGap] = 2;
+    }
+};
+
+class ObstaclesMediumScenario : public ObstaclesScenario
+{
+public:
+    explicit ObstaclesMediumScenario(const std::string &name, Env &env, Env::EnvState &envState)
+    : ObstaclesScenario(name, env, envState)
+    {
+        ObstaclesScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::obstaclesMinNumPlatforms] = 2;
+        fp[Str::obstaclesMaxNumPlatforms] = 4;
+
+        fp[Str::obstaclesMinGap] = 1;
+        fp[Str::obstaclesMaxGap] = 3;
+    }
+};
+
+class ObstaclesHardScenario : public ObstaclesScenario
+{
+public:
+    explicit ObstaclesHardScenario(const std::string &name, Env &env, Env::EnvState &envState)
+    : ObstaclesScenario(name, env, envState)
+    {
+        ObstaclesScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::obstaclesMinNumPlatforms] = 2;
+        fp[Str::obstaclesMaxNumPlatforms] = 7;
+
+        fp[Str::obstaclesMinGap] = 2;
+        fp[Str::obstaclesMaxGap] = 3;
+    }
 };
 
 }

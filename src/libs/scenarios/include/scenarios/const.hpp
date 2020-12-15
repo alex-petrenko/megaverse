@@ -5,6 +5,11 @@
 
 namespace VoxelWorld::Str
 {
+    ConstStr obstaclesMinNumPlatforms = "obstaclesMinNumPlatforms",
+             obstaclesMaxNumPlatforms = "obstaclesMaxNumPlatforms",
+             obstaclesMinGap = "obstaclesMinGap",
+             obstaclesMaxGap = "obstaclesMaxGap";
+
     ConstStr teamSpirit = "teamSpirit",
              pickedUpObject = "pickedUpObject",
              visitedBuildingZoneWithObject = "visitedBuildingZoneWithObject";

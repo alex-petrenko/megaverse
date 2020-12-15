@@ -7,8 +7,8 @@ using namespace VoxelWorld;
 class BoxAGoneScenario::BoxAGonePlatform : public EmptyPlatform
 {
 public:
-    explicit BoxAGonePlatform(Object3D *parent, Rng &rng, int walls, int)
-    : EmptyPlatform(parent, rng, walls)
+    explicit BoxAGonePlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int)
+    : EmptyPlatform(parent, rng, walls, params)
     {
     }
 
@@ -56,7 +56,7 @@ void BoxAGoneScenario::reset()
     platformStates.clear();
     extraPlatforms.clear();
 
-    platform = std::make_unique<BoxAGonePlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, env.getNumAgents());
+    platform = std::make_unique<BoxAGonePlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
     vg.addPlatform(*platform, true);
 

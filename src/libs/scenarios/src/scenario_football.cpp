@@ -7,8 +7,8 @@ using namespace VoxelWorld;
 class FootballScenario::FootballLayout : public EmptyPlatform
 {
 public:
-    FootballLayout(Object3D *parent, Rng &rng, int walls)
-    : EmptyPlatform{parent, rng, walls}
+    FootballLayout(Object3D *parent, Rng &rng, int walls, const FloatParams &params)
+    : EmptyPlatform{parent, rng, walls, params}
     {
     }
 
@@ -122,7 +122,7 @@ void FootballScenario::reset()
 
     footballObject = &object;
 
-    layout = std::make_unique<FootballLayout>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL);
+    layout = std::make_unique<FootballLayout>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams);
     layout->init(), layout->generate();
     vg.addPlatform(*layout, true);
 }

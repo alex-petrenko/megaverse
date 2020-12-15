@@ -33,11 +33,11 @@ using namespace VoxelWorld;
 
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "Football";
-//const auto scenarioName = "Obstacles";
+const auto scenarioName = "ObstaclesEasy";
 //const auto scenarioName = "Collect";
 //const auto scenarioName = "Sokoban";
 //const auto scenarioName = "BoxAGone";
-const auto scenarioName = "HexMemory";
+//const auto scenarioName = "HexMemory";
 
 
 class Viewer: public Platform::Application

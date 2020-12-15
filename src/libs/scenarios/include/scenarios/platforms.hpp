@@ -10,6 +10,8 @@
 #include <util/math_utils.hpp>
 #include <util/tiny_logger.hpp>
 
+#include <env/env.hpp>
+
 #include <scenarios/const.hpp>
 
 
@@ -64,7 +66,7 @@ struct BoundingBox
 
     BoundingBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ)
         : min{minX, minY, minZ}
-          , max{maxX, maxY, maxZ}
+        , max{maxX, maxY, maxZ}
     {
     }
 
@@ -89,7 +91,7 @@ struct BoundingBox
         if (min.z() > max.z()) std::swap(min.z(), max.z());
     }
 
-    bool collidesWith(const BoundingBox &other) const
+    [[nodiscard]] bool collidesWith(const BoundingBox &other) const
     {
         // we're looking for an axis with no overlap
         if (max.x() <= other.min.x()) return false;
@@ -118,7 +120,7 @@ struct MagnumAABB
         max->translateLocal(Magnum::Vector3(bb.max));
     }
 
-    BoundingBox boundingBox() const
+    [[nodiscard]] BoundingBox boundingBox() const
     {
         BoundingBox bb;
         bb.min = Magnum::Math::lround(min->absoluteTransformation().translation());
@@ -135,10 +137,11 @@ public:
 class Platform
 {
 public:
-    explicit Platform(Object3D *parent, Rng &rng, int walls)
+    explicit Platform(Object3D *parent, Rng &rng, int walls, const FloatParams &params)
     : rng{rng}
     , walls{walls}
     , root{&parent->addChild<Object3D>()}
+    , params{params}
     {
     }
 
@@ -271,6 +274,11 @@ public:
         return coords;
     }
 
+    int param(const std::string &str) const
+    {
+        return int(lround(params.at(str)));
+    }
+
 public:
     Rng &rng;
 
@@ -288,13 +296,15 @@ public:
     BoundingBox outerBoundingBox;
 
     std::map<std::pair<int, int>, int> occupancy;
+
+    const FloatParams &params;
 };
 
 class EmptyPlatform : public Platform
 {
 public:
-    explicit EmptyPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : Platform{parent, rng, walls}
+    explicit EmptyPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int w = -1)
+        : Platform{parent, rng, walls, params}
     {
         width = w;
     }
@@ -319,8 +329,8 @@ public:
 class WallPlatform : public EmptyPlatform
 {
 public:
-    explicit WallPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : EmptyPlatform{parent, rng, walls, w}
+    explicit WallPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int w = -1)
+        : EmptyPlatform{parent, rng, walls, params, w}
     {
     }
 
@@ -357,8 +367,8 @@ private:
 class LavaPlatform : public EmptyPlatform
 {
 public:
-    explicit LavaPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : EmptyPlatform{parent, rng, walls, w}
+    explicit LavaPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int w = -1)
+        : EmptyPlatform{parent, rng, walls, params, w}
     {
     }
 
@@ -382,8 +392,8 @@ private:
 class StepPlatform : public EmptyPlatform
 {
 public:
-    explicit StepPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : EmptyPlatform{parent, rng, walls, w}
+    explicit StepPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int w = -1)
+        : EmptyPlatform{parent, rng, walls, params, w}
     {
     }
 
@@ -427,8 +437,8 @@ private:
 class GapPlatform : public EmptyPlatform
 {
 public:
-    explicit GapPlatform(Object3D *parent, Rng &rng, int walls, int w = -1)
-        : EmptyPlatform{parent, rng, walls, w}
+    explicit GapPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int w = -1)
+        : EmptyPlatform{parent, rng, walls, params, w}
     {
     }
 
@@ -436,7 +446,7 @@ public:
     {
         EmptyPlatform::init();
 
-        gap = randRange(2, std::min(6, length - 1), rng);
+        gap = randRange(param(Str::obstaclesMinGap), std::min(param(Str::obstaclesMaxGap) + 1, length - 1), rng);
         gapX = randRange(1, length - gap, rng);
     }
 
@@ -483,8 +493,8 @@ private:
 class StartPlatform : public EmptyPlatform
 {
 public:
-    explicit StartPlatform(Object3D *parent, Rng &rng, int w = -1)
-        : EmptyPlatform{parent, rng, WALLS_SOUTH | WALLS_EAST | WALLS_WEST, w}
+    explicit StartPlatform(Object3D *parent, Rng &rng, const FloatParams &params, int w = -1)
+        : EmptyPlatform{parent, rng, WALLS_SOUTH | WALLS_EAST | WALLS_WEST, params, w}
     {
     }
 
@@ -497,8 +507,8 @@ public:
 class ExitPlatform : public EmptyPlatform
 {
 public:
-    explicit ExitPlatform(Object3D *parent, Rng &rng, int w = -1)
-        : EmptyPlatform{parent, rng, WALLS_NORTH | WALLS_EAST | WALLS_WEST, w}
+    explicit ExitPlatform(Object3D *parent, Rng &rng, const FloatParams &params, int w = -1)
+        : EmptyPlatform{parent, rng, WALLS_NORTH | WALLS_EAST | WALLS_WEST, params, w}
     {
     }
 
@@ -514,8 +524,8 @@ public:
 class TransitionPlatform : public EmptyPlatform
 {
 public:
-    explicit TransitionPlatform(Object3D *parent, Rng &rng, int walls, int l, int w)
-        : EmptyPlatform{parent, rng, walls, -1}
+    explicit TransitionPlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int l, int w)
+        : EmptyPlatform{parent, rng, walls, params, -1}
     {
         length = l, width = w;
     }

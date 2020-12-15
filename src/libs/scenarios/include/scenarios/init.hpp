@@ -28,7 +28,9 @@ void scenariosGlobalInit()
     initialized = true;
 
     registerScenario<TowerBuildingScenario>("TowerBuilding");
-    registerScenario<ObstaclesScenario>("Obstacles");
+    registerScenario<ObstaclesEasyScenario>("ObstaclesEasy");
+    registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
+    registerScenario<ObstaclesHardScenario>("ObstaclesHard");
     registerScenario<FootballScenario>("Football");
     registerScenario<CollectScenario>("Collect");
     registerScenario<SokobanScenario>("Sokoban");
