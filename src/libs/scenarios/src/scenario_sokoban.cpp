@@ -276,15 +276,17 @@ void SokobanScenario::addEpisodeDrawables(DrawablesMap &drawables)
     }
 
     for (auto box : boxesCoords) {
-        auto scale = Magnum::Vector3{voxelSize / 2, 0.5f, voxelSize / 2} * 0.8f;
+        auto scale = Magnum::Vector3{voxelSize / 2, 0.45f, voxelSize / 2} * 0.8f;
         auto translation = Magnum::Vector3{float(box.x()) + 0.5f, float(box.y()) + 0.2f, float(box.z()) + 0.5f} * voxelSize;
 
         auto &layoutBox = envState.scene->addChild<Object3D>();
         layoutBox.scale(scale).translate(translation);
         drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::DARK_BLUE));
 
-        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), voxelSize * 2, scale.z()});
+        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
         auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        collisionBox.setCollisionScale({1, 3, 1});
+        collisionBox.setCollisionOffset({0, 0.6, 0});
         collisionBox.syncPose();
         envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
 

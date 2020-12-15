@@ -332,7 +332,7 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
         overview.camera = &(overview.verticalTilt->addFeature<SceneGraph::Camera3D>());
 
         overview.camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-                       .setProjectionMatrix(Matrix4::perspectiveProjection(110.0_degf, 128.0f / 72.0f, 0.1f, 150.0f))
+                       .setProjectionMatrix(Matrix4::perspectiveProjection(100.0_degf, 128.0f / 72.0f, 0.1f, 150.0f))
                        .setViewport(GL::defaultFramebuffer.viewport().size());
 
         if (overview.rootTransformation != Matrix4{} || overview.verticalTiltTransformation != Matrix4{})

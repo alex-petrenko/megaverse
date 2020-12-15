@@ -205,7 +205,6 @@ void BoxAGoneScenario::addEpisodeDrawables(DrawablesMap &drawables)
 
 void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
 {
-    const auto collisionScale = 0.45f * voxelSize;
     auto objSize = 0.42f * voxelSize;
     auto thicknessRatio = 0.045f;
     auto objScale = Magnum::Vector3{objSize, objSize * thicknessRatio, objSize};
@@ -213,7 +212,7 @@ void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
     for (const auto &[pos, color] : disappearingPlatforms) {
         auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f} * voxelSize;
 
-        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{collisionScale, collisionScale * thicknessRatio, collisionScale});
+        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
         auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
         object.scale(objScale).translate(translation);
@@ -230,7 +229,7 @@ void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
 
     for (int i = 0; i < env.getNumAgents() * 3; ++i) {
         auto translation = Magnum::Vector3{300, 300, 300} * voxelSize;
-        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{collisionScale, collisionScale * thicknessRatio, collisionScale});
+        auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
         auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
         object.scale(objScale).translate(translation);

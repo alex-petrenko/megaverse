@@ -14,6 +14,6 @@ namespace VoxelWorld
 
     void addStaticCollidingBox(
         DrawablesMap &drawables, Env::EnvState &envState,
-        Magnum::Vector3 scale, Magnum::Vector3 translation, Magnum::Vector3 collisionScale, ColorRgb color
+        Magnum::Vector3 scale, Magnum::Vector3 translation, ColorRgb color
     );
 }

@@ -38,7 +38,7 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
             drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::LAYOUT)); // TODO support multiple layout colors
 
         if (voxelType & VOXEL_SOLID) {
-            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{scale.x(), scale.y(), scale.z()});
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1,1,1});
             auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
 
             collisionBox.syncPose();
@@ -67,14 +67,14 @@ void VoxelWorld::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, Te
 
 void VoxelWorld::addStaticCollidingBox(
     DrawablesMap &drawables, Env::EnvState &envState,
-    Vector3 scale, Vector3 translation, Vector3 collisionScale, ColorRgb color
+    Vector3 scale, Vector3 translation, ColorRgb color
 )
 {
     auto &layoutBox = envState.scene->addChild<Object3D>();
     layoutBox.scale(scale).translate(translation);
     drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(color));
 
-    auto bBoxShape = std::make_unique<btBoxShape>(btVector3{collisionScale.x(), collisionScale.y(), collisionScale.z()});
+    auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
     auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
     collisionBox.syncPose();
     envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));

@@ -61,24 +61,20 @@ public:
 
     btRigidBody &rigidBody() { return *bRigidBody; }
 
-    void setCollisionOffset(const Magnum::Vector3 &collisionOffsetVec)
+    /**
+     * Allows to set collsion shape scale relative to the object scale
+     */
+    void setCollisionScale(const Magnum::Vector3 &scale)
     {
-        collisionOffset = Magnum::Matrix4::translation(collisionOffsetVec);
+        collisionScale = scale;
     }
 
     /* needed after changing the pose from Magnum side */
     void syncPose()
     {
-        //bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
-
-        const auto m = transformationMatrix();
-        const auto s = m.scaling();
-        const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
-
-        auto t = collisionOffset * Magnum::Matrix4::translation(m.translation()) * invS *
-                 Magnum::Matrix4::translation(-m.translation()) * m;
-
-        bRigidBody->setWorldTransform(btTransform(t));
+        const auto &m = absoluteTransformationMatrix();
+        bRigidBody->setWorldTransform(btTransform{btMatrix3x3{m.rotation()}, btVector3{m.translation()}});
+        bRigidBody->getCollisionShape()->setLocalScaling(btVector3{m.scaling() * collisionScale});
     }
 
     void toggleCollision()
@@ -98,7 +94,7 @@ public:
 public:
     btDynamicsWorld &bWorld;
     Magnum::Containers::Pointer<btRigidBody> bRigidBody;
-    Magnum::Matrix4 collisionOffset;
+    Magnum::Vector3 collisionScale{1, 1, 1};
     bool colliding = false;
 };
 
@@ -117,7 +113,7 @@ void FootballScenario::reset()
     vg.reset(env, envState);
     platformsComponent.reset(env, envState);
 
-    collisionShape = std::make_unique<btSphereShape>(1.0);
+    collisionShape = std::make_unique<btSphereShape>(2.0);
 
     auto &object = envState.scene->addChild<DynamicRigidBody>(envState.scene.get(), 1.0f, collisionShape.get(), envState.physics.bWorld);
     auto translation = Magnum::Vector3{5, 5, 5};

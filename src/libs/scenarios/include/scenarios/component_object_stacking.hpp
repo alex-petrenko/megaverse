@@ -174,11 +174,12 @@ public:
             const auto pos = movableObject;
             auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.5f, float(pos.z()) + 0.5f};
 
-            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{0.45f, 0.5f, 0.45f});
+            auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
             auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
             object.scale(objScale).translate(translation);
-            object.setCollisionOffset({0.0f, -0.1f, 0.0f});
+            object.setCollisionScale({1.15f, 1.15f, 1.15f});
+            object.setCollisionOffset({0, -0.05f, 0});
             object.syncPose();
 
             drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::MOVABLE_BOX));

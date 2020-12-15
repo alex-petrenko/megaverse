@@ -6,6 +6,7 @@
 
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
+#include <Magnum/SceneGraph/TranslationRotationScalingTransformation3D.h>
 
 #include <util/magnum.hpp>
 
@@ -48,31 +49,29 @@ public:
 
     btRigidBody &rigidBody() { return *bRigidBody; }
 
-    void setCollisionOffset(const Magnum::Vector3 &collisionOffsetVec)
+    /**
+     * Allows to set collsion shape scale relative to the object scale
+     */
+    void setCollisionScale(const Magnum::Vector3 &scale)
     {
-        collisionOffset = Magnum::Matrix4::translation(collisionOffsetVec);
+        collisionScale = scale;
+    }
+
+    void setCollisionOffset(const Magnum::Vector3 &offset)
+    {
+        collisionOffset = offset;
     }
 
     /* needed after changing the pose from Magnum side */
     void syncPose()
     {
-        bRigidBody->setWorldTransform(btTransform(absoluteTransformationMatrix()));
-
-//        const auto m = absoluteTransformationMatrix();
-//        const auto s = m.scaling();
-//        const auto invS = Magnum::Matrix4::scaling({1.0f / s.x(), 1.0f / s.y(), 1.0f / s.z()});
-//
-//        auto t = collisionOffset * Magnum::Matrix4::translation(m.translation()) * invS *
-//                 Magnum::Matrix4::translation(-m.translation()) * m;
-//
-//        bRigidBody->setWorldTransform(btTransform(t));
+        const auto &m = absoluteTransformationMatrix();
+        bRigidBody->setWorldTransform(btTransform{btMatrix3x3{m.rotation()}, btVector3{m.translation() + collisionOffset}});
+        bRigidBody->getCollisionShape()->setLocalScaling(btVector3{m.scaling() * collisionScale});
     }
 
     void toggleCollision()
     {
-//        bRigidBody->setCollisionFlags(bRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-//        bRigidBody->setActivationState(DISABLE_SIMULATION);
-
         if (colliding) {
             bWorld.removeRigidBody(bRigidBody.get());
             colliding = false;
@@ -85,7 +84,8 @@ public:
 private:
     btDynamicsWorld &bWorld;
     Magnum::Containers::Pointer<btRigidBody> bRigidBody;
-    Magnum::Matrix4 collisionOffset;
+    Magnum::Vector3 collisionScale{1, 1, 1};
+    Magnum::Vector3 collisionOffset;
     bool colliding = false;
 };
 
