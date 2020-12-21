@@ -14,9 +14,9 @@ public:
 
     void init() override
     {
-        length = randRange(8, 14, rng);
+        length = randRange(14, 24, rng);
         if (width == -1)
-            width = randRange(8, 12, rng);
+            width = randRange(12, 24, rng);
 
          height = randRange(3, 7, rng);
     }

@@ -10,6 +10,9 @@ class HoneyCombMaze : public Maze {
 
   virtual std::tuple<double, double, double, double> GetCoordinateBounds() const;
 
+public:
+    bool bordersForEntranceAndExit = true;
+
  protected:
   int size_;
   static const int neigh[6][2];

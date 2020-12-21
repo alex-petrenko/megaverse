@@ -30,14 +30,14 @@ using namespace Magnum::Math::Literals;
 
 using namespace VoxelWorld;
 
-
-//const auto scenarioName = "TowerBuilding";
-//const auto scenarioName = "Football";
-const auto scenarioName = "ObstaclesEasy";
+//const auto scenarioName = "ObstaclesHard";
+//const auto scenarioName = "ObstaclesEasy";
 //const auto scenarioName = "Collect";
 //const auto scenarioName = "Sokoban";
 //const auto scenarioName = "BoxAGone";
-//const auto scenarioName = "HexMemory";
+//const auto scenarioName = "TowerBuilding";
+const auto scenarioName = "HexMemory";
+//const auto scenarioName = "Football";
 
 
 class Viewer: public Platform::Application
@@ -83,7 +83,7 @@ Viewer::Viewer(const Arguments& arguments):
     {
         const Vector2 dpiScaling = this->dpiScaling({});
         Configuration conf;
-        conf.setTitle("VoxelEnvViewer").setSize({1280, 720}, dpiScaling);
+        conf.setTitle("VoxelEnvViewer").setSize({1800, 1000}, dpiScaling);
         GLConfiguration glConf;
         glConf.setSampleCount(dpiScaling.max() < 2.0f ? 8 : 2);
         if(!tryCreate(conf, glConf)) {

@@ -22,6 +22,7 @@ public:
 
 private:
     float mazeScale = 1.0f;
+    float wallHeight = 1.0f;
     std::unique_ptr<HoneyCombMaze> maze;
     double xMin = 0, xMax = 0, yMin = 0, yMax = 0;
 };

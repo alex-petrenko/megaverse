@@ -24,9 +24,10 @@ void HoneyCombMaze::InitialiseGraph() {
           adjacencylist_[node].push_back({nnode, ptr});
           adjacencylist_[nnode].push_back({node, ptr});
         } else {
-          if ((node == startvertex_ and n == 0) or
-              (node == endvertex_ and n == 3))
-            continue;
+            if (!bordersForEntranceAndExit)
+              if ((node == startvertex_ and n == 0) or
+                  (node == endvertex_ and n == 3))
+                continue;
           adjacencylist_[node].push_back(
               {-1, std::make_shared<LineBorder>(GetEdge(u, v, n))});
         }

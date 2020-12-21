@@ -18,7 +18,7 @@ HexagonalMazeComponent::~HexagonalMazeComponent() = default;
 
 void HexagonalMazeComponent::reset(Env &, Env::EnvState &envState)
 {
-    const auto size = 5;
+    const auto size = 11;
     maze = std::make_unique<HoneyCombMaze>(size);
 
     Kruskal algorithm;
@@ -31,7 +31,9 @@ void HexagonalMazeComponent::reset(Env &, Env::EnvState &envState)
     const auto [xmin, ymin, xmax, ymax] = maze->GetCoordinateBounds();
     xMin = xmin, yMin = ymin, xMax = xmax, yMax = ymax;
 
-    mazeScale = frand(envState.rng) * 0.8f + 3.0f;
+//    mazeScale = frand(envState.rng) * 0.8f + 3.0f;
+    mazeScale = 3.0f;
+    wallHeight = frand(envState.rng) * 2.0f + 2.0f;
 
     xMin *= mazeScale, xMax *= mazeScale, yMin *= mazeScale, yMax *= mazeScale;
 }
@@ -66,7 +68,7 @@ void HexagonalMazeComponent::addDrawablesAndCollisions(DrawablesMap &drawables, 
             x1 *= mazeScale, z1 *= mazeScale, x2 *= mazeScale, z2 *= mazeScale;
 
             const auto length = 0.5f * sqrtf(float(sqr(x1 - x2) + sqr(z1 - z2)));
-            const Vector3 wallScale{length, 3.0f, 0.15f};
+            const Vector3 wallScale{length, wallHeight, 0.15f};
             const Vector3 wallTranslation{float(x1 + x2) / 2, 1, float(z1 + z2) / 2};
 
             const auto deltaX = x1 - x2;
