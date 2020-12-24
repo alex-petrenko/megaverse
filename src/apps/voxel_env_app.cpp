@@ -26,8 +26,8 @@ constexpr int delayMs = 20;  // 1000 / 15;
 
 //constexpr ConstStr scenario = "Collect";
 //constexpr ConstStr scenario = "Obstacles";
-//constexpr ConstStr scenario = "Sokoban";
-constexpr ConstStr scenario = "BoxAGone";
+constexpr ConstStr scenario = "Sokoban";
+//constexpr ConstStr scenario = "BoxAGone";
 
 constexpr bool useVulkan = true;
 
@@ -169,9 +169,9 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 1;  // to test vectorized env interface
-    const int numAgentsPerEnv = 1;
-    const int numSimulationThreads = 1;
+    const int numEnvs = 4;  // to test vectorized env interface
+    const int numAgentsPerEnv = 2;
+    const int numSimulationThreads = 2;
 
     FloatParams params{{Str::episodeLengthSec, 100.0f}};
 

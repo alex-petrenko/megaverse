@@ -14,7 +14,7 @@ def sample_actions(e):
 
 def make_env(num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
     """Making env with a default scenario name."""
-    return VoxelEnv('Obstacles', num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
+    return VoxelEnv('ObstaclesEasy', num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
 
 
 class TestEnv(TestCase):

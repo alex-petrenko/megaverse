@@ -19,14 +19,16 @@ class Maze {
   virtual void InitialiseGraph() = 0;
 
   AdjList & getAdjacencyList() { return adjacencylist_; }
+  std::vector<std::pair<double, double>> & getCellCenters() { return cellCenters; }
 
   virtual std::tuple<double, double, double, double> GetCoordinateBounds() const = 0;
 
- protected:
-  // Solving a maze is equivalent to finding a path in a graph
-  int vertices_;
-  AdjList adjacencylist_;
-  int startvertex_, endvertex_;
+protected:
+    // Solving a maze is equivalent to finding a path in a graph
+    int vertices_;
+    AdjList adjacencylist_;
+    int startvertex_, endvertex_;
+    std::vector<std::pair<double, double>> cellCenters;
 };
 
 #endif /* end of include guard: MAZE_H */

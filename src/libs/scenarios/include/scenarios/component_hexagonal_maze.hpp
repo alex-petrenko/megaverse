@@ -20,9 +20,22 @@ public:
 
     void addDrawablesAndCollisions(DrawablesMap &drawables, Env::EnvState &envState) const;
 
+    HoneyCombMaze & getMaze() { return *maze; }
+
+    [[nodiscard]] float getScale() const { return mazeScale; }
+    [[nodiscard]] int getSize() const { return mazeSize; }
+
+public:
+    int minSize = 2, maxSize = 10;
+
 private:
+    int mazeSize = 0;
     float mazeScale = 1.0f;
     float wallHeight = 1.0f;
+    float omitWallsProbability = 0.0f;
+    ColorRgb bottomEdgingColor, topEdgingColor;
+    float wallLandmarkProbability = 0.0f;
+
     std::unique_ptr<HoneyCombMaze> maze;
     double xMin = 0, xMax = 0, yMin = 0, yMax = 0;
 };

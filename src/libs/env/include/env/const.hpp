@@ -47,6 +47,7 @@ enum class ColorRgb
 const ColorRgb allColors[] = {
     ColorRgb::YELLOW, ColorRgb::GREEN, ColorRgb::LIGHT_GREEN, ColorRgb::BLUE, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
     ColorRgb::DARK_GREY, ColorRgb::VERY_DARK_GREY, ColorRgb::WHITE, ColorRgb::LIGHT_ORANGE, ColorRgb::DARK_BLUE,
+    ColorRgb::RED, ColorRgb::VIOLET,
 };
 const int numColors = ARR_LENGTH(allColors);
 
@@ -54,5 +55,11 @@ const ColorRgb agentColors[] = {ColorRgb::YELLOW, ColorRgb::GREEN, ColorRgb::BLU
 const int numAgentColors = ARR_LENGTH(agentColors);
 
 inline Magnum::Color3 rgb(ColorRgb color) { return toRgbf((unsigned long long)color); }
+
+inline ColorRgb sampleRandomColor(Rng &rng)
+{
+    const auto idx = randRange(0, ARR_LENGTH(allColors), rng);
+    return allColors[idx];
+}
 
 }

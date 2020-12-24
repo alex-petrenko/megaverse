@@ -66,38 +66,27 @@ cd Release/bin
 (see global boolean flags in voxel_env_app.cpp, they control the scenario and rendering settings
 TODO: make configurable)
 
-11) To build the Python package and install it in the active Python env:
+11) Run viewer
+cd Release/bin
+./viewer
+
+use WASD and arrows to control agent
+digits (1,2) to switch between agents in multi-agent envs
+E to interact with objects
+O to switch to overview camera
+UHJK to control overview camera
+
+(see global vars at the top of viewer.cpp file to control which environment is chosen
+TODO: make configurable)
+
+12) To build the Python package and install it in the active Python env:
 python setup.py develop
 pip install -e .
 
-12) TODO: run Python tests, run RL training
+13) Run tests
+python -m unittest
+
+14) You are ready to use the VoxelWorld Python API!
 
 ```
 
-
-```
-v4r version
-
-1) install CUDA 10.2 (or newer?) https://developer.nvidia.com/cuda-10.2-download-archive?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=runfilelocal
-
-2) Download Vulkan SDK (tested on vulkansdk-linux-x86_64-1.2.148.1) and unzip
-
-3) Set env vars in the current shell
-cd <vulkan_sdk_folder>
-source setup-env.sh
-
-4) Update cmake if needed (tested on 3.18)
-sudo snap install cmake --classic
-
-5) Install bullet
-sudo apt install libbullet-dev
-
-6) Activate conda environment
-conda activate sample-factory-pytorch-1.6
-
-7) Cmake step
-cd src
-mkdir build-release
-cd build-release
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER=/usr/local/cuda-10.2/bin/nvcc ..
-```

@@ -14,6 +14,9 @@ void HoneyCombMaze::InitialiseGraph() {
     auto vextent = VExtent(u);
     for (int v = vextent.first; v <= vextent.second; ++v) {
       int node = VertexIndex(u, v);
+
+      cellCenters[node] = GetCenter(u, v);
+
       for (int n = 0; n < 6; ++n) {
         int uu = u + neigh[n][0], vv = v + neigh[n][1];
         if (IsValidNode(uu, vv)) {
@@ -42,6 +45,13 @@ int HoneyCombMaze::VertexIndex(int u, int v) const {
     return ((3 * size_ + u) * (size_ + u - 1)) / 2 + v;
   else
     return (3 * size_ * (size_ - 1) + (4 * size_ - u - 1) * u) / 2 + v;
+}
+
+std::pair<double, double> HoneyCombMaze::GetCenter(int u, int v)
+{
+    double dxu = sqrt(3) / 2, dyu = 1.5, dxv = sqrt(3), dyv = 0;
+    double cx = dxu * u + dxv * v, cy = dyu * u + dyv * v;
+    return std::make_pair(cx, cy);
 }
 
 std::tuple<double, double, double, double> HoneyCombMaze::GetEdge(

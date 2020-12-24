@@ -9,6 +9,7 @@ Maze::Maze(int vertices, int startvertex, int endvertex)
 void Maze::InitialiseGraph() {
   adjacencylist_.clear();
   adjacencylist_.resize(vertices_);
+  cellCenters.resize(vertices_);
 }
 
 void Maze::GenerateMaze(SpanningtreeAlgorithm* algorithm) {

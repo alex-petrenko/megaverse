@@ -24,7 +24,7 @@ void HexMemoryScenario::step()
 
 std::vector<Magnum::Vector3> HexMemoryScenario::agentStartingPositions()
 {
-    std::vector<Magnum::Vector3> pos(env.getNumAgents(), {0, 2, 0});
+    std::vector<Magnum::Vector3> pos(env.getNumAgents(), {0, 0.5, 0});
     return pos;
 }
 

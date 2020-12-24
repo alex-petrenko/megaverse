@@ -8,6 +8,7 @@
 #include <scenarios/scenario_obstacles.hpp>
 #include <scenarios/scenario_hex_memory.hpp>
 #include <scenarios/scenario_box_a_gone.hpp>
+#include <scenarios/scenario_hex_explore.hpp>
 #include <scenarios/scenario_tower_building.hpp>
 
 
@@ -36,6 +37,7 @@ void scenariosGlobalInit()
     registerScenario<SokobanScenario>("Sokoban");
     registerScenario<BoxAGoneScenario>("BoxAGone");
     registerScenario<HexMemoryScenario>("HexMemory");
+    registerScenario<HexExploreScenario>("HexExplore");
 }
 
 }
