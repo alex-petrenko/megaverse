@@ -26,6 +26,9 @@ public:
 
 private:
     HexagonalMazeComponent maze;
+
+    Magnum::Vector3 landmarkLocation;
+    std::vector<Magnum::Vector3> goodObjects, badObjects;
 };
 
 }

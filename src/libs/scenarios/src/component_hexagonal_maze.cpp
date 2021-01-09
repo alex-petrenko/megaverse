@@ -31,7 +31,7 @@ void HexagonalMazeComponent::reset(Env &, Env::EnvState &envState)
     const auto [xmin, ymin, xmax, ymax] = maze->GetCoordinateBounds();
     xMin = xmin, yMin = ymin, xMax = xmax, yMax = ymax;
 
-    mazeScale = 3.0f;
+    mazeScale = 3.5f;
     wallHeight = frand(envState.rng) * 0.55f + 0.85f;
     omitWallsProbability = frand(envState.rng) * 0.6f + 0.1f;
     wallLandmarkProbability = frand(envState.rng) * 0.15f + 0.15f;

@@ -16,4 +16,9 @@ namespace VoxelWorld
         DrawablesMap &drawables, Env::EnvState &envState,
         Magnum::Vector3 scale, Magnum::Vector3 translation, ColorRgb color
     );
+
+    Object3D * addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color);
+    Object3D * addPillar(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color);
+
+    // TODO: add cone and others
 }

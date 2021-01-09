@@ -12,6 +12,7 @@
 #include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Primitives/Icosphere.h>
 #include <Magnum/Primitives/Cone.h>
+#include <Magnum/Primitives/Cylinder.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
@@ -136,8 +137,8 @@ public:
 
     std::vector<SceneGraph::DrawableGroup3D> envDrawables;
 
-    GL::Buffer boxInstanceBuffer{NoCreate}, capsuleInstanceBuffer{NoCreate}, sphereInstanceBuffer{NoCreate}, coneInstanceBuffer{NoCreate};
-    Containers::Array<InstanceData> boxInstanceData, capsuleInstanceData, sphereInstanceData, coneInstanceData;
+    std::map<DrawableType, GL::Buffer> instanceBuffers;
+    std::map<DrawableType, Containers::Array<InstanceData>> instanceData;
 
     Shaders::Phong shader{NoCreate};
     Shaders::Phong shaderInstanced{NoCreate};
@@ -145,7 +146,7 @@ public:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
-    GL::Mesh boxMesh, capsuleMesh, sphereMesh, coneMesh;
+    std::map<DrawableType, GL::Mesh> meshes;
 
     std::vector<std::vector<Containers::Array<uint8_t>>> agentFrames;
     std::vector<std::vector<std::unique_ptr<MutableImageView2D>>> agentImageViews;
@@ -210,41 +211,21 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, bool
 
     // meshes
     {
-        boxMesh = MeshTools::compile(Primitives::cubeSolid());
-        boxInstanceBuffer = GL::Buffer{};
-        boxMesh.addVertexBufferInstanced(
-            boxInstanceBuffer, 1, 0,
-            Shaders::Phong::TransformationMatrix{},
-            Shaders::Phong::NormalMatrix{},
-            Shaders::Phong::Color3{}
-        );
+        meshes[DrawableType::Box] = MeshTools::compile(Primitives::cubeSolid());
+        meshes[DrawableType::Capsule] = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
+        meshes[DrawableType::Sphere] = MeshTools::compile(Primitives::icosphereSolid(1));
+        meshes[DrawableType::Cone] = MeshTools::compile(Primitives::coneSolid(1, 6, 0.5f));
+        meshes[DrawableType::Cylinder] = MeshTools::compile(Primitives::cylinderSolid(1, 6, 0.5f, Magnum::Primitives::CylinderFlag::CapEnds));
 
-        capsuleMesh = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
-        capsuleInstanceBuffer = GL::Buffer{};
-        capsuleMesh.addVertexBufferInstanced(
-            capsuleInstanceBuffer, 1, 0,
-            Shaders::Phong::TransformationMatrix{},
-            Shaders::Phong::NormalMatrix{},
-            Shaders::Phong::Color3{}
-        );
-
-        sphereMesh = MeshTools::compile(Primitives::icosphereSolid(1));
-        sphereInstanceBuffer = GL::Buffer{};
-        sphereMesh.addVertexBufferInstanced(
-            sphereInstanceBuffer, 1, 0,
-            Shaders::Phong::TransformationMatrix{},
-            Shaders::Phong::NormalMatrix{},
-            Shaders::Phong::Color3{}
-        );
-
-        coneMesh = MeshTools::compile(Primitives::coneSolid(1, 6, 0.5f));
-        coneInstanceBuffer = GL::Buffer{};
-        coneMesh.addVertexBufferInstanced(
-            coneInstanceBuffer, 1, 0,
-            Shaders::Phong::TransformationMatrix{},
-            Shaders::Phong::NormalMatrix{},
-            Shaders::Phong::Color3{}
-        );
+        for (auto &[k, v] : meshes) {
+            instanceBuffers[k] = GL::Buffer{};
+            v.addVertexBufferInstanced(
+                instanceBuffers[k], 1, 0,
+                Shaders::Phong::TransformationMatrix{},
+                Shaders::Phong::NormalMatrix{},
+                Shaders::Phong::Color3{}
+            );
+        }
     }
 
     // drawables
@@ -289,34 +270,20 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
     // reset renderer data structures
     {
         envDrawables[envIndex] = SceneGraph::DrawableGroup3D{};
-        arrayResize(boxInstanceData, 0);
-        arrayResize(capsuleInstanceData, 0);
-        arrayResize(sphereInstanceData, 0);
-        arrayResize(coneInstanceData, 0);
+
+        for ([[maybe_unused]] const auto &[k, v] : meshes)
+            arrayResize(instanceData[k], 0);
     }
 
     // drawables
     {
         const auto &drawables = env.getDrawables();
 
-        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Box)) {
-            const auto &color = sceneObjectInfo.color;
-            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(boxInstanceData, color, envDrawables[envIndex]);
-        }
-
-        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Capsule)) {
-            const auto &color = sceneObjectInfo.color;
-            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(capsuleInstanceData, color, envDrawables[envIndex]);
-        }
-
-        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Sphere)) {
-            const auto &color = sceneObjectInfo.color;
-            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(sphereInstanceData, color, envDrawables[envIndex]);
-        }
-
-        for (const auto &sceneObjectInfo : drawables.at(DrawableType::Cone)) {
-            const auto &color = sceneObjectInfo.color;
-            sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(coneInstanceData, color, envDrawables[envIndex]);
+        for ([[maybe_unused]] const auto &[k, v] : meshes) {
+            for (const auto &sceneObjectInfo : drawables.at(k)) {
+                const auto &color = sceneObjectInfo.color;
+                sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(instanceData[k], color, envDrawables[envIndex]);
+            }
         }
     }
 
@@ -353,10 +320,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
         .clearDepth(1.0f)
         .bind();
 
-    arrayResize(boxInstanceData, 0);
-    arrayResize(capsuleInstanceData, 0);
-    arrayResize(sphereInstanceData, 0);
-    arrayResize(coneInstanceData, 0);
+    for ([[maybe_unused]] const auto &[k, v] : meshes)
+        arrayResize(instanceData[k], 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
     if (withOverviewCamera && overview.enabled)
@@ -367,29 +332,13 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
 
     shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());
 
-    /* Upload instance data to the GPU (orphaning the previous buffer
-       contents) and draw all cubes in one call  */
-    boxInstanceBuffer.setData(boxInstanceData, GL::BufferUsage::DynamicDraw);
-    boxMesh.setInstanceCount(Int(boxInstanceData.size()));
-    shaderInstanced.draw(boxMesh);
-
-    if (!capsuleInstanceData.empty()) {
-        capsuleInstanceBuffer.setData(capsuleInstanceData, GL::BufferUsage::DynamicDraw);
-        capsuleMesh.setInstanceCount(Int(capsuleInstanceData.size()));
-        shaderInstanced.draw(capsuleMesh);
-    }
-
-    if (!sphereInstanceData.empty()) {
-        sphereInstanceBuffer.setData(sphereInstanceData, GL::BufferUsage::DynamicDraw);
-        sphereMesh.setInstanceCount(Int(sphereInstanceData.size()));
-        shaderInstanced.draw(sphereMesh);
-    }
-
-    if (!coneInstanceData.empty()) {
-        coneInstanceBuffer.setData(coneInstanceData, GL::BufferUsage::DynamicDraw);
-        coneMesh.setInstanceCount(Int(coneInstanceData.size()));
-        shaderInstanced.draw(coneMesh);
-    }
+    // Upload instance data to the GPU (orphaning the previous buffer contents) and draw all meshes in one call
+    for (auto &[drawableType, mesh] : meshes)
+        if (!instanceData[drawableType].empty()) {
+            instanceBuffers[drawableType].setData(instanceData[drawableType], GL::BufferUsage::DynamicDraw);
+            mesh.setInstanceCount(Int(instanceData[drawableType].size()));
+            shaderInstanced.draw(mesh);
+        }
 
     // Bullet debug draw
     if (withDebugDraw) {

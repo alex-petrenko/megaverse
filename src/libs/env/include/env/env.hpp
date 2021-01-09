@@ -63,6 +63,7 @@ enum class DrawableType
     Capsule = 1,
     Sphere = 2,
     Cone = 3,
+    Cylinder = 4,
 
     NumTypes,
 };

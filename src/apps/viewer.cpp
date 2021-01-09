@@ -33,10 +33,10 @@ using namespace VoxelWorld;
 //const auto scenarioName = "ObstaclesHard";
 //const auto scenarioName = "ObstaclesEasy";
 //const auto scenarioName = "Collect";
-const auto scenarioName = "Sokoban";
+//const auto scenarioName = "Sokoban";
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
-//const auto scenarioName = "HexMemory";
+const auto scenarioName = "HexMemory";
 //const auto scenarioName = "HexExplore";
 //const auto scenarioName = "Football";
 
@@ -96,7 +96,7 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
-    const int numAgents = 2;
+    const int numAgents = 4;
 
     auto env = std::make_unique<Env>(scenarioName, numAgents);
 //    env->seed(42);
