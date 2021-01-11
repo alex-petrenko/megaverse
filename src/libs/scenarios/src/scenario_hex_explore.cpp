@@ -40,7 +40,7 @@ void HexExploreScenario::reset()
 void HexExploreScenario::step()
 {
     for (auto &agent : env.getAgents()) {
-        const auto &t = agent->absoluteTransformation().translation();
+        const auto t = agent->absoluteTransformation().translation();
 
         const auto threshold = 0.9f;
         if ((t - rewardObjectCoords).length() < threshold) {

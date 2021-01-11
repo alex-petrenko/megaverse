@@ -174,7 +174,7 @@ void ObstaclesScenario::step()
     int numAgentsAtExit = 0;
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
-        const auto &t = agent->absoluteTransformation().translation();
+        const auto t = agent->absoluteTransformation().translation();
         const auto voxel = vg.grid.getCoords(t);
 
         if (vg.grid.hasVoxel(voxel)) {

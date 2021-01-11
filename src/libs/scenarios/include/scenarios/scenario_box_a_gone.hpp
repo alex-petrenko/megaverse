@@ -15,7 +15,7 @@ namespace VoxelWorld
 struct VoxelBoxAGone : public VoxelState
 {
     RigidBody *disappearingPlatform = nullptr;
-};
+} __attribute__((aligned(8)));
 
 class BoxAGoneScenario : public DefaultScenario, public FallDetectionCallbacks
 {
@@ -32,7 +32,7 @@ private:
         int remainingTicks = 0;
         VoxelCoords coords;
         RigidBody *temporaryPlatform = nullptr;
-    };
+    } __attribute__((aligned(32)));
 
 public:
     explicit BoxAGoneScenario(const std::string &name, Env &env, Env::EnvState &envState);

@@ -131,45 +131,6 @@ void Env::step()
 
     scenario->step();
 
-//    int numAgentsAtExit = 0;
-
-//    // TODO: move this to obstacle course scenario
-//    for (int i = 0; i < int(agents.size()); ++i) {
-//        const auto &agent = agents[i];
-//        const auto t = agent->transformation().translation();
-//
-//        const auto distToGoal = (t - exitPadCenter).length();
-//        const auto distIncrement = 0.5f;
-//        const auto rewardForGettingCloserToGoal = 0.0f;
-//
-//        if (agentStates[i].minDistToGoal - distToGoal > distIncrement) {
-//            agentStates[i].minDistToGoal -= distIncrement;
-//            lastReward[i] += rewardForGettingCloserToGoal;
-//        }
-//
-//        if (t.x() >= exitPad.min.x() && t.x() <= exitPad.max.x()
-//            && t.y() >= exitPad.min.y() && t.y() <= exitPad.max.y() + 2  // TODO: hack
-//            && t.z() >= exitPad.min.z() && t.z() <= exitPad.max.z()) {
-//            ++numAgentsAtExit;
-//
-//            if (!agentStates[i].visitedExit) {
-//                lastReward[i] += 3.0f;
-//                agentStates[i].visitedExit = true;
-//            }
-//        }
-//    }
-
-//    if (numAgentsAtExit == numAgents) {
-//        done = true;
-//        completed = true;
-//
-//        for (int i = 0; i < int(agents.size()); ++i) {
-//            lastReward[i] += 5.0f;
-//            if (agents[i]->carryingObject)
-//                lastReward[i] += 2.0f;  // TODO: this is experimental - encourage agents to carry their cubes to the exit
-//        }
-//    }
-
     state.currEpisodeSec += state.lastFrameDurationSec;
 
     if (state.currEpisodeSec >= episodeLengthSec())
@@ -179,11 +140,12 @@ void Env::step()
     for (int i = 0; i < numAgents; ++i)
         state.currAction[i] = Action::Idle;
 
-    for (int i = 0; i < int(state.agents.size()); ++i)
+    for (int i = 0; i < int(state.agents.size()); ++i) {
         state.totalReward[i] += state.lastReward[i];
 
-//    if (fabs(lastReward[0]) > SIMD_EPSILON)
-//        TLOG(INFO) << "Last reward: " << lastReward[0];
+        if (fabs(state.lastReward[i]) > SIMD_EPSILON)
+            TLOG(INFO) << "Last reward for agent #" << i << ":  " << state.lastReward[i] << ", total reward:  " << state.totalReward[i];
+    }
 }
 
 std::vector<Magnum::Color3> Env::getPalette() const

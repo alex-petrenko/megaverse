@@ -1,10 +1,24 @@
 #pragma once
 
+#include <list>
+
 #include <scenarios/scenario_default.hpp>
 #include <scenarios/component_hexagonal_maze.hpp>
 
 namespace VoxelWorld
 {
+
+struct CollectableObject
+{
+    Object3D *object = nullptr;
+    bool good = false;
+};
+
+struct VoxelHexMemory
+{
+    std::list<CollectableObject> objects;
+};
+
 
 class HexMemoryScenario : public DefaultScenario
 {
@@ -27,8 +41,11 @@ public:
 private:
     HexagonalMazeComponent maze;
 
+    VoxelGridComponent<VoxelHexMemory> vg;
+
     Magnum::Vector3 landmarkLocation;
     std::vector<Magnum::Vector3> goodObjects, badObjects;
+    int goodObjectsCollected = 0;
 };
 
 }

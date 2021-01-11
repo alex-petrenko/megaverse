@@ -24,4 +24,7 @@ namespace VoxelWorld::Str
     ConstStr boxagoneTouchedFloor = "boxagoneTouchedFloor",
              boxagonePerStepReward = "boxagonePerStepReward",
              boxagoneLastManStanding = "boxagoneLastManStanding";
+
+    ConstStr memoryCollectGood = "memoryCollectGood",
+             memoryCollectBad = "memoryCollectBad";
 }

@@ -83,6 +83,7 @@ void VoxelWorld::addStaticCollidingBox(
 Object3D * VoxelWorld::addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto &rootObject = parent.addChild<Object3D>();
+
     rootObject.scale(scale).translate(translation);
     drawables[DrawableType::Cylinder].emplace_back(&rootObject, rgb(color));
 
@@ -96,8 +97,8 @@ Object3D * VoxelWorld::addPillar(DrawablesMap &drawables, Object3D &parent, Magn
     auto capScale = Vector3 {scale.x() * 1.2f, 0.15f, scale.z() * 1.2f};
     auto capTranslation = Vector3 {0, 0.47, 0} * scale;
 
-    addCylinder(drawables, parent, translation + capTranslation, capScale, color);
-    addCylinder(drawables, parent, translation - capTranslation, capScale, color);
+    addCylinder(drawables, parent, translation + capTranslation, capScale, color)->setParentKeepTransformation(rootObject);
+    addCylinder(drawables, parent, translation - capTranslation, capScale, color)->setParentKeepTransformation(rootObject);
 
     return rootObject;
 }

@@ -106,7 +106,7 @@ void BoxAGoneScenario::step()
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
-        const auto &t = agent->absoluteTransformation().translation();
+        const auto t = agent->absoluteTransformation().translation();
         const auto coords = vg.grid.getCoords(t);
 
         const bool touchesFloor = coords.y() < 3;
