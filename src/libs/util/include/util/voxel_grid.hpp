@@ -141,7 +141,7 @@ public:
      * @param v point (vector) in 3D space.
      * @return corresponding voxel coords.
      */
-    VoxelCoords getCoords(const Magnum::Vector3 &v)
+    VoxelCoords getCoords(const Magnum::Vector3 &v) const
     {
         const auto coordsFloat = (v - origin) / voxelSize;
         const auto coords = toVoxel(coordsFloat);

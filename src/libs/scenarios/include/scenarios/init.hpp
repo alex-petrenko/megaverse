@@ -6,6 +6,7 @@
 #include <scenarios/scenario_collect.hpp>
 #include <scenarios/scenario_football.hpp>
 #include <scenarios/scenario_obstacles.hpp>
+#include <scenarios/scenario_rearrange.hpp>
 #include <scenarios/scenario_hex_memory.hpp>
 #include <scenarios/scenario_box_a_gone.hpp>
 #include <scenarios/scenario_hex_explore.hpp>
@@ -38,6 +39,7 @@ void scenariosGlobalInit()
     registerScenario<BoxAGoneScenario>("BoxAGone");
     registerScenario<HexMemoryScenario>("HexMemory");
     registerScenario<HexExploreScenario>("HexExplore");
+    registerScenario<RearrangeScenario>("Rearrange");
 }
 
 }

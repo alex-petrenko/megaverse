@@ -5,8 +5,6 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 
 #include <env/agent.hpp>
-#include <util/tiny_logger.hpp>
-#include <util/util.hpp>
 
 
 using namespace Magnum;

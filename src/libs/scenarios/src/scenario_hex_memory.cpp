@@ -69,7 +69,7 @@ void HexMemoryScenario::reset()
 
     std::shuffle(objectCoordinates.begin(), objectCoordinates.end(), envState.rng);
 
-    float cellWithObjectsFraction = frand(envState.rng) * 0.1f + 0.1f;
+    float cellWithObjectsFraction = frand(envState.rng) * 0.2f + 0.1f;
     long numCellsWithGoodObjects = std::lround(ceilf(cellWithObjectsFraction * objectCoordinates.size()));
     long numCellsWithBadObjects = std::lround(ceilf(cellWithObjectsFraction * objectCoordinates.size()));
 

@@ -36,9 +36,10 @@ using namespace VoxelWorld;
 //const auto scenarioName = "Sokoban";
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
-const auto scenarioName = "HexMemory";
+//const auto scenarioName = "HexMemory";
 //const auto scenarioName = "HexExplore";
 //const auto scenarioName = "Football";
+const auto scenarioName = "Rearrange";
 
 
 class Viewer: public Platform::Application
@@ -96,7 +97,7 @@ Viewer::Viewer(const Arguments& arguments):
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
-    const int numAgents = 4;
+    const int numAgents = 2;
 
     auto env = std::make_unique<Env>(scenarioName, numAgents);
 //    env->seed(42);
