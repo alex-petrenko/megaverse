@@ -4,7 +4,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Magnum/Primitives/Cube.h>
-#include <Magnum/Primitives/Axis.h>
 #include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/Camera.h>
@@ -18,6 +17,8 @@
 #include <v4r/debug.hpp>
 
 #include <util/tiny_logger.hpp>
+
+#include <rendering/render_utils.hpp>
 
 #include <v4r_rendering/v4r_env_renderer.hpp>
 
@@ -107,7 +108,7 @@ public:
 
     glm::u32vec2 framebufferSize;
 
-    int pixelsPerFrame, pixelsPerEnv;
+    int pixelsPerFrame{}, pixelsPerEnv{};
 
 //    vector<uint8_t> cpuFrames;
 
@@ -120,6 +121,7 @@ public:
 
 //    v4r::RenderDoc rdoc;
 
+    std::map<DrawableType, Trade::MeshData> meshData;
     std::map<DrawableType, int> meshIndices;
 };
 
@@ -185,15 +187,11 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
 
     // meshes
     {
-        auto capsuleMesh = Primitives::capsule3DSolid(3, 3, 8, 1.0);
-        meshIndices[DrawableType::Capsule] = int(meshes.size());
-        meshes.emplace_back(convertMesh(capsuleMesh));
-
-        auto cubeMesh = Primitives::cubeSolid();
-        meshIndices[DrawableType::Box] = int(meshes.size());
-        meshes.emplace_back(convertMesh(cubeMesh));
-
-        // TODO cone, sphere
+        initPrimitives(meshData);
+        for (const auto &[drawable, data] : meshData) {
+            meshIndices[drawable] = int(meshes.size());
+            meshes.emplace_back(convertMesh(data));
+        }
     }
 
     // Materials
@@ -243,7 +241,8 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
-        renderEnvs[idx] = cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f);
+        auto [fov, near, far] = cameraParameters();
+        renderEnvs[idx] = cmdStream.makeEnvironment(scene, fov, near, far);
     }
 
     // reset renderer data structures
@@ -262,7 +261,7 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
             for (const auto &[drawableType, meshIndex] : meshIndices) {
                 for (const auto &sceneObjectInfo : drawables.at(drawableType)) {
                     const auto &color = sceneObjectInfo.color;
-                    const auto materialIdx = materialIndices[color];
+                    const auto materialIdx = materialIndices[color];  // if we forgot to add the color to the palette, we should crash here
                     const auto renderID = renderEnv.addInstance(uint32_t(meshIndex), uint32_t(materialIdx), glm::mat4(1.f));
                     sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
                 }
@@ -373,7 +372,7 @@ void V4REnvRenderer::postDraw(Env &env, int envIndex)
     pimpl->postDraw(env, envIndex);
 }
 
-const uint8_t *V4REnvRenderer::getObservation(int envIdx, int agentIdx) const
+const uint8_t * V4REnvRenderer::getObservation(int envIdx, int agentIdx) const
 {
     return pimpl->getObservation(envIdx, agentIdx);
 }

@@ -150,13 +150,13 @@ int RearrangeScenario::countMatchingObjects() const
     return matching;
 }
 
-void RearrangeScenario::placedObject(int agentIdx, const VoxelCoords &coords, Object3D *obj)
+void RearrangeScenario::placedObject(int agentIdx, const VoxelCoords &, Object3D *obj)
 {
     dynamic_cast<ArrangementObject *>(obj)->pickedUp = false;
     checkDone(agentIdx);
 }
 
-void RearrangeScenario::pickedObject(int agentIdx, const VoxelCoords &coords, Object3D *obj)
+void RearrangeScenario::pickedObject(int agentIdx, const VoxelCoords &, Object3D *obj)
 {
     dynamic_cast<ArrangementObject *>(obj)->pickedUp = true;
     checkDone(agentIdx);
@@ -181,7 +181,7 @@ std::vector<Magnum::Vector3> RearrangeScenario::agentStartingPositions()
     auto positions = std::vector<Magnum::Vector3>(env.getNumAgents());
 
     for (int i = 0; i < env.getNumAgents(); ++i)
-        positions[i] = Vector3 {float(platform->length) / 2 + i, 1, float(platform->width) - 3};
+        positions[i] = Vector3 {float(platform->length) / 2 + float(i), 1, float(platform->width) - 3};
 
     return positions;
 }

@@ -8,11 +8,6 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Trade/MeshData.h>
-#include <Magnum/Primitives/Cube.h>
-#include <Magnum/Primitives/Capsule.h>
-#include <Magnum/Primitives/Icosphere.h>
-#include <Magnum/Primitives/Cone.h>
-#include <Magnum/Primitives/Cylinder.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
@@ -27,6 +22,8 @@
 #include <Magnum/BulletIntegration/DebugDraw.h>
 
 #include <util/tiny_logger.hpp>
+
+#include <rendering/render_utils.hpp>
 
 #include <magnum_rendering/windowless_context.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
@@ -121,7 +118,7 @@ public:
     void drawAgent(Env &env, int envIndex, int agentIdx, bool readToBuffer);
     void postDraw(Env &env, int envIndex);
 
-    const uint8_t * getObservation(int envIdx, int agentIdx) const;
+    uint8_t * getObservation(int envIdx, int agentIdx);
 
     GL::Framebuffer * getFramebuffer() { return &framebuffer; }
 
@@ -146,6 +143,7 @@ public:
     GL::Framebuffer framebuffer;
     GL::Renderbuffer colorBuffer, depthBuffer;
 
+    std::map<DrawableType, Trade::MeshData> meshData;
     std::map<DrawableType, GL::Mesh> meshes;
 
     std::vector<std::vector<Containers::Array<uint8_t>>> agentFrames;
@@ -211,11 +209,9 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, bool
 
     // meshes
     {
-        meshes[DrawableType::Box] = MeshTools::compile(Primitives::cubeSolid());
-        meshes[DrawableType::Capsule] = MeshTools::compile(Primitives::capsule3DSolid(3, 3, 8, 1.0));
-        meshes[DrawableType::Sphere] = MeshTools::compile(Primitives::icosphereSolid(1));
-        meshes[DrawableType::Cone] = MeshTools::compile(Primitives::coneSolid(1, 6, 0.5f));
-        meshes[DrawableType::Cylinder] = MeshTools::compile(Primitives::cylinderSolid(1, 6, 0.5f, Magnum::Primitives::CylinderFlag::CapEnds));
+        initPrimitives(meshData);
+        for (const auto &[drawable, data] : meshData)
+            meshes[drawable] = MeshTools::compile(data);
 
         for (auto &[k, v] : meshes) {
             instanceBuffers[k] = GL::Buffer{};
@@ -298,8 +294,9 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
 
         overview.camera = &(overview.verticalTilt->addFeature<SceneGraph::Camera3D>());
 
+        auto [fov, near, far] = cameraParameters();
         overview.camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-                       .setProjectionMatrix(Matrix4::perspectiveProjection(100.0_degf, 128.0f / 72.0f, 0.1f, 150.0f))
+                       .setProjectionMatrix(Matrix4::perspectiveProjection(Deg(fov), 128.0f / 72.0f, near, far))
                        .setViewport(GL::defaultFramebuffer.viewport().size());
 
         if (overview.rootTransformation != Matrix4{} || overview.verticalTiltTransformation != Matrix4{})
@@ -378,7 +375,7 @@ void MagnumEnvRenderer::Impl::draw(Envs &envs)
             drawAgent(*envs[envIdx], envIdx, agentIdx, true);
 }
 
-const uint8_t * MagnumEnvRenderer::Impl::getObservation(int envIdx, int agentIdx) const
+uint8_t * MagnumEnvRenderer::Impl::getObservation(int envIdx, int agentIdx)
 {
     return agentFrames[envIdx][agentIdx].data();
 }

@@ -61,7 +61,7 @@ public:
 
     void postDraw(Env &env, int envIdx) override;
 
-    const uint8_t *getObservation(int envIdx, int agentIdx) const override;
+    const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 
     Magnum::GL::Framebuffer *getFramebuffer();
 

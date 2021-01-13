@@ -1,27 +1,36 @@
-#include <Corrade/Containers/Optional.h>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include <Magnum/Timeline.h>
+#include <Magnum/ImageView.h>
+#include <Magnum/PixelFormat.h>
 
 #include <Magnum/GL/Buffer.h>
-#include <Magnum/GL/DefaultFramebuffer.h>
-#include <Magnum/GL/Mesh.h>
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Renderer.h>
-#include <Magnum/Math/Color.h>
+#include <Magnum/GL/PixelFormat.h>
+#include <Magnum/GL/Version.h>
+#include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/TextureFormat.h>
+
+#include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
+
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/SceneGraph/Drawable.h>
-#include <Magnum/GL/RenderbufferFormat.h>
-#include <Magnum/GL/Version.h>
-#include <Magnum/GL/Framebuffer.h>
-#include <Magnum/GL/Context.h>
-#include <Magnum/Timeline.h>
 
 #include <util/tiny_logger.hpp>
 
 #include <env/env.hpp>
 #include <scenarios/init.hpp>
+
 #include <magnum_rendering/windowless_context.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
+
+#include <v4r_rendering/v4r_env_renderer.hpp>
 
 
 using namespace Magnum;
@@ -30,19 +39,22 @@ using namespace Magnum::Math::Literals;
 
 using namespace VoxelWorld;
 
+// TODO: CLI parameters
+const bool useVulkan = true;
+
 //const auto scenarioName = "ObstaclesHard";
 //const auto scenarioName = "ObstaclesEasy";
-//const auto scenarioName = "Collect";
+const auto scenarioName = "Collect";
 //const auto scenarioName = "Sokoban";
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";
 //const auto scenarioName = "HexExplore";
 //const auto scenarioName = "Football";
-const auto scenarioName = "Rearrange";
+//const auto scenarioName = "Rearrange";
 
 
-class Viewer: public Platform::Application
+class Viewer: public Magnum::Platform::Application
 {
 public:
     explicit Viewer(const Arguments& arguments);
@@ -61,8 +73,10 @@ private:
     void moveOverviewCamera();
 
 private:
+    int width = 1800, height = 1000;
+
     Envs envs;
-    std::unique_ptr<MagnumEnvRenderer> renderer;
+    std::unique_ptr<EnvRenderer> renderer;
     std::unique_ptr<RenderingContext> ctx;
 
     bool withDebugDraw = true;
@@ -74,10 +88,13 @@ private:
     bool forceReset = false;
 
     Timeline timeline;
+
+    GL::Framebuffer framebuffer{NoCreate};
+    GL::Renderbuffer colorBuffer{NoCreate};
 };
 
-Viewer::Viewer(const Arguments& arguments):
-    Platform::Application{arguments, NoCreate}
+Viewer::Viewer(const Arguments& arguments)
+: Magnum::Platform::Application{arguments, NoCreate}
 {
     scenariosGlobalInit();
 
@@ -85,7 +102,7 @@ Viewer::Viewer(const Arguments& arguments):
     {
         const Vector2 dpiScaling = this->dpiScaling({});
         Configuration conf;
-        conf.setTitle("VoxelEnvViewer").setSize({1800, 1000}, dpiScaling);
+        conf.setTitle("VoxelEnvViewer").setSize({width, height}, dpiScaling);
         GLConfiguration glConf;
         glConf.setSampleCount(dpiScaling.max() < 2.0f ? 8 : 2);
         if(!tryCreate(conf, glConf)) {
@@ -113,10 +130,19 @@ Viewer::Viewer(const Arguments& arguments):
 
     ctx = std::make_unique<WindowRenderingContext>();
 
-    auto viewport = GL::defaultFramebuffer.viewport();
-    renderer = std::make_unique<MagnumEnvRenderer>(envs, viewport.sizeX(), viewport.sizeY(), withDebugDraw, true, ctx.get());
+    if (useVulkan) {
+        framebuffer = GL::Framebuffer{Range2Di{{}, Vector2i{width, height}}};
+        framebuffer.attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer);
+        framebuffer.mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}}});
+        framebuffer.clearColor(0, Color3{0.125f}).clearDepth(1.0).bind();
+
+        renderer = std::make_unique<V4REnvRenderer>(envs, width, height);
+    } else {
+        renderer = std::make_unique<MagnumEnvRenderer>(envs, width, height, withDebugDraw, true, ctx.get());
+        dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
+    }
+
     renderer->reset(*envs[activeEnv], activeEnv);
-    renderer->toggleDebugMode();
 
     timeline.start();
     setSwapInterval(0);
@@ -124,19 +150,51 @@ Viewer::Viewer(const Arguments& arguments):
 
 void Viewer::drawEvent()
 {
-    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
-        renderer->preDraw(*envs[envIdx], envIdx);
-        renderer->drawAgent(*envs[envIdx], envIdx, activeAgent, false);
+    if (useVulkan) {
+        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
+            renderer->preDraw(*envs[envIdx], envIdx);
+
+        renderer->draw(envs);
+        auto dataPtr = renderer->getObservation(activeEnv, activeAgent);
+
+        // probably would've been easier to actually draw a quad upside down instead of flipping the texture
+        // but hey, this is not a performance-critical code and it works!
+        cv::Mat mat(height, width, CV_8UC4, (char *) dataPtr);
+        cv::flip(mat, mat, 0);
+
+        Containers::ArrayView<const uint8_t> data(dataPtr, width * height * 4);
+        ImageView2D image(PixelFormat::RGBA8Unorm, {width, height}, data);
+
+        GL::Texture2D texture;
+        texture.setWrapping(GL::SamplerWrapping::ClampToEdge)
+               .setStorage(Math::log2(height) + 1, GL::TextureFormat::RGBA8, {width, height})
+               .setSubImage(0, {}, image)
+               .generateMipmap();
+
+        framebuffer.mapForRead(GL::Framebuffer::ColorAttachment(0));
+        framebuffer.attachTexture(GL::Framebuffer::ColorAttachment(0), texture, 0);
+
+        // blit color to window framebuffer
+        GL::defaultFramebuffer.bind();
+        GL::AbstractFramebuffer::blit(framebuffer, GL::defaultFramebuffer, {{}, framebuffer.viewport().size()}, GL::FramebufferBlit::Color);
+
+    } else {
+        auto &magnumRenderer = dynamic_cast<MagnumEnvRenderer &>(*renderer);
+
+        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
+            magnumRenderer.preDraw(*envs[envIdx], envIdx);
+            magnumRenderer.drawAgent(*envs[envIdx], envIdx, activeAgent, false);
+        }
+
+        auto rendererFramebuffer = magnumRenderer.getFramebuffer();
+
+        GL::defaultFramebuffer.bind();
+
+        rendererFramebuffer->mapForRead(GL::Framebuffer::ColorAttachment{0});
+
+        // blit color to window framebuffer
+        GL::AbstractFramebuffer::blit(*rendererFramebuffer, GL::defaultFramebuffer, {{}, rendererFramebuffer->viewport().size()}, GL::FramebufferBlit::Color);
     }
-
-    auto framebuffer = renderer->getFramebuffer();
-
-    GL::defaultFramebuffer.bind();
-
-    framebuffer->mapForRead(GL::Framebuffer::ColorAttachment{0});
-
-    // blit color to window framebuffer
-    GL::AbstractFramebuffer::blit(*framebuffer, GL::defaultFramebuffer, {{}, framebuffer->viewport().size()}, GL::FramebufferBlit::Color);
 
     swapBuffers();
 
@@ -229,7 +287,10 @@ void Viewer::controlOverview(const KeyEvent::Key &key, bool addAction)
 
 void Viewer::moveOverviewCamera()
 {
-    auto &overview = renderer->getOverview();
+    if (useVulkan)
+        return;
+
+    auto &overview = dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview();
     if (!overview.enabled)
         return;
 
@@ -254,6 +315,10 @@ void Viewer::keyPressEvent(KeyEvent& event)
 {
 //    TLOG(INFO) << "Key event " << event.keyName();
 
+    Overview *overview{};
+    if (!useVulkan)
+        overview = &(dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview());  // TODO
+
     handleActions(event.key(), true);
 
     controlOverview(event.key(), true);
@@ -272,11 +337,13 @@ void Viewer::keyPressEvent(KeyEvent& event)
             forceReset = true;
             break;
         case KeyEvent::Key::O:
-            renderer->getOverview().enabled = !renderer->getOverview().enabled;
-            setCursor(renderer->getOverview().enabled ? Cursor::HiddenLocked : Cursor::Arrow);
+            if (!useVulkan) {
+                overview->enabled = !overview->enabled;
+                setCursor(overview->enabled ? Cursor::HiddenLocked : Cursor::Arrow);
+            }
             break;
         case KeyEvent::Key::Enter:
-            renderer->toggleDebugMode();
+            dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
             break;
         case KeyEvent::Key::Esc:
             exit(0);
@@ -287,15 +354,18 @@ void Viewer::keyPressEvent(KeyEvent& event)
     event.setAccepted();
 }
 
-void Viewer::keyReleaseEvent(Platform::Sdl2Application::KeyEvent &event)
+void Viewer::keyReleaseEvent(Magnum::Platform::Sdl2Application::KeyEvent &event)
 {
     handleActions(event.key(), false);
     controlOverview(event.key(), false);
 }
 
-void Viewer::mouseMoveEvent(Platform::Sdl2Application::MouseMoveEvent &event)
+void Viewer::mouseMoveEvent(Magnum::Platform::Sdl2Application::MouseMoveEvent &event)
 {
-    auto &overview = renderer->getOverview();
+    if (useVulkan)
+        return;
+
+    auto &overview = dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview();
     if (!overview.enabled)
         return;
 

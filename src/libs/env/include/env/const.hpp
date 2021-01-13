@@ -45,9 +45,19 @@ enum class ColorRgb
 // TODO: define more colors?
 
 const ColorRgb allColors[] = {
-    ColorRgb::YELLOW, ColorRgb::GREEN, ColorRgb::LIGHT_GREEN, ColorRgb::BLUE, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
-    ColorRgb::DARK_GREY, ColorRgb::VERY_DARK_GREY, ColorRgb::WHITE, ColorRgb::LIGHT_ORANGE, ColorRgb::DARK_BLUE,
-    ColorRgb::RED, ColorRgb::VIOLET,
+    ColorRgb::YELLOW,
+    ColorRgb::GREEN,
+    ColorRgb::LIGHT_GREEN,
+    ColorRgb::BLUE,
+    ColorRgb::LIGHT_BLUE,
+    ColorRgb::DARK_BLUE,
+    ColorRgb::ORANGE,
+    ColorRgb::DARK_GREY,
+    ColorRgb::VERY_DARK_GREY,
+    ColorRgb::WHITE,
+    ColorRgb::RED,
+    ColorRgb::LIGHT_ORANGE,
+    ColorRgb::VIOLET,
 };
 const int numColors = ARR_LENGTH(allColors);
 

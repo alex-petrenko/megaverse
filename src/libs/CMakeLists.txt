@@ -1,4 +1,5 @@
 add_subdirectory(util)
+add_subdirectory(rendering)
 add_subdirectory(magnum_rendering)
 add_subdirectory(v4r_rendering)
 add_subdirectory(env)
