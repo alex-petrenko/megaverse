@@ -42,16 +42,16 @@ using namespace VoxelWorld;
 // TODO: CLI parameters
 const bool useVulkan = true;
 
-//const auto scenarioName = "ObstaclesHard";
-//const auto scenarioName = "ObstaclesEasy";
-const auto scenarioName = "Collect";
-//const auto scenarioName = "Sokoban";
+const auto scenarioName = "ObstaclesHard";  // *
+//const auto scenarioName = "ObstaclesEasy";  // *
+//const auto scenarioName = "Collect";    // *
+//const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
-//const auto scenarioName = "HexMemory";
-//const auto scenarioName = "HexExplore";
+//const auto scenarioName = "HexMemory";  // *
+//const auto scenarioName = "HexExplore";  // *
 //const auto scenarioName = "Football";
-//const auto scenarioName = "Rearrange";
+//const auto scenarioName = "Rearrange";  // *
 
 
 class Viewer: public Magnum::Platform::Application
