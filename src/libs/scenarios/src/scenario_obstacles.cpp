@@ -214,7 +214,7 @@ float ObstaclesScenario::episodeLengthSec() const
     return std::max(minDuration, float(numPlatforms) * 30);
 }
 
-void ObstaclesScenario::agentFell(int agentIdx)
+void ObstaclesScenario::agentFell(int)
 {
     // TODO reward
 }

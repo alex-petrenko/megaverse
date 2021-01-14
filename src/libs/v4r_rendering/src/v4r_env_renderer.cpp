@@ -1,10 +1,9 @@
 #include <memory>
 #include <vector>
 
+#include <glm/ext.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <Magnum/Primitives/Cube.h>
-#include <Magnum/Primitives/Capsule.h>
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
@@ -178,9 +177,8 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
             });
         }
 
-        for (uint32_t idx : magnum_indices) {
+        for (uint32_t idx : magnum_indices)
             indices.push_back(idx);
-        }
 
         return loader.loadMesh(move(vertices), move(indices));
     };
@@ -278,6 +276,7 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
 
         auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
         auto view = glm::make_mat4(activeCameraPtr->cameraMatrix().data());
+
         renderEnv.setCameraView(view);
     }
 
