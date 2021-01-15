@@ -1,4 +1,5 @@
 import copy
+import os
 import time
 
 import numpy as np
@@ -133,5 +134,27 @@ class TestEnv(TestCase):
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(0))
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(1))
         self.assertNotEqual(default_reward_shaping, e.get_current_reward_shaping(3))
+
+        e.close()
+
+    def test_memleak(self):
+        def mem_usage_kb():
+            import psutil
+            process = psutil.Process(os.getpid())
+            return process.memory_info().rss / 1024
+
+        params = {'episodeLengthSec': 0.01}
+        e = VoxelEnv('Empty', num_envs=32, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=True, params=params)
+        e.reset()
+
+        orig_mem_usage = mem_usage_kb()
+
+        for i in range(1000):
+            print('Mem difference: ', mem_usage_kb() - orig_mem_usage, 'kb')
+            e.reset()
+            for _ in range(4):
+                e.step(sample_actions(e))
+
+        print('Final mem difference: ', mem_usage_kb() - orig_mem_usage, 'kb')
 
         e.close()

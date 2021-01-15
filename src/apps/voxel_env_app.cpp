@@ -4,8 +4,9 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <util/tiny_logger.hpp>
 #include <util/util.hpp>
+#include <util/os_utils.hpp>
+#include <util/tiny_logger.hpp>
 #include <util/tiny_profiler.hpp>
 
 #include <env/env.hpp>
@@ -24,10 +25,11 @@ using namespace VoxelWorld;
 
 constexpr int delayMs = 20;  // 1000 / 15;
 
-//constexpr ConstStr scenario = "Collect";
-//constexpr ConstStr scenario = "Obstacles";
-constexpr ConstStr scenario = "Sokoban";
-//constexpr ConstStr scenario = "BoxAGone";
+//ConstStr scenario = "Empty";
+ConstStr scenario = "Collect";
+//ConstStr scenario = "Obstacles";
+//ConstStr scenario = "Sokoban";
+//ConstStr scenario = "BoxAGone";
 
 constexpr bool useVulkan = true;
 
@@ -37,7 +39,7 @@ bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 8'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? int(1e5) * 8'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -57,11 +59,13 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
         randomActions = true;
 
     auto activeAgent = 0;
-    int numFrames = 0;
+    int numFrames = 0, prevNumFrames = 0;
+
+    const auto numEnvs = int(venv.envs.size()), numAgents = venv.envs.front()->getNumAgents();
 
     if constexpr (viz) {
-        for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
-            for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
+        for (int envIdx = 0; envIdx < numEnvs; ++envIdx) {
+            for (int i = 0; i < numAgents; ++i) {
                 const auto wname = windowName(envIdx, i);
                 cv::namedWindow(wname);
                 cv::moveWindow(wname, int(W * i * 1.1), int(H * envIdx * 1.1));
@@ -73,14 +77,18 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
 
     bool shouldExit = false;
 
+    std::vector<std::vector<int>> vvi;
+
+    tprof().startTimer("fps_period");
+
     while (!shouldExit) {
         tprof().startTimer("step");
         venv.step();
         tprof().pauseTimer("step");
 
         for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
-            if (venv.done[envIdx])
-                TLOG(INFO) << "Episode boundary env: " << envIdx << " frames: " << numFrames;
+//            if (venv.done[envIdx])
+//                TLOG(INFO) << "Episode boundary env: " << envIdx << " frames: " << numFrames;
 
             for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
                 const uint8_t *obsData = renderer.getObservation(envIdx, i);
@@ -155,8 +163,21 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
             shouldExit = true;
             TLOG(INFO) << "Done: " << numFrames;
             break;
-        } else if (numFrames % 5000 == 0)
-            TLOG(INFO) << "Progress " << numFrames << "/" << maxNumFrames;
+        } else if (numFrames % 5000 == 0) {
+            auto elapsedTimeSec = tprof().stopTimer("fps_period") / 1e6;
+            tprof().startTimer("fps_period");
+
+            auto approxFps = float(numFrames - prevNumFrames) / elapsedTimeSec;
+            prevNumFrames = numFrames;
+
+            double vmUsage, residentSet;
+            unixProcessMemUsage(vmUsage, residentSet);
+
+            // test artificial memleak
+            // vvi.emplace_back(1024 * 1024, 3);
+            // TLOG(INFO) << std::accumulate(vvi.back().begin(), vvi.back().end(), 0);
+            TLOG(INFO) << "Progress " << numFrames << "/" << maxNumFrames << ". Approx FPS: " << approxFps << ". VM usage: " << (long long)vmUsage << ". RSS: " << (long long)residentSet;
+        }
     }
 
     return numFrames;
@@ -170,10 +191,10 @@ int main(int argc, char** argv)
     scenariosGlobalInit();
 
     const int numEnvs = 4;  // to test vectorized env interface
-    const int numAgentsPerEnv = 2;
-    const int numSimulationThreads = 2;
+    const int numAgentsPerEnv = 1;
+    const int numSimulationThreads = 1;
 
-    FloatParams params{{Str::episodeLengthSec, 100.0f}};
+    FloatParams params{{Str::episodeLengthSec, 10.0f}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {

@@ -93,9 +93,9 @@ float TinyProfiler::readTimer(const std::string &key, bool log)
     return float(passedUsec);
 }
 
-float TinyProfiler::stopTimer(const std::string &key)
+float TinyProfiler::stopTimer(const std::string &key, bool log)
 {
-    const auto passedUsec = readTimer(key, true);
+    const auto passedUsec = readTimer(key, log);
     data->timestamps.erase(key);
     data->totalTime.erase(key);
     return passedUsec;

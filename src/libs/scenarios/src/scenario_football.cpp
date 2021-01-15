@@ -37,7 +37,7 @@ public:
             bShape->calculateLocalInertia(mass, bInertia);
 
         // Bullet rigid body setup
-        auto *motionState = new Magnum::BulletIntegration::MotionState{*this};  // motion state will update the Object3D transformation
+        motionState = std::make_unique<Magnum::BulletIntegration::MotionState>(*this);
         auto info = btRigidBody::btRigidBodyConstructionInfo{mass, &motionState->btMotionState(), bShape, bInertia};
         info.m_friction = 0.5;
         info.m_rollingFriction = 0.1;
@@ -94,6 +94,7 @@ public:
 public:
     btDynamicsWorld &bWorld;
     Magnum::Containers::Pointer<btRigidBody> bRigidBody;
+    std::unique_ptr<Magnum::BulletIntegration::MotionState> motionState;
     Magnum::Vector3 collisionScale{1, 1, 1};
     bool colliding = false;
 };

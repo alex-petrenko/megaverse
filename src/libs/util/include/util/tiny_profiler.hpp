@@ -25,7 +25,7 @@ public:
     float readTimer(const std::string &key, bool log = false);
 
     /// Stop measurement for key, returns all measured time since start.
-    float stopTimer(const std::string &key);
+    float stopTimer(const std::string &key, bool log = false);
 
     TinyProfiler(const TinyProfiler &) = delete;
 

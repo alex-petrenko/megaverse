@@ -35,7 +35,7 @@ class VoxelEnv(gym.Env):
                 else:
                     raise Exception('Params of type %r not supported', type(v))
 
-        # float_params['episodeLengthSec'] = 15.0
+        # float_params['episodeLengthSec'] = 0.1
 
         self.env = VoxelEnvGym(
             self.scenario_name,

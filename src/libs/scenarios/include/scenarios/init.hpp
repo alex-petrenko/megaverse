@@ -2,6 +2,7 @@
 
 #include <env/scenario.hpp>
 
+#include <scenarios/scenario_empty.hpp>
 #include <scenarios/scenario_sokoban.hpp>
 #include <scenarios/scenario_collect.hpp>
 #include <scenarios/scenario_football.hpp>
@@ -28,6 +29,9 @@ void scenariosGlobalInit()
     if (initialized)
         return;
     initialized = true;
+
+    // used for debugging and testing
+    registerScenario<EmptyScenario>("Empty");
 
     registerScenario<TowerBuildingScenario>("TowerBuilding");
     registerScenario<ObstaclesEasyScenario>("ObstaclesEasy");

@@ -61,7 +61,7 @@ void Env::reset()
 
     auto seed = randRange(0, 1 << 30, state.rng);
     state.rng.seed((unsigned long)seed);
-    TLOG(INFO) << "Using seed " << seed;
+    // TLOG(INFO) << "Using seed " << seed;
 
     // remove dangling pointers from the previous episode
     for (int drawableType = int(DrawableType::First); drawableType < int(DrawableType::NumTypes); ++drawableType)
@@ -143,8 +143,8 @@ void Env::step()
     for (int i = 0; i < int(state.agents.size()); ++i) {
         state.totalReward[i] += state.lastReward[i];
 
-        if (fabs(state.lastReward[i]) > SIMD_EPSILON)
-            TLOG(INFO) << "Last reward for agent #" << i << ":  " << state.lastReward[i] << ", total reward:  " << state.totalReward[i];
+//        if (fabs(state.lastReward[i]) > SIMD_EPSILON)
+//            TLOG(INFO) << "Last reward for agent #" << i << ":  " << state.lastReward[i] << ", total reward:  " << state.totalReward[i];
     }
 }
 

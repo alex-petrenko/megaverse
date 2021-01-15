@@ -138,7 +138,7 @@ void CollectScenario::step()
         VoxelCoords voxel = vg.grid.getCoords(t);
         auto voxelPtr = vg.grid.get(voxel);
         if (voxelPtr && voxelPtr->rewardObject) {
-            TLOG(INFO) << "Reward " << voxelPtr->reward;
+            // TLOG(INFO) << "Reward " << voxelPtr->reward;
             Magnum::Vector3 far = {500, 500, 500};
             voxelPtr->rewardObject->translate(far);
 
@@ -170,7 +170,7 @@ void CollectScenario::addEpisodeDrawables(DrawablesMap &drawables)
     auto boundingBoxesByType = vg.toBoundingBoxes();
     for (auto &[voxelType, bb] : boundingBoxesByType) {
         addBoundingBoxes(drawables, envState, bb, voxelType);
-        TLOG(INFO) << "Num bounding boxes: " << voxelType << " " << bb.size();
+        // TLOG(INFO) << "Num bounding boxes: " << voxelType << " " << bb.size();
     }
 
     objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectPositions);
