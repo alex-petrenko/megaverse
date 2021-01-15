@@ -351,19 +351,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     }
 }
 
-void MagnumEnvRenderer::Impl::postDraw(Env &env, int envIndex)
+void MagnumEnvRenderer::Impl::postDraw(Env &, int)
 {
-    const auto remainingTimeBarThickness = 2;
-    const auto numPixelsInOneRow = framebuffer.viewport().size().x() * 4;
-    const auto pixelsToFill = env.remainingTimeFraction() * numPixelsInOneRow;
-
-    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
-        for (int i = 0; i < remainingTimeBarThickness; ++i) {
-            // viewport is flipped upside-down
-            const auto rowStart = agentFrames[envIndex][agentIdx].size() - numPixelsInOneRow * (i + 1);
-            memset(agentFrames[envIndex][agentIdx].data() + rowStart, 255, size_t(pixelsToFill));
-        }
-    }
 }
 
 void MagnumEnvRenderer::Impl::draw(Envs &envs)

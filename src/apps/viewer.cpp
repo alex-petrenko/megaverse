@@ -42,11 +42,11 @@ using namespace VoxelWorld;
 // TODO: CLI parameters
 const bool useVulkan = true;
 
-const auto scenarioName = "Empty";
+//const auto scenarioName = "Empty";
 //const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
 //const auto scenarioName = "Collect";    // *
-//const auto scenarioName = "Sokoban";  // *
+const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *

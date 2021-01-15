@@ -145,13 +145,12 @@ void CollectScenario::step()
             if (voxelPtr->reward > 0)
                 ++positiveRewardsCollected;
 
-            float reward = rewardShaping[i].at(Str::collectSingle) * voxelPtr->reward;
+            float reward = rewardShaping[i].at(Str::collectSingle) * float(voxelPtr->reward);
             envState.lastReward[i] += reward;
 
             if (positiveRewardsCollected >= numPositiveRewards) {
                 TLOG(INFO) << "All rewards collected!";
-                envState.done = true;
-
+                envState.currEpisodeSec = episodeLengthSec() - 1;  // terminate in 1 second
                 envState.lastReward[i] += rewardShaping[i].at(Str::collectAll);
             }
 

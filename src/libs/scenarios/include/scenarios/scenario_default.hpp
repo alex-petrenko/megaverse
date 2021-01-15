@@ -17,9 +17,60 @@ namespace VoxelWorld
 class DefaultScenario : public Scenario
 {
 public:
+    struct UIElement
+    {
+    public:
+        UIElement() = default;
+
+        UIElement(Object3D *anchor, Object3D *uiElement)
+        : anchor{anchor}
+        , uiElement{uiElement}
+        {
+        }
+
+        void rescale(const Magnum::Vector3 &requiredScale) const
+        {
+            const auto scale = uiElement->transformation().scaling();
+            uiElement->scaleLocal(requiredScale / scale);
+        }
+
+        void show()
+        {
+            if (visible)
+                return;
+
+            anchor->translate({-1000, 0, 0});
+            visible = true;
+        }
+
+        void hide()
+        {
+            if (!visible)
+                return;
+
+            anchor->translate({1000, 0, 0});
+            visible = false;
+        }
+
+    public:
+        bool visible = true;
+        Object3D *anchor = nullptr;
+        Object3D *uiElement = nullptr;
+    };
+
+    struct DefaultUI
+    {
+        std::vector<UIElement> remainingTimeBars, positiveRewardIndicator, negativeRewardIndicator;
+        float initialRemainingTimeBarScale = 0.24f;
+    };
+
+public:
     explicit DefaultScenario(const std::string &scenarioName, Env &env, Env::EnvState &envState)
     : Scenario{scenarioName, env, envState}
     {
+        const auto numAgents = env.getNumAgents();
+        defaultUI.remainingTimeBars.resize(numAgents);
+        defaultUI.positiveRewardIndicator.resize(numAgents), defaultUI.negativeRewardIndicator.resize(numAgents);
     }
 
     void spawnAgents(std::vector<AbstractAgent *> &agents) override
@@ -68,6 +119,59 @@ public:
         }
     }
 
+    void addUIDrawables(DrawablesMap &drawables) override
+    {
+        const auto numAgents = env.getNumAgents();
+        for (int i = 0; i < numAgents; ++i) {
+            auto agent = envState.agents[i];
+
+            auto &uiObject = agent->getCameraObject()->addChild<Object3D>();
+            uiObject.translate({0, 0, -0.2f});
+
+            auto &remainingTimeBarAnchor = uiObject.addChild<Object3D>();
+            remainingTimeBarAnchor.translate({0, -0.131f, 0});
+            auto &remainingTimeBar = remainingTimeBarAnchor.addChild<Object3D>();
+            remainingTimeBar.scaleLocal({defaultUI.initialRemainingTimeBarScale, 0.0015, 0.001});
+            drawables[DrawableType::Box].emplace_back(&remainingTimeBar, rgb(ColorRgb::BLUE));
+            defaultUI.remainingTimeBars[i] = UIElement{&remainingTimeBarAnchor, &remainingTimeBar};
+
+            auto addRewardIndicator = [&](float xOffset, ColorRgb color, std::vector<UIElement> &container) {
+                auto &indicatorAnchor = uiObject.addChild<Object3D>();
+                indicatorAnchor.translate({xOffset, 0, 0});
+                auto &indicator = indicatorAnchor.addChild<Object3D>();
+                indicator.scaleLocal({0.01, 0.03, 0.0001});
+                drawables[DrawableType::Box].emplace_back(&indicator, rgb(color));
+                container[i] = UIElement{&indicatorAnchor, &indicator};
+                container[i].hide();
+            };
+
+            addRewardIndicator(-0.23f, ColorRgb::GREEN, defaultUI.positiveRewardIndicator);
+            addRewardIndicator(0.23f, ColorRgb::RED, defaultUI.negativeRewardIndicator);
+        }
+    }
+
+    void updateUI() override
+    {
+        const auto numAgents = env.getNumAgents();
+        for (int i = 0; i < numAgents; ++i) {
+            auto &bar = defaultUI.remainingTimeBars[i];
+            bar.rescale({env.remainingTimeFraction() * defaultUI.initialRemainingTimeBarScale, 0.0015, 0.001});
+
+            if (envState.lastReward[i] > FLT_EPSILON) {
+                defaultUI.positiveRewardIndicator[i].show();
+                defaultUI.positiveRewardIndicator[i].rescale({0.06, 0.04f * envState.lastReward[i], 0.0001});
+                defaultUI.negativeRewardIndicator[i].hide();
+            } else if (envState.lastReward[i] < -FLT_EPSILON) {
+                defaultUI.negativeRewardIndicator[i].show();
+                defaultUI.negativeRewardIndicator[i].rescale({0.06, -0.04f * envState.lastReward[i], 0.0001});
+                defaultUI.positiveRewardIndicator[i].hide();
+            } else {
+                defaultUI.positiveRewardIndicator[i].hide();
+                defaultUI.negativeRewardIndicator[i].hide();
+            }
+        }
+    }
+
     std::vector<Magnum::Color3> getPalette() const override
     {
         std::vector<Magnum::Color3> palette;
@@ -76,6 +180,9 @@ public:
 
         return palette;
     }
+
+protected:
+    DefaultUI defaultUI;
 };
 
 }

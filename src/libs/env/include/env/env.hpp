@@ -135,6 +135,7 @@ public:
         {
             done = false;
             currEpisodeSec = 0;
+            numFrames = 0;
 
             std::fill(currAction.begin(), currAction.end(), Action::Idle);
             std::fill(lastReward.begin(), lastReward.end(), 0.0f);
@@ -152,6 +153,7 @@ public:
 
         // Basic environment info
         bool done = false;
+        int numFrames = 0;
         float currEpisodeSec = 0;
         float simulationStepSeconds = 1.0f / 15.0f;  // 15 FPS is default
         float lastFrameDurationSec = simulationStepSeconds;

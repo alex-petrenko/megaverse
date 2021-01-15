@@ -319,21 +319,8 @@ void V4REnvRenderer::Impl::draw(Envs &)
 //        abort();
 }
 
-void V4REnvRenderer::Impl::postDraw(Env &env, int envIdx)
+void V4REnvRenderer::Impl::postDraw(Env &, int)
 {
-    const auto remainingTimeBarThickness = 2;
-    const auto numPixelsInOneRow = framebufferSize.x * 4;
-    const auto pixelsToFill = env.remainingTimeFraction() * numPixelsInOneRow;
-
-    const auto startIdx = envIdx * pixelsPerEnv;
-
-    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
-        for (int i = 0; i < remainingTimeBarThickness; ++i) {
-            // viewport is flipped upside-down
-            const auto rowStart = numPixelsInOneRow * i;
-            memset((void *)(cmdStream.getRGB() + startIdx + agentIdx * pixelsPerFrame + rowStart), 255, size_t(pixelsToFill));
-        }
-    }
 }
 
 const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) const

@@ -34,14 +34,6 @@ public:
 
     void agentFell(int agentIdx) override;
 
-    void initializeDefaultParameters() override
-    {
-        DefaultScenario::initializeDefaultParameters();
-
-        auto &fp = floatParams;
-        fp[Str::verticalLookLimitRad] = 0.2f;
-    }
-
 private:
     VoxelGridComponent<VoxelWithPhysicsObjects> vg;
     PlatformsComponent platformsComponent;

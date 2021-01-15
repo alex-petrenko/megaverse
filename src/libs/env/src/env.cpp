@@ -73,6 +73,7 @@ void Env::reset()
 
     scenario->addEpisodeDrawables(drawables);
     scenario->addEpisodeAgentsDrawables(drawables);
+    scenario->addUIDrawables(drawables);
 }
 
 void Env::setAction(int agentIdx, Action action)
@@ -133,6 +134,8 @@ void Env::step()
 
     state.currEpisodeSec += state.lastFrameDurationSec;
 
+    scenario->updateUI();
+
     if (state.currEpisodeSec >= episodeLengthSec())
         state.done = true;
 
@@ -146,6 +149,8 @@ void Env::step()
 //        if (fabs(state.lastReward[i]) > SIMD_EPSILON)
 //            TLOG(INFO) << "Last reward for agent #" << i << ":  " << state.lastReward[i] << ", total reward:  " << state.totalReward[i];
     }
+
+    ++state.numFrames;
 }
 
 std::vector<Magnum::Color3> Env::getPalette() const

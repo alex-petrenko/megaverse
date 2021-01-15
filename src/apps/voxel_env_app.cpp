@@ -33,7 +33,7 @@ ConstStr scenario = "Collect";
 
 constexpr bool useVulkan = true;
 
-constexpr bool viz = false;
+constexpr bool viz = true;
 constexpr bool hires = false;
 bool randomActions = true;
 

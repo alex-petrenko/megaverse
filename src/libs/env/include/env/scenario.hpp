@@ -96,6 +96,11 @@ public:
     virtual void step() {}
 
     /**
+     * Called after every step() by the environment, use to adjust health bars, etc.
+     */
+    virtual void updateUI() {}
+
+    /**
      * @return vector with starting positions of the agents.
      */
     virtual std::vector<Magnum::Vector3> agentStartingPositions() = 0;
@@ -114,6 +119,11 @@ public:
      * Same as above, but for drawables related to agents
      */
     virtual void addEpisodeAgentsDrawables(DrawablesMap &) {}
+
+    /**
+     * We display a rudimentary HUD just by drawing a bunch of geometric primitives very close to the camera.
+     */
+    virtual void addUIDrawables(DrawablesMap &) {}
 
     /**
      * @return a set of colors used by the renderer in this scenario.
@@ -159,7 +169,7 @@ public:
     {
         auto &fp = floatParams;
         fp[Str::episodeLengthSec] = 60.0f;
-        fp[Str::verticalLookLimitRad] = 0.0f;
+        fp[Str::verticalLookLimitRad] = 0.2f;
     }
 
     virtual const FloatParams & getFloatParams() const { return floatParams; }
@@ -201,8 +211,6 @@ protected:
 
     // reward shaping schemes for every agent in the env
     std::vector<RewardShaping> rewardShaping;
-
-
 };
 
 }

@@ -113,14 +113,6 @@ public:
 
     void checkDone(int agentIdx);
 
-    void initializeDefaultParameters() override
-    {
-        DefaultScenario::initializeDefaultParameters();
-
-        auto &fp = floatParams;
-        fp[Str::verticalLookLimitRad] = 0.2f;
-    }
-
 private:
     PlatformsComponent platformsComponent;
     VoxelGridComponent<VoxelRearrange> vg;
