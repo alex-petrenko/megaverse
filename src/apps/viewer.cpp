@@ -45,8 +45,8 @@ const bool useVulkan = true;
 //const auto scenarioName = "Empty";
 //const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
-//const auto scenarioName = "Collect";    // *
-const auto scenarioName = "Sokoban";  // *
+const auto scenarioName = "Collect";    // *
+//const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
@@ -137,7 +137,7 @@ Viewer::Viewer(const Arguments& arguments)
         framebuffer.mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}}});
         framebuffer.clearColor(0, Color3{0.125f}).clearDepth(1.0).bind();
 
-        renderer = std::make_unique<V4REnvRenderer>(envs, width, height);
+        renderer = std::make_unique<V4REnvRenderer>(envs, width, height, nullptr);
     } else {
         renderer = std::make_unique<MagnumEnvRenderer>(envs, width, height, withDebugDraw, true, ctx.get());
         dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
@@ -344,7 +344,8 @@ void Viewer::keyPressEvent(KeyEvent& event)
             }
             break;
         case KeyEvent::Key::Enter:
-            dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
+            if (!useVulkan)
+                dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
             break;
         case KeyEvent::Key::Esc:
             exit(0);

@@ -98,7 +98,7 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return 0; } // TODO
+    float trueObjective() const override { return solved; }
 
     void generateArrangement();
 
@@ -127,6 +127,8 @@ private:
 
     const VoxelCoords leftCenter = {5, 2, 5};
     const VoxelCoords rightCenter = {13, 2, 5};
+
+    bool solved = false;
 };
 
 }

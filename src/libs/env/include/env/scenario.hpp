@@ -45,9 +45,7 @@ public:
         auto &scenarioRegistry = getScenarioRegistry();
         const auto scenarioNameLowercase = toLower(scenarioName);
         scenarioRegistry[scenarioNameLowercase] = factoryFunc;
-        TLOG(INFO) << "Scenario " << scenarioNameLowercase << " registered!";
-        TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
-        TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
+        TLOG(INFO) << "Scenario " << scenarioNameLowercase << " registered! " << scenarioRegistry.size() << " scenarios.";
     }
 
     static ScenarioPtr create(const std::string &scenarioName, Env &env, Env::EnvState &envState)
@@ -55,10 +53,10 @@ public:
         const auto scenarioNameLowercase = toLower(scenarioName);
         const auto &scenarioRegistry = getScenarioRegistry();
 
-        TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
-        TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
-        for (const auto &[k,v]: scenarioRegistry)
-            TLOG(INFO) << k;
+        // TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
+        // TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
+        // for (const auto &[k,v]: scenarioRegistry)
+        //    TLOG(INFO) << k;
 
         if (!scenarioRegistry.count(scenarioNameLowercase))
             TLOG(FATAL) << "Unknown scenario " << scenarioNameLowercase << ". Did you register the scenario in scenariosGlobalInit()?";
@@ -188,9 +186,6 @@ private:
     static ScenarioRegistry & getScenarioRegistry()
     {
         static ScenarioRegistry scenarioRegistry;
-        static int counter = 0;
-        ++counter;
-        TLOG(INFO) << counter << " " << &scenarioRegistry;
         return scenarioRegistry;
     }
 

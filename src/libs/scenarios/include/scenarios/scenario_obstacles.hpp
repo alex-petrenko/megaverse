@@ -26,7 +26,7 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return 0; }//TODO
+    float trueObjective() const override { return solved; }
 
     float episodeLengthSec() const override;
 
@@ -42,6 +42,9 @@ private:
 
     std::vector<VoxelCoords> objectSpawnPositions;
     std::vector<Magnum::Vector3> agentSpawnPositions;
+
+    std::vector<bool> agentReachedExit;
+    bool solved;
 
     int numPlatforms{};
 };

@@ -86,6 +86,7 @@ public:
                 Magnum::Vector3{agentPositions[i]} + Magnum::Vector3{0.5, 0.0, 0.5},
                 randomRotation, verticalLookLimitRad
             );
+            agent.updateTransform();
 
             agents.emplace_back(&agent);
         }

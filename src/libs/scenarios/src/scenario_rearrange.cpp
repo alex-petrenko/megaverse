@@ -16,7 +16,7 @@ public:
     {
     }
 
-    ~RearrangePlatform() = default;
+    ~RearrangePlatform() override = default;
 
     void init() override
     {
@@ -38,6 +38,13 @@ RearrangeScenario::RearrangeScenario(const std::string &name, Env &env, Env::Env
 , vg{*this, 100, 0, 0, 0, 1}
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
 {
+    std::map<std::string, float> rewardShapingScheme{
+        {Str::rearrangeOneObjectCorrectPosition, 1.0f},
+        {Str::rearrangeAllObjectsCorrectPosition, 5.0f},
+    };
+
+    for (int i = 0; i < env.getNumAgents(); ++i)
+        rewardShaping[i] = rewardShapingScheme;
 }
 
 RearrangeScenario::~RearrangeScenario() = default;
@@ -45,6 +52,8 @@ RearrangeScenario::~RearrangeScenario() = default;
 
 void RearrangeScenario::reset()
 {
+    solved = false;
+
     vg.reset(env, envState);
     objectStackingComponent.reset(env, envState);
     platformsComponent.reset(env, envState);
@@ -166,13 +175,14 @@ void RearrangeScenario::checkDone(int agentIdx)
 {
     const auto matches = countMatchingObjects();
     const auto delta = matches - matchingObjects;
-    envState.lastReward[agentIdx] += delta;
+    envState.lastReward[agentIdx] += delta * rewardShaping[agentIdx].at(Str::rearrangeOneObjectCorrectPosition);
 
     matchingObjects = matches;
 
-    if (matches >= int(arrangement.items.size())) {
-        envState.lastReward[agentIdx] += 1;  // TODO rewards
-        envState.currEpisodeSec = episodeLengthSec() - 1;  // terminate in 1 second
+    if (matches >= int(arrangement.items.size()) && !solved) {
+        solved = true;
+        envState.lastReward[agentIdx] += rewardShaping[agentIdx].at(Str::rearrangeAllObjectsCorrectPosition);
+        envState.currEpisodeSec = episodeLengthSec() - 0.5f;  // terminate in 0.5 second
     }
 }
 

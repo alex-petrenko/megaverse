@@ -17,8 +17,6 @@ public:
 
     virtual void draw(Envs &envs) = 0;
 
-    virtual void postDraw(Env &env, int envIndex) = 0;
-
     /**
      * Query the pointer to memory holding the latest observation for an agent in an env.
      * @param envIdx env index.

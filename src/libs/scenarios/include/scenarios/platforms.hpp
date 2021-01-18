@@ -112,11 +112,10 @@ public:
 struct MagnumAABB
 {
     MagnumAABB(Object3D &parent, const BoundingBox &bb)
+    : min(&parent.addChild<Object3D>())
+    , max(&parent.addChild<Object3D>())
     {
-        min = &parent.addChild<Object3D>();
         min->translateLocal(Magnum::Vector3(bb.min));
-
-        max = &parent.addChild<Object3D>();
         max->translateLocal(Magnum::Vector3(bb.max));
     }
 
@@ -144,6 +143,8 @@ public:
     , params{params}
     {
     }
+
+    virtual ~Platform() = default;
 
     virtual void init() = 0;
 

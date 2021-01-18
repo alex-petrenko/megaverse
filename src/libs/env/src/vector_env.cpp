@@ -89,10 +89,6 @@ void VectorEnv::step()
     executeTask(Task::STEP);
     renderer.draw(envs);
 
-    // do this in background thread?? (tried, isn't faster really with current postDraw)
-    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
-        renderer.postDraw(*envs[envIdx], envIdx);
-
     // do this in background thread??
     for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
         if (envs[envIdx]->isDone()) {

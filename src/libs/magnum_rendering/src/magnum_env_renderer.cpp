@@ -116,7 +116,6 @@ public:
     void preDraw(Env &env, int envIndex);
     void draw(Envs &envs);
     void drawAgent(Env &env, int envIndex, int agentIdx, bool readToBuffer);
-    void postDraw(Env &env, int envIndex);
 
     uint8_t * getObservation(int envIdx, int agentIdx);
 
@@ -351,10 +350,6 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     }
 }
 
-void MagnumEnvRenderer::Impl::postDraw(Env &, int)
-{
-}
-
 void MagnumEnvRenderer::Impl::draw(Envs &envs)
 {
     ctx->makeCurrent();
@@ -390,11 +385,6 @@ void MagnumEnvRenderer::preDraw(Env &env, int envIdx)
 void MagnumEnvRenderer::draw(Envs &envs)
 {
     pimpl->draw(envs);
-}
-
-void MagnumEnvRenderer::postDraw(Env &env, int envIdx)
-{
-    pimpl->postDraw(env, envIdx);
 }
 
 void MagnumEnvRenderer::drawAgent(Env &env, int envIndex, int agentIndex, bool readToBuffer)

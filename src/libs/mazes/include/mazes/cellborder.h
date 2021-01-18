@@ -6,17 +6,18 @@
 
 
 class CellBorder {
- public:
-  virtual std::string GnuplotPrintString() const = 0;
-  virtual std::string SVGPrintString() const = 0;
+public:
+    virtual ~CellBorder() = default;
+    virtual std::string GnuplotPrintString() const = 0;
+    virtual std::string SVGPrintString() const = 0;
 };
 
 class LineBorder : public CellBorder {
 public:
-    virtual std::string GnuplotPrintString() const;
-    virtual std::string SVGPrintString() const;
+    std::string GnuplotPrintString() const override;
+    std::string SVGPrintString() const override;
     LineBorder(double, double, double, double);
-    LineBorder(std::tuple<double, double, double, double>);
+    explicit LineBorder(std::tuple<double, double, double, double>);
 
     [[nodiscard]] std::tuple<double, double, double, double> getBorderCoords() const
     {
@@ -29,8 +30,8 @@ protected:
 
 class ArcBorder : public CellBorder {
  public:
-  virtual std::string GnuplotPrintString() const;
-  virtual std::string SVGPrintString() const;
+  std::string GnuplotPrintString() const override;
+  std::string SVGPrintString() const override;
   ArcBorder(double, double, double, double, double);
 
  protected:

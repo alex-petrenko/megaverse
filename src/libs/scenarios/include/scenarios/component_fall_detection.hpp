@@ -9,6 +9,7 @@ namespace VoxelWorld
 class FallDetectionCallbacks
 {
 public:
+    virtual ~FallDetectionCallbacks() = default;
     virtual void agentFell(int /*agentIdx*/) {}
 };
 

@@ -14,17 +14,15 @@
 using namespace VoxelWorld;
 
 
-// static helper method
+#ifdef UNUSED_FUNCTION
 static btVector3 getNormalizedVector(const btVector3& v)
 {
     btVector3 n(0, 0, 0);
-
     if (v.length() > SIMD_EPSILON)
-    {
         n = v.normalized();
-    }
     return n;
 }
+#endif
 
 ///@todo Interact with dynamic objects,
 ///Ride kinematicly animated platforms properly
@@ -155,7 +153,7 @@ btPairCachingGhostObject* KinematicCharacterController::getGhostObject()
     return m_ghostObject;
 }
 
-bool KinematicCharacterController::recoverFromPenetration(btCollisionWorld* collisionWorld, int iteration)
+bool KinematicCharacterController::recoverFromPenetration(btCollisionWorld* collisionWorld, int /*iteration*/)
 {
     // Here we must refresh the overlapping paircache as the penetrating movement itself or the
     // previous recovery iteration might have used setWorldTransform and pushed us into an object
@@ -517,7 +515,7 @@ void KinematicCharacterController::warp(const btVector3& origin)
     horizontalVelocity.setValue(0, 0, 0);
 }
 
-void KinematicCharacterController::preStep(btCollisionWorld* collisionWorld)
+void KinematicCharacterController::preStep(btCollisionWorld* /*collisionWorld*/)
 {
     m_currentPosition = m_ghostObject->getWorldTransform().getOrigin();
     m_targetPosition = m_currentPosition;
@@ -694,7 +692,7 @@ btVector3* KinematicCharacterController::getUpAxisDirections()
     return sUpAxisDirection;
 }
 
-void KinematicCharacterController::debugDraw(btIDebugDraw* debugDrawer)
+void KinematicCharacterController::debugDraw(btIDebugDraw* /*debugDrawer*/)
 {
 }
 

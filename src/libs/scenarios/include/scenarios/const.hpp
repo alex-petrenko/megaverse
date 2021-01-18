@@ -8,7 +8,9 @@ namespace VoxelWorld::Str
     ConstStr obstaclesMinNumPlatforms = "obstaclesMinNumPlatforms",
              obstaclesMaxNumPlatforms = "obstaclesMaxNumPlatforms",
              obstaclesMinGap = "obstaclesMinGap",
-             obstaclesMaxGap = "obstaclesMaxGap";
+             obstaclesMaxGap = "obstaclesMaxGap",
+             obstaclesAgentAtExit = "obstaclesAgentAtExit",
+             obstaclesAllAgentsAtExit = "obstaclesAllAgentsAtExit";
 
     ConstStr teamSpirit = "teamSpirit",
              pickedUpObject = "pickedUpObject",
@@ -27,4 +29,7 @@ namespace VoxelWorld::Str
 
     ConstStr memoryCollectGood = "memoryCollectGood",
              memoryCollectBad = "memoryCollectBad";
+
+    ConstStr rearrangeOneObjectCorrectPosition = "rearrangeOneObjectCorrectPosition",
+             rearrangeAllObjectsCorrectPosition = "rearrangeAllObjectsCorrectPosition";
 }

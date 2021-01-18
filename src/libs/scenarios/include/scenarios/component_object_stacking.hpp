@@ -15,6 +15,7 @@ struct VoxelWithPhysicsObjects : public VoxelState
 class ObjectStackingCallbacks
 {
 public:
+    virtual ~ObjectStackingCallbacks() = default;
     virtual bool canPlaceObject(int /*agentIdx*/, const VoxelCoords &, Object3D * /*obj*/) { return true; }
     virtual void placedObject(int /*agentIdx*/, const VoxelCoords &, Object3D * /*obj*/) {}
     virtual void pickedObject(int /*agentIdx*/, const VoxelCoords &, Object3D * /*obj*/) {}

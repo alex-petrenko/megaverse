@@ -11,7 +11,8 @@ using AdjList = std::vector<std::vector<std::pair<int, std::shared_ptr<CellBorde
 
 class Maze {
  public:
-  Maze(int = 0, int = 0, int = 1);
+  explicit Maze(int = 0, int = 0, int = 1);
+  virtual ~Maze() = default;
   void GenerateMaze(SpanningtreeAlgorithm*);
   void PrintMazeGnuplot(const std::string&) const;
   void PrintMazeSVG(const std::string&) const;

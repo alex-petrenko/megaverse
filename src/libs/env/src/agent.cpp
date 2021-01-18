@@ -24,18 +24,17 @@ AbstractAgent::AbstractAgent(Object3D *parent, btDynamicsWorld &bWorld, float ve
 DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition,
                                              float rotationRad, float verticalLookLimitRad)
 : AbstractAgent(parent, bWorld, verticalLookLimitRad)
+, cameraObject{&(addChild<Object3D>())}
+, camera{&(cameraObject->addFeature<SceneGraph::Camera3D>())}
+, pickupSpot{&(cameraObject->addChild<Object3D>())}
 {
-    cameraObject = &(addChild<Object3D>());
     // cameraObject.rotateY(0.0_degf);
     cameraObject->translate(Magnum::Vector3{0, 0.41f, 0});
-
-    camera = &(cameraObject->addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
         .setProjectionMatrix(Matrix4::perspectiveProjection(100.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
-    pickupSpot = &(cameraObject->addChild<Object3D>());
     pickupSpot->translate({0.0f, -0.44f, -1.0f});
 
     btTransform startTransform;
@@ -61,8 +60,6 @@ DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &
 //    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter); // TODO!!!
     bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter); // TODO!!!
     bWorld.addAction(bCharacter.get());
-
-    this->updateTransform();
 }
 
 DefaultKinematicAgent::~DefaultKinematicAgent()

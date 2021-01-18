@@ -5,15 +5,15 @@
 
 class HexagonalMaze : public Maze {
  public:
-  HexagonalMaze(int);
-  virtual void InitialiseGraph();
+  explicit HexagonalMaze(int);
+  void InitialiseGraph() override;
 
  protected:
   int size_;
 
   virtual std::shared_ptr<CellBorder> GetEdge(int, int, int, int) const;
   int VertexIndex(int, int, int, int) const;
-  std::tuple<double, double, double, double> GetCoordinateBounds() const;
+  std::tuple<double, double, double, double> GetCoordinateBounds() const override;
 };
 
 #endif /* end of include guard: HEXAGONALMAZE_H */

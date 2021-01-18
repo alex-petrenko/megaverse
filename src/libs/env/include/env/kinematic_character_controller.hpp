@@ -28,17 +28,17 @@ public:
     KinematicCharacterController(btPairCachingGhostObject *ghostObject, btConvexShape *convexShape, btScalar stepHeight,
                                  const btVector3 &up = btVector3(1.0, 0.0, 0.0));
 
-    ~KinematicCharacterController();
+    ~KinematicCharacterController() override;
 
     ///btActionInterface interface
-    virtual void updateAction(btCollisionWorld *collisionWorld, btScalar deltaTime)
+    void updateAction(btCollisionWorld *collisionWorld, btScalar deltaTime) override
     {
         preStep(collisionWorld);
         playerStep(collisionWorld, deltaTime);
     }
 
     ///btActionInterface interface
-    void debugDraw(btIDebugDraw *debugDrawer);
+    void debugDraw(btIDebugDraw *debugDrawer) override;
 
     void setUp(const btVector3 &up);
 

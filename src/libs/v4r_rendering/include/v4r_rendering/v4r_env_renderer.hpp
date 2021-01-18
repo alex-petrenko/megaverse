@@ -8,10 +8,17 @@
 namespace VoxelWorld
 {
 
+class V4RDrawable;
+
 class V4REnvRenderer : public EnvRenderer
 {
 public:
-    explicit V4REnvRenderer(Envs &envs, int w, int h);
+    /**
+     * @param previousRenderer if renderers are chained (i.e. multiple renderers render the same scene) we need the
+     * pointer to the previous renderer in the chain to provide the list of "dirty" drawables whose absolute
+     * transformations we need to query from the scene graph and update.
+     */
+    explicit V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer);
 
     ~V4REnvRenderer() override;
 
@@ -21,9 +28,9 @@ public:
 
     void draw(Envs &envs) override;
 
-    void postDraw(Env &env, int envIndex) override;
-
     const uint8_t * getObservation(int envIdx, int agentIdx) const override;
+
+    std::vector<int> getDirtyDrawables(int envIdx) const;
 
 private:
     struct Impl;

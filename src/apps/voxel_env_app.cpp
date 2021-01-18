@@ -23,23 +23,24 @@
 using namespace VoxelWorld;
 
 
-constexpr int delayMs = 20;  // 1000 / 15;
+constexpr int delayMs = 1;  // 1000 / 15;
 
 //ConstStr scenario = "Empty";
-ConstStr scenario = "Collect";
-//ConstStr scenario = "Obstacles";
+//ConstStr scenario = "Collect";
+ConstStr scenario = "ObstaclesEasy";
+//ConstStr scenario = "ObstaclesHard";
 //ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
 
 constexpr bool useVulkan = true;
 
 constexpr bool viz = true;
-constexpr bool hires = false;
+constexpr bool hires = true;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? int(1e5) * 8'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
 constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
 
 // don't ask me, this is what waitKeyEx returns
@@ -158,7 +159,8 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
             venv.envs.front()->setAction(activeAgent, Action(1 << randomAction));
         }
 
-        ++numFrames;
+        numFrames += numAgents * numEnvs;
+
         if (numFrames > maxNumFrames) {
             shouldExit = true;
             TLOG(INFO) << "Done: " << numFrames;
@@ -190,11 +192,17 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 4;  // to test vectorized env interface
+    /**
+     * FPS single-core benchmark config: 64, 1, 1, default env params (i.e. episode length)
+     * On Core i9 expecting 28000 FPS on "Collect" and 66000 FPS on "Empty"
+     */
+
+    const int numEnvs = 1;  // to test vectorized env interface
     const int numAgentsPerEnv = 1;
     const int numSimulationThreads = 1;
 
-    FloatParams params{{Str::episodeLengthSec, 10.0f}};
+//    FloatParams params{{Str::episodeLengthSec, 1.0f}};
+    FloatParams params{{}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
@@ -204,7 +212,7 @@ int main(int argc, char** argv)
 
     std::unique_ptr<EnvRenderer> renderer;
     if constexpr (useVulkan)
-        renderer = std::make_unique<V4REnvRenderer>(envs, W, H);
+        renderer = std::make_unique<V4REnvRenderer>(envs, W, H, nullptr);
     else {
         const auto debugDraw = false;
         renderer = std::make_unique<MagnumEnvRenderer>(envs, W, H, debugDraw);
@@ -221,9 +229,8 @@ int main(int argc, char** argv)
     vectorEnv.close();
 
     const auto fps = nFrames / (usecPassed / 1e6);
-    const auto totalNumAgents = envs.front()->getNumAgents() * envs.size();
 
-    TLOG(DEBUG) << "\n\n" << fps * totalNumAgents << " FPS! (" << totalNumAgents << "*" << fps << ") for " << nFrames << " frames";
+    TLOG(DEBUG) << "\n\n" << fps << " FPS! " << nFrames << " frames";
 
     return EXIT_SUCCESS;
 }

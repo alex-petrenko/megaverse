@@ -26,6 +26,7 @@ TEST(maze, honeycomb)
 
     auto adjList = maze->getAdjacencyList();
     const auto [xmin, ymin, xmax, ymax] = maze->GetCoordinateBounds();
+    TLOG(DEBUG) << xmin << " " << ymin << " " << xmax << " " << ymax;
 
     TLOG(DEBUG) << system("eog /tmp/maze.svg");
 }

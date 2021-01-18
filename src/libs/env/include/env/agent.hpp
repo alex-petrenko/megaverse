@@ -114,8 +114,8 @@ private:
 
     float currXRotation = 0.0f;
 
-    Magnum::SceneGraph::Camera3D *camera;
     Object3D *cameraObject;
+    Magnum::SceneGraph::Camera3D *camera;
     Object3D *pickupSpot;
 
     std::unique_ptr<btCapsuleShape> capsuleShape;

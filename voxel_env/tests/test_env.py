@@ -149,11 +149,10 @@ class TestEnv(TestCase):
 
         orig_mem_usage = mem_usage_kb()
 
-        for i in range(1000):
+        for i in range(10000):
             print('Mem difference: ', mem_usage_kb() - orig_mem_usage, 'kb')
             e.reset()
-            for _ in range(4):
-                e.step(sample_actions(e))
+            e.step(sample_actions(e))
 
         print('Final mem difference: ', mem_usage_kb() - orig_mem_usage, 'kb')
 

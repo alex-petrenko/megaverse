@@ -45,6 +45,13 @@ ObstaclesScenario::ObstaclesScenario(const std::string &name, Env &env, Env::Env
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
 , fallDetection{*this, vg.grid, *this}
 {
+    std::map<std::string, float> rewardShapingScheme{
+        {Str::obstaclesAgentAtExit, 1.0f},
+        {Str::obstaclesAllAgentsAtExit, 5.0f},
+    };
+
+    for (int i = 0; i < env.getNumAgents(); ++i)
+        rewardShaping[i] = rewardShapingScheme;
 }
 
 void ObstaclesScenario::reset()
@@ -55,6 +62,8 @@ void ObstaclesScenario::reset()
     fallDetection.reset(env, envState);
 
     agentSpawnPositions.clear(), objectSpawnPositions.clear();
+    agentReachedExit = std::vector<bool>(env.getNumAgents(), false);
+    solved = false;
 
     auto &platforms = platformsComponent.platforms;
 
@@ -161,7 +170,10 @@ void ObstaclesScenario::reset()
     }
 
     for (int i = 0; i < int(platforms.size()); ++i) {
-        const auto coords = platforms[i]->generateMovableBoxes(numBoxes[i]);
+        float randomBoxesFraction = frand(envState.rng) * 0.5f;
+        auto randomBoxes = int(lround(randomBoxesFraction * numBoxes[i])) + randRange(0, 2, envState.rng);
+
+        const auto coords = platforms[i]->generateMovableBoxes(numBoxes[i] + randomBoxes);
         objectSpawnPositions.insert(objectSpawnPositions.end(), coords.cbegin(), coords.cend());
     }
 }
@@ -179,16 +191,22 @@ void ObstaclesScenario::step()
 
         if (vg.grid.hasVoxel(voxel)) {
             const auto terrainType = vg.grid.get(voxel)->terrain;
-            if (terrainType & TERRAIN_EXIT)
+            if (terrainType & TERRAIN_EXIT) {
                 ++numAgentsAtExit;
-            else if (terrainType & TERRAIN_LAVA)
+                if (!agentReachedExit[i]) {
+                    agentReachedExit[i] = true;
+                    envState.lastReward[i] += rewardShaping[i].at(Str::obstaclesAgentAtExit);
+                }
+            } else if (terrainType & TERRAIN_LAVA)
                 agentTouchedLava(i);
         }
     }
 
-    if (numAgentsAtExit == env.getNumAgents()) {
-        envState.done = true;
-        // TODO reward
+    if (numAgentsAtExit == env.getNumAgents() && !solved) {
+        solved = true;
+        envState.currEpisodeSec = episodeLengthSec() - 0.5f;  // terminate in 0.5 seconds
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            envState.lastReward[i] += rewardShaping[i].at(Str::obstaclesAllAgentsAtExit);
     }
 }
 
