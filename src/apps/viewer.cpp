@@ -45,14 +45,14 @@ const bool useVulkan = true;
 //const auto scenarioName = "Empty";
 //const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
-const auto scenarioName = "Collect";    // *
+//const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
 //const auto scenarioName = "HexExplore";  // *
 //const auto scenarioName = "Football";
-//const auto scenarioName = "Rearrange";  // *
+const auto scenarioName = "Rearrange";  // *
 
 
 class Viewer: public Magnum::Platform::Application
@@ -117,7 +117,9 @@ Viewer::Viewer(const Arguments& arguments)
 
     const int numAgents = 2;
 
-    auto env = std::make_unique<Env>(scenarioName, numAgents);
+    FloatParams params{{Str::useUIRewardIndicators, 1.0f}};
+//    FloatParams params{};
+    auto env = std::make_unique<Env>(scenarioName, numAgents, params);
 //    env->seed(42);
     env->reset();
 

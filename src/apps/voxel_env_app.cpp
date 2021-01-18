@@ -27,21 +27,21 @@ constexpr int delayMs = 1;  // 1000 / 15;
 
 //ConstStr scenario = "Empty";
 //ConstStr scenario = "Collect";
-ConstStr scenario = "ObstaclesEasy";
+//ConstStr scenario = "ObstaclesEasy";
 //ConstStr scenario = "ObstaclesHard";
 //ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
+ConstStr scenario = "Rearrange";
 
 constexpr bool useVulkan = true;
 
-constexpr bool viz = true;
-constexpr bool hires = true;
+constexpr bool viz = false;
+constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
-constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
+constexpr int maxNumFrames = performanceTest ? 2000'000 : 2'000'000'000;
 
 // don't ask me, this is what waitKeyEx returns
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;
@@ -197,11 +197,11 @@ int main(int argc, char** argv)
      * On Core i9 expecting 28000 FPS on "Collect" and 66000 FPS on "Empty"
      */
 
-    const int numEnvs = 1;  // to test vectorized env interface
+    const int numEnvs = 64;  // to test vectorized env interface
     const int numAgentsPerEnv = 1;
     const int numSimulationThreads = 1;
 
-//    FloatParams params{{Str::episodeLengthSec, 1.0f}};
+//    FloatParams params{{Str::episodeLengthSec, 0.1f}};
     FloatParams params{{}};
 
     std::vector<std::unique_ptr<Env>> envs;

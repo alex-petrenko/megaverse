@@ -168,6 +168,7 @@ public:
         auto &fp = floatParams;
         fp[Str::episodeLengthSec] = 60.0f;
         fp[Str::verticalLookLimitRad] = 0.2f;
+        fp[Str::useUIRewardIndicators] = 0.0f;
     }
 
     virtual const FloatParams & getFloatParams() const { return floatParams; }

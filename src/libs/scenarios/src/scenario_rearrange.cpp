@@ -154,7 +154,7 @@ int RearrangeScenario::countMatchingObjects() const
             ++matching;
     }
 
-    TLOG(DEBUG) << "Matching " << matching << " objects";
+    // TLOG(DEBUG) << "Matching " << matching << " objects";
 
     return matching;
 }

@@ -12,7 +12,8 @@ using ConstStr = const char *const;
 namespace Str
 {
     ConstStr episodeLengthSec = "episodeLengthSec",
-             verticalLookLimitRad = "verticalLookLimitRad";
+             verticalLookLimitRad = "verticalLookLimitRad",
+             useUIRewardIndicators = "useUIRewardIndicators";
 }
 
 

@@ -46,7 +46,7 @@ bool isNvidiaGpuReadable(int device)
 struct ContextEGL
 {
     explicit ContextEGL(int device)
-        : magnumGlContext_{Mn::NoCreate}, gpuDevice_{device}
+    : magnumGlContext_{Mn::NoCreate}
     {
         const auto loadStatus = gladLoadEGL();
         TCHECK(loadStatus) << "Failed to load EGL " << loadStatus;
@@ -159,7 +159,6 @@ private:
     EGLContext context_;
     Mn::Platform::GLContext magnumGlContext_;
     bool isValid_ = false;
-    int gpuDevice_;
 };
 
 
