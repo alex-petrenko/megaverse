@@ -143,13 +143,14 @@ class TestEnv(TestCase):
             process = psutil.Process(os.getpid())
             return process.memory_info().rss / 1024
 
-        params = {'episodeLengthSec': 0.1}
+        # params = {'episodeLengthSec': 0.1}
+        params = {}
         e = VoxelEnv('Rearrange', num_envs=32, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=True, params=params)
         e.reset()
 
         orig_mem_usage = mem_usage_kb()
 
-        for i in range(1000):
+        for i in range(10000):
             print('Mem difference: ', mem_usage_kb() - orig_mem_usage, 'kb')
             e.step(sample_actions(e))
 

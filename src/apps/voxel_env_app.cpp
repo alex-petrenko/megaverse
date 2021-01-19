@@ -26,12 +26,12 @@ using namespace VoxelWorld;
 constexpr int delayMs = 1;  // 1000 / 15;
 
 //ConstStr scenario = "Empty";
-//ConstStr scenario = "Collect";
+ConstStr scenario = "Collect";
 //ConstStr scenario = "ObstaclesEasy";
 //ConstStr scenario = "ObstaclesHard";
 //ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
-ConstStr scenario = "Rearrange";
+//ConstStr scenario = "Rearrange";
 
 constexpr bool useVulkan = true;
 
@@ -41,7 +41,7 @@ bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 2000'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
 
 // don't ask me, this is what waitKeyEx returns
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;
@@ -49,7 +49,7 @@ constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364
 
 std::string windowName(int envIdx, int agentIdx)
 {
-    const auto wname = std::to_string(envIdx) + std::to_string(agentIdx);
+    auto wname = std::to_string(envIdx) + std::to_string(agentIdx);
     return wname;
 }
 

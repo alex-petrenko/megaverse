@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
     maze->PrintMazeGnuplot(outputprefix);
     std::cout << "Rendering maze to '" << outputprefix
               << ".png' using gnuplot..." << std::endl;
-    system(("gnuplot '" + outputprefix + ".plt'").c_str());
+    (void)system(("gnuplot '" + outputprefix + ".plt'").c_str());
   }
   return 0;
 }
