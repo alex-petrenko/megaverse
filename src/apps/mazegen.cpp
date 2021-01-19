@@ -251,5 +251,5 @@ int main(int argc, char *argv[]) {
               << ".png' using gnuplot..." << std::endl;
     status = system(("gnuplot '" + outputprefix + ".plt'").c_str());
   }
-  return 0;
+  return status;
 }
