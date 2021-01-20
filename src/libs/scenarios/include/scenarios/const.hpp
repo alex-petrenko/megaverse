@@ -10,13 +10,15 @@ namespace VoxelWorld::Str
              obstaclesMinGap = "obstaclesMinGap",
              obstaclesMaxGap = "obstaclesMaxGap",
              obstaclesAgentAtExit = "obstaclesAgentAtExit",
-             obstaclesAllAgentsAtExit = "obstaclesAllAgentsAtExit";
+             obstaclesAllAgentsAtExit = "obstaclesAllAgentsAtExit",
+             obstacleExtraReward = "obstacleExtraReward";
 
-    ConstStr teamSpirit = "teamSpirit",
-             pickedUpObject = "pickedUpObject",
-             visitedBuildingZoneWithObject = "visitedBuildingZoneWithObject";
+    ConstStr towerPickedUpObject = "towerPickedUpObject",
+             towerVisitedBuildingZoneWithObject = "towerVisitedBuildingZoneWithObject",
+             towerBuildingReward = "towerBuildingReward";
 
-    ConstStr collectSingle = "collectSingle",
+    ConstStr collectSingleGood = "collectSingleGood",
+             collectSingleBad = "collectSingleBad",
              collectAll = "collectAll";
 
     ConstStr sokobanBoxOnTarget = "sokobanBoxOnTarget",
@@ -24,12 +26,13 @@ namespace VoxelWorld::Str
              sokobanAllBoxesOnTarget = "sokobanAllBoxesOnTarget";
 
     ConstStr boxagoneTouchedFloor = "boxagoneTouchedFloor",
-             boxagonePerStepReward = "boxagonePerStepReward",
-             boxagoneLastManStanding = "boxagoneLastManStanding";
+             boxagonePerStepReward = "boxagonePerStepReward";
+
+    ConstStr exploreSolved = "exploreSolved";
 
     ConstStr memoryCollectGood = "memoryCollectGood",
              memoryCollectBad = "memoryCollectBad";
 
-    ConstStr rearrangeOneObjectCorrectPosition = "rearrangeOneObjectCorrectPosition",
+    ConstStr rearrangeOneMoreObjectCorrectPosition = "rearrangeOneMoreObjectCorrectPosition",
              rearrangeAllObjectsCorrectPosition = "rearrangeAllObjectsCorrectPosition";
 }

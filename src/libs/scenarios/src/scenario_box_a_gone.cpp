@@ -33,19 +33,14 @@ BoxAGoneScenario::BoxAGoneScenario(const std::string &name, Env &env, Env::EnvSt
 , platformsComponent{*this}
 , fallDetection{*this, vg.grid, *this}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::boxagoneTouchedFloor,  -0.1f},
-        {Str::boxagonePerStepReward, 0.01f},
-        {Str::boxagoneLastManStanding, 0.05f},
-    };
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 BoxAGoneScenario::~BoxAGoneScenario() = default;
 
 void BoxAGoneScenario::reset()
 {
+    finished = false;
+
     vg.reset(env, envState);
     platformsComponent.reset(env, envState);
     fallDetection.reset(env, envState);
@@ -102,7 +97,6 @@ void BoxAGoneScenario::reset()
 void BoxAGoneScenario::step()
 {
     int agentsTouchingFloor = 0;
-    int doesNotTouchFloorIdx = -1;
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
@@ -112,12 +106,12 @@ void BoxAGoneScenario::step()
         const bool touchesFloor = coords.y() < 3;
 
         if (touchesFloor) {
-            envState.lastReward[i] += rewardShaping[i].at(Str::boxagoneTouchedFloor);
+            rewardTeam(Str::boxagoneTouchedFloor, i, 1);  // the rewards here are purely individual (each agent belongs to their own team, although this can be changed)
             ++agentsTouchingFloor;
         }
         else {
-            envState.lastReward[i] += rewardShaping[i].at(Str::boxagonePerStepReward);
-            doesNotTouchFloorIdx = i;
+            rewardTeam(Str::boxagonePerStepReward, i, 1);
+            agentStates[i].secondsBeforeTouchedFloor = envState.currEpisodeSec;
         }
 
         auto voxel = vg.grid.get(coords);
@@ -176,12 +170,10 @@ void BoxAGoneScenario::step()
         }
     }
 
-    if (agentsTouchingFloor == env.getNumAgents() - 1 && env.getNumAgents() > 1)
-        if (doesNotTouchFloorIdx >= 0)
-            envState.lastReward[doesNotTouchFloorIdx] += rewardShaping[doesNotTouchFloorIdx].at(Str::boxagoneLastManStanding);
-
-    if (agentsTouchingFloor >= env.getNumAgents())
-        envState.done = true;  // TODO: true reward
+    if (agentsTouchingFloor >= env.getNumAgents() && !finished) {
+        finished = true;
+        doneWithTimer();
+    }
 }
 
 std::vector<Magnum::Vector3> BoxAGoneScenario::agentStartingPositions()

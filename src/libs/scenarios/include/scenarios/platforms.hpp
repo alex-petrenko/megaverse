@@ -245,12 +245,12 @@ public:
 
     virtual int requiresMovableBoxesToTraverse() { return 0; }
 
-    virtual std::vector<VoxelCoords> generateMovableBoxes(int numBoxesToGenerate)
+    virtual std::vector<VoxelCoords> generateObjectPositions(int numPositionsToGenerate)
     {
         std::vector<VoxelCoords> boxes;
         constexpr int maxAttempts = 10;
 
-        for (int i = 0; i < numBoxesToGenerate; ++i) {
+        for (int i = 0; i < numPositionsToGenerate; ++i) {
             for (int attempt = 0; attempt < 10; ++attempt) {
                 const int x = randRange(1, length - 1, rng);
                 const int z = randRange(1, width - 1, rng);
@@ -467,7 +467,7 @@ public:
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(std::max(0, gap - 2)); }
 
-    std::vector<VoxelCoords> generateMovableBoxes(int numBoxesToGenerate) override
+    std::vector<VoxelCoords> generateObjectPositions(int numPositionsToGenerate) override
     {
         std::vector<VoxelCoords> boxes, candidates;
 
@@ -478,7 +478,7 @@ public:
                 candidates.emplace_back(x, 1, z);
             }
 
-        for (int i = 0; i < numBoxesToGenerate; ++i) {
+        for (int i = 0; i < numPositionsToGenerate; ++i) {
             const auto v = randomSample(candidates, rng);
             const int y = ++occupancy[{v.x(), v.z()}];
             boxes.emplace_back(v.x(), y, v.z());

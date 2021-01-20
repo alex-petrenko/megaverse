@@ -98,7 +98,15 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return solved; }
+    float trueObjective(int /*agentIdx*/) const override { return solved; }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::rearrangeOneMoreObjectCorrectPosition, 1},
+            {Str::rearrangeAllObjectsCorrectPosition, 10},
+        };
+    }
 
     void generateArrangement();
 
@@ -123,7 +131,7 @@ private:
     Arrangement arrangement;
     std::vector<ArrangementObject *> arrangementObjects;
 
-    int matchingObjects = 0;
+    int maxMatchingObjects = 0;
 
     const VoxelCoords leftCenter = {5, 2, 5};
     const VoxelCoords rightCenter = {13, 2, 5};

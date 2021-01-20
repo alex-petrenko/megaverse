@@ -168,7 +168,7 @@ public:
     };
 
 public:
-    explicit Env(const std::string &scenarioName, int numAgents = 2, FloatParams customFloatParams = FloatParams{});
+    explicit Env(const std::string &scenarioName, int numAgents = 2, const FloatParams& customFloatParams = FloatParams{});
 
     ~Env();
 
@@ -176,7 +176,7 @@ public:
 
     Scenario & getScenario() { return *scenario; }
 
-    Scene3D & getScene() { return *state.scene; }
+    Scene3D & getScene() const { return *state.scene; }
 
     Agents & getAgents() { return state.agents; }
 
@@ -215,7 +215,7 @@ public:
     /**
      * Unshaped reward that we're actually trying to maximize.
      */
-    float trueObjective() const;
+    float trueObjective(int agentIdx) const;
 
     float episodeLengthSec() const;
 

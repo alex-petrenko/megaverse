@@ -35,7 +35,7 @@ class VoxelEnv(gym.Env):
                 else:
                     raise Exception('Params of type %r not supported', type(v))
 
-        # float_params['episodeLengthSec'] = 2.0
+        float_params['episodeLengthSec'] = 1.0
 
         self.env = VoxelEnvGym(
             self.scenario_name,
@@ -117,8 +117,7 @@ class VoxelEnv(gym.Env):
             done = self.env.is_done(env_i)  # currently no individual done per agent
             dones.extend([done for _ in range(self.num_agents_per_env)])
             if done:
-                true_objective = self.env.true_objective(env_i)
-                infos.extend([dict(true_reward=float(true_objective)) for _ in range(self.num_agents_per_env)])
+                infos.extend([dict(true_reward=float(self.env.true_objective(env_i, j))) for j in range(self.num_agents_per_env)])
             else:
                 infos.extend([{} for _ in range(self.num_agents_per_env)])
 

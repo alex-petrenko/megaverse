@@ -11,19 +11,14 @@ HexMemoryScenario::HexMemoryScenario(const std::string &name, Env &env, Env::Env
 , maze{*this}
 , vg{*this, 100, 0, 0, 0, 1.0}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::memoryCollectGood, 1.0f},
-        {Str::memoryCollectBad, -1.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 HexMemoryScenario::~HexMemoryScenario() = default;
 
 void HexMemoryScenario::reset()
 {
+    solved = false;
+
     vg.reset(env, envState);
 
     goodObjects.clear(), badObjects.clear();
@@ -82,8 +77,10 @@ void HexMemoryScenario::step()
 {
     constexpr auto collectRadius = 1.0f;
 
-    if (goodObjectsCollected >= int(goodObjects.size()))
-        envState.done = true;
+    if (goodObjectsCollected >= int(goodObjects.size()) && !solved) {
+        solved = true;
+        doneWithTimer();
+    }
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
@@ -106,7 +103,8 @@ void HexMemoryScenario::step()
                     const auto distance = (pillarPos - t).length();
                     if (distance < collectRadius) {
                         // collecting the object
-                        envState.lastReward[i] += it->good ? rewardShaping[i].at(Str::memoryCollectGood) : rewardShaping[i].at(Str::memoryCollectBad);
+                        rewardTeam(it->good ? Str::memoryCollectGood : Str::memoryCollectBad, i, 1);
+
                         goodObjectsCollected += it->good;
                         it->object->translate({100, 100, 100});
                         it = voxel->objects.erase(it);

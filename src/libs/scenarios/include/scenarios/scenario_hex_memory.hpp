@@ -36,9 +36,25 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    [[nodiscard]] float trueObjective() const override { return 0; }//TODO
+    [[nodiscard]] float trueObjective(int /*agentIdx*/) const override { return solved; }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::memoryCollectGood, 1.0f},
+            {Str::memoryCollectBad, -1.0f},
+        };
+    }
+
+    float episodeLengthSec() const override
+    {
+        // add a little bit of time for every extra reward object
+        return Scenario::episodeLengthSec() + 5.0f * goodObjects.size();
+    }
 
 private:
+    bool solved = false;
+
     HexagonalMazeComponent maze;
 
     VoxelGridComponent<VoxelHexMemory> vg;

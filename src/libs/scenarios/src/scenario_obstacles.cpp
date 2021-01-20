@@ -45,13 +45,6 @@ ObstaclesScenario::ObstaclesScenario(const std::string &name, Env &env, Env::Env
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
 , fallDetection{*this, vg.grid, *this}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::obstaclesAgentAtExit, 1.0f},
-        {Str::obstaclesAllAgentsAtExit, 5.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 void ObstaclesScenario::reset()
@@ -61,7 +54,7 @@ void ObstaclesScenario::reset()
     objectStackingComponent.reset(env, envState);
     fallDetection.reset(env, envState);
 
-    agentSpawnPositions.clear(), objectSpawnPositions.clear();
+    agentSpawnPositions.clear(), objectSpawnPositions.clear(), rewardSpawnPositions.clear();
     agentReachedExit = std::vector<bool>(env.getNumAgents(), false);
     solved = false;
 
@@ -173,8 +166,14 @@ void ObstaclesScenario::reset()
         float randomBoxesFraction = frand(envState.rng) * 0.5f;
         auto randomBoxes = int(lround(randomBoxesFraction * numBoxes[i])) + randRange(0, 2, envState.rng);
 
-        const auto coords = platforms[i]->generateMovableBoxes(numBoxes[i] + randomBoxes);
+        const auto coords = platforms[i]->generateObjectPositions(numBoxes[i] + randomBoxes);
         objectSpawnPositions.insert(objectSpawnPositions.end(), coords.cbegin(), coords.cend());
+    }
+
+    for (int i = 1; i < int(platforms.size()) - 1; ++i) {
+        auto numRewardObjects = randRange(0, 2, envState.rng);
+        const auto coords = platforms[i]->generateObjectPositions(numRewardObjects);
+        rewardSpawnPositions.insert(rewardSpawnPositions.end(), coords.cbegin(), coords.cend());
     }
 }
 
@@ -195,18 +194,25 @@ void ObstaclesScenario::step()
                 ++numAgentsAtExit;
                 if (!agentReachedExit[i]) {
                     agentReachedExit[i] = true;
-                    envState.lastReward[i] += rewardShaping[i].at(Str::obstaclesAgentAtExit);
+                    rewardTeam(Str::obstaclesAgentAtExit, i, 1);
                 }
             } else if (terrainType & TERRAIN_LAVA)
                 agentTouchedLava(i);
+
+            // additional reward objects promote exploration
+            auto voxelData = vg.grid.get(voxel);
+            if (voxelData->rewardObject) {
+                voxelData->rewardObject->translate({1000, 1000, 1000});
+                voxelData->rewardObject = nullptr;  // remove the reference, but the object will be later cleaned when we destroy the scene graph
+                rewardTeam(Str::obstacleExtraReward, i, 1);
+            }
         }
     }
 
     if (numAgentsAtExit == env.getNumAgents() && !solved) {
         solved = true;
-        envState.currEpisodeSec = episodeLengthSec() - 0.5f;  // terminate in 0.5 seconds
-        for (int i = 0; i < env.getNumAgents(); ++i)
-            envState.lastReward[i] += rewardShaping[i].at(Str::obstaclesAllAgentsAtExit);
+        doneWithTimer();
+        rewardAll(Str::obstaclesAllAgentsAtExit, 1);
     }
 }
 
@@ -224,6 +230,14 @@ void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
                 addTerrain(drawables, envState, terrainType, bb.boundingBox());
 
     objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectSpawnPositions);
+
+    for (const auto &pos : rewardSpawnPositions) {
+        auto rewardObject = addDiamond(drawables, *envState.scene, Vector3{pos} + Vector3{0.5, 0.7, 0.5}, {0.17f, 0.45f, 0.17f}, ColorRgb::GREEN);
+        if (!vg.grid.hasVoxel(pos))
+            vg.grid.set(pos, makeVoxel<VoxelObstacles>(VOXEL_EMPTY));
+
+        vg.grid.get(pos)->rewardObject = rewardObject;
+    }
 }
 
 float ObstaclesScenario::episodeLengthSec() const
@@ -234,7 +248,8 @@ float ObstaclesScenario::episodeLengthSec() const
 
 void ObstaclesScenario::agentFell(int)
 {
-    // TODO reward
+    // we don't penalize the agent for stepping onto lava or falling
+    // otherwise they get discouraged and never even go near these obstacles
 }
 
 void ObstaclesScenario::agentTouchedLava(int agentIdx)

@@ -45,10 +45,10 @@ public:
     EnvRenderer &renderer;
 
     std::vector<bool> done;
-    std::vector<float> trueObjectives;
+    std::vector<std::vector<float>> trueObjectives;
 
 private:
-    int numThreads, envsPerThread;
+    int numThreads{}, envsPerThread{};
     std::vector<std::thread> backgroundThreads;
     std::vector<Task> currTasks;
     std::condition_variable cvTask;

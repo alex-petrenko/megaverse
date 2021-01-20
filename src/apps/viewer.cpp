@@ -40,7 +40,7 @@ using namespace Magnum::Math::Literals;
 using namespace VoxelWorld;
 
 // TODO: CLI parameters
-const bool useVulkan = true;
+const bool useVulkan = false;
 
 //const auto scenarioName = "Empty";
 //const auto scenarioName = "ObstaclesHard";  // *
@@ -48,11 +48,11 @@ const bool useVulkan = true;
 //const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "BoxAGone";
-//const auto scenarioName = "TowerBuilding";
+const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
 //const auto scenarioName = "HexExplore";  // *
 //const auto scenarioName = "Football";
-const auto scenarioName = "Rearrange";  // *
+//const auto scenarioName = "Rearrange";  // *
 
 
 class Viewer: public Magnum::Platform::Application
@@ -219,11 +219,13 @@ void Viewer::tickEvent() {
             TLOG(INFO) << "Done!";
 
         std::ostringstream s;
-        for (int i = 0; i < env->getNumAgents(); ++i)
-            s << " " << env->getTotalReward(i);
+        for (int i = 0; i < env->getNumAgents(); ++i) s << " " << env->getTotalReward(i);
+        TLOG(INFO) << "Total reward: " << s.str();
+        s.clear();
 
-        TLOG(INFO) << "Total reward " << s.str();
-        TLOG(INFO) << "True objective " << env->trueObjective();
+        for (int i = 0; i < env->getNumAgents(); ++i) s << " " << env->trueObjective(i);
+        TLOG(INFO) << "True objectives: " << s.str();
+
         env->reset();
         renderer->reset(*env, activeEnv);
         forceReset = false;

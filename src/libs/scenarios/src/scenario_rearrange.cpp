@@ -38,13 +38,6 @@ RearrangeScenario::RearrangeScenario(const std::string &name, Env &env, Env::Env
 , vg{*this, 100, 0, 0, 0, 1}
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::rearrangeOneObjectCorrectPosition, 1.0f},
-        {Str::rearrangeAllObjectsCorrectPosition, 5.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 RearrangeScenario::~RearrangeScenario() = default;
@@ -174,15 +167,16 @@ void RearrangeScenario::pickedObject(int agentIdx, const VoxelCoords &, Object3D
 void RearrangeScenario::checkDone(int agentIdx)
 {
     const auto matches = countMatchingObjects();
-    const auto delta = matches - matchingObjects;
-    envState.lastReward[agentIdx] += delta * rewardShaping[agentIdx].at(Str::rearrangeOneObjectCorrectPosition);
 
-    matchingObjects = matches;
+    if (matches > maxMatchingObjects) {
+        rewardTeam(Str::rearrangeOneMoreObjectCorrectPosition, agentIdx, 1);
+        maxMatchingObjects = matches;
+    }
 
     if (matches >= int(arrangement.items.size()) && !solved) {
         solved = true;
-        envState.lastReward[agentIdx] += rewardShaping[agentIdx].at(Str::rearrangeAllObjectsCorrectPosition);
-        envState.currEpisodeSec = episodeLengthSec() - 0.5f;  // terminate in 0.5 second
+        rewardTeam(Str::rearrangeAllObjectsCorrectPosition, agentIdx, 1);
+        doneWithTimer();
     }
 }
 
@@ -190,8 +184,19 @@ std::vector<Magnum::Vector3> RearrangeScenario::agentStartingPositions()
 {
     auto positions = std::vector<Magnum::Vector3>(env.getNumAgents());
 
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        positions[i] = Vector3 {float(platform->length) / 2 + float(i), 1, float(platform->width) - 3};
+    for (int i = 0; i < env.getNumAgents(); ++i) {
+        for (int attempt = 0; attempt < 20; ++attempt) {
+            int agentX = randRange(2, platform->length - 1, envState.rng);
+            int agentZ = randRange(2, platform->width - 1, envState.rng);
+            if (fabs(agentX - leftCenter.x()) < 2 && fabs(agentZ - leftCenter.z()) < 2)
+                continue;
+            if (fabs(agentX - rightCenter.x()) < 2 && fabs(agentZ - rightCenter.z()) < 2)
+                continue;
+
+            positions[i] = Vector3 {float(agentX), 2, float(agentZ)};
+            break;
+        }
+    }
 
     return positions;
 }
@@ -278,7 +283,8 @@ void RearrangeScenario::addEpisodeDrawables(DrawablesMap &drawables)
     arrangementDrawables(drawables, arrangement, leftCenter, false);
     arrangementDrawables(drawables, arrangement, rightCenter, true);
 
-    matchingObjects = countMatchingObjects();
+    maxMatchingObjects = countMatchingObjects();
+    TLOG(DEBUG) << "Initial num matching objects: " << maxMatchingObjects;
 
     Vector3 platformCenter = {9.5, 0, 7};
 
@@ -286,13 +292,13 @@ void RearrangeScenario::addEpisodeDrawables(DrawablesMap &drawables)
 
     // add pedestal for the desired arrangement
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {0.5, -0.5, 0.5}, ColorRgb::LAYOUT);
-    addStaticCollidingBox(drawables, envState, {1.5, 0.5, 1.5}, Vector3{leftCenter} + Vector3 {0.5, -0.49, 0.5}, ColorRgb::DARK_GREY);
+    addStaticCollidingBox(drawables, envState, {1.5, 0.5, 1.5}, Vector3{leftCenter} + Vector3 {0.5, -0.45, 0.5}, ColorRgb::DARK_GREY);
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {1.0, -0.66, 1.0}, ColorRgb::LAYOUT);
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {1.5, -0.82, 1.5}, ColorRgb::LAYOUT);
 
     // add pedestal for the working area
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{rightCenter} + Vector3 {0.5, -0.5, 0.5}, ColorRgb::BLUE);
-    addStaticCollidingBox(drawables, envState, {1.5, 0.5, 1.5}, Vector3{rightCenter} + Vector3 {0.5, -0.49, 0.5}, ColorRgb::DARK_GREY);
+    addStaticCollidingBox(drawables, envState, {1.5, 0.5, 1.5}, Vector3{rightCenter} + Vector3 {0.5, -0.45, 0.5}, ColorRgb::DARK_GREY);
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{rightCenter} + Vector3 {0, -0.66, 1.0}, ColorRgb::BLUE);
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{rightCenter} + Vector3 {-0.5, -0.82, 1.5}, ColorRgb::BLUE);
 }

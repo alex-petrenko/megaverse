@@ -48,22 +48,6 @@ void HexagonalMazeComponent::addDrawablesAndCollisions(DrawablesMap &drawables, 
     auto translation = Magnum::Vector3{float(xMax + xMin) / 2, 0.0f, float(yMax + yMin) / 2};
     addStaticCollidingBox(drawables, envState, scale, translation, ColorRgb::LAYOUT);
 
-    // TODO: debug stuff, remove
-//    for (int x = -1; x >= -7; --x)
-//        for (int z = -1; z >= -7; --z) {
-//            scale = Magnum::Vector3{0.1, 1, 0.1};
-//            translation = Magnum::Vector3{float(x), 1, float(z)};
-//
-//            addStaticCollidingBox(drawables, envState, scale, translation, ColorRgb::GREEN);
-//        }
-//
-//    for (int x = 20; x >= -7; --x)
-//        for (int z = 0; z >= 0; --z) {
-//            scale = Magnum::Vector3{0.1, 1, 0.1};
-//            translation = Magnum::Vector3{float(x), 1, float(z)};
-//            addStaticCollidingBox(drawables, envState, scale, translation, ColorRgb::RED);
-//        }
-
     std::set<std::pair<int, int>> existingWalls;
 
     auto adjList = maze->getAdjacencyList();
@@ -106,13 +90,13 @@ void HexagonalMazeComponent::addDrawablesAndCollisions(DrawablesMap &drawables, 
 
             auto &layoutBox = envState.scene->addChild<Object3D>();
             if (frand(envState.rng) < wallLandmarkProbability) {
-                const auto landmarkWidth = 0.12f, landmarkHeight = landmarkWidth * length / wallHeight;
+                const auto landmarkWidth = 0.15f, landmarkHeight = landmarkWidth * length / wallHeight;
 
                 int numLandmarks = randRange(2, 5, envState.rng);
                 for (int li = 0; li < numLandmarks; ++li) {
-                    const Vector3 landmarkScale{landmarkWidth, landmarkHeight, frand(envState.rng) * 1.1f + 1.0f};
+                    const Vector3 landmarkScale{landmarkWidth, landmarkHeight, frand(envState.rng) * 1.2f + 1.5f};
                     auto &landmarkBox = layoutBox.addChild<Object3D>();
-                    const Vector3 landmarkTranslation{float(li % 2 == 1) * landmarkWidth * 2, float(li > 1) * landmarkHeight * 2, 0};
+                    const Vector3 landmarkTranslation{float(li % 2 == 1) * landmarkWidth * 2, float(li > 1) * landmarkHeight * 2 - 0.2f, 0};
                     landmarkBox.scaleLocal(landmarkScale).translate(landmarkTranslation);
                     drawables[DrawableType::Box].emplace_back(&landmarkBox, rgb(sampleRandomColor(envState.rng)));
                 }

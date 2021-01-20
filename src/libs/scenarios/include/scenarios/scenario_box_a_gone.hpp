@@ -25,6 +25,7 @@ private:
     struct AgentState
     {
         RigidBody *lastPlatform = nullptr;
+        float secondsBeforeTouchedFloor = 0.0f;
     };
 
     struct PlatformState
@@ -50,18 +51,51 @@ public:
 
     void addDisappearingPlatforms(DrawablesMap &drawables);
 
-    float trueObjective() const override { return 0; } // TODO
+    /**
+     * Different trueObjective depending on whether this is a single-agent or competitive setting.
+     */
+    float trueObjective(int agentIdx) const override
+    {
+        if (env.getNumAgents() > 1) {
+            // last man standing wins
+            float maxSecondsBeforeTouchingFloor = 0.0f;
+            int bestAgent = 0;
+            for (int i = 0; i < env.getNumAgents(); ++i)
+                if (agentStates[i].secondsBeforeTouchedFloor > maxSecondsBeforeTouchingFloor)
+                    bestAgent = i, maxSecondsBeforeTouchingFloor = agentStates[i].secondsBeforeTouchedFloor;
+
+            return agentIdx == bestAgent;  // winner gets 1, other agents get 0
+        } else {
+            // fraction of the episode for which we managed to avoid the floor
+            return agentStates[agentIdx].secondsBeforeTouchedFloor / episodeLengthSec();
+        }
+    }
 
     void initializeDefaultParameters() override
     {
         auto &fp = floatParams;
-        fp[Str::episodeLengthSec] = 600.0f;
+        fp[Str::episodeLengthSec] = 300.0f;
         fp[Str::verticalLookLimitRad] = 0.75f;
     }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::boxagoneTouchedFloor,  -0.1f},
+            {Str::boxagonePerStepReward, 0.01f},
+        };
+    }
+
+    /**
+     * Each agent is for himself.
+     */
+    int teamAffinity(int agentIdx) const override { return agentIdx; }
 
 private:
     constexpr static float voxelSize = 2.0f;
     constexpr static int platformSize = 24;
+
+    bool finished = false;
 
     VoxelGridComponent<VoxelBoxAGone> vg;
     PlatformsComponent platformsComponent;

@@ -39,15 +39,6 @@ SokobanScenario::SokobanScenario(const std::string &name, Env &env, Env::EnvStat
 : DefaultScenario(name, env, envState)
 , vg{*this, 100, 0, 0, 0, 2}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::sokobanBoxOnTarget, 1.0f},
-        {Str::sokobanBoxLeavesTarget, -1.0f},
-        {Str::sokobanAllBoxesOnTarget, 10.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
-
     auto envvarBoxobanPath = std::getenv("BOXOBAN_LEVELS");
     if (!envvarBoxobanPath || strlen(envvarBoxobanPath) == 0)
         TLOG(DEBUG) << "Could not find Boxoban levels through the environment variable 'BOXOBAN_LEVELS'";
@@ -169,15 +160,6 @@ void SokobanScenario::step()
 {
     // TODO: in multi-agent envs they can push each other and thus move unmovable boxes. Fix
 
-    if (numBoxesOnGoal == numBoxes && !solved) {
-        TLOG(INFO) << "Done!";
-        solved = true;
-        for (int i = 0; i < env.getNumAgents(); ++i)
-            envState.lastReward[i] += rewardShaping[i].at(Str::sokobanAllBoxesOnTarget);  // TODO: team spirit rewards?
-
-        envState.currEpisodeSec = episodeLengthSec() - 1;  // terminate in 1 second
-    }
-
     // moving the boxes logic
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto a = envState.currAction[i];
@@ -219,11 +201,19 @@ void SokobanScenario::step()
                             if (voxel->terrain != SOKO_GOAL && desiredPosVoxel->terrain == SOKO_GOAL) {
                                 // moved the box to the goal position
                                 ++numBoxesOnGoal;
-                                envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxOnTarget);
+                                rewardTeam(Str::sokobanBoxOnTarget, i, 1);
+
+                                if (numBoxesOnGoal == numBoxes && !solved) {
+                                    TLOG(INFO) << "Done!";
+                                    solved = true;
+                                    rewardTeam(Str::sokobanAllBoxesOnTarget, i, 1);
+                                    doneWithTimer();
+                                }
+
                             } else if (voxel->terrain == SOKO_GOAL && desiredPosVoxel->terrain != SOKO_GOAL) {
                                 // moved the box from the goal position - penalty
                                 --numBoxesOnGoal;
-                                envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxLeavesTarget);
+                                rewardTeam(Str::sokobanBoxLeavesTarget, i, 1);
                             }
                         }
                     }

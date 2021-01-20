@@ -1,8 +1,12 @@
 #include <mazes/honeycombmaze.h>
 
+#include <scenarios/const.hpp>
+#include <scenarios/layout_utils.hpp>
 #include <scenarios/scenario_hex_explore.hpp>
 
 using namespace VoxelWorld;
+
+using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
@@ -16,6 +20,8 @@ HexExploreScenario::~HexExploreScenario() = default;
 
 void HexExploreScenario::reset()
 {
+    solved = false;
+
     maze.minSize = 2, maze.maxSize = 6;
     maze.reset(env, envState);
 
@@ -39,13 +45,16 @@ void HexExploreScenario::reset()
 
 void HexExploreScenario::step()
 {
-    for (auto &agent : env.getAgents()) {
+    for (int i = 0; i < env.getNumAgents(); ++i) {
+        auto &agent = env.getAgents()[i];
         const auto t = agent->absoluteTransformation().translation();
 
         const auto threshold = 0.9f;
-        if ((t - rewardObjectCoords).length() < threshold) {
-            envState.done = true;
-            // TODO: rewards
+        if ((t - rewardObjectCoords).length() < threshold && !solved) {
+            solved = true;
+            doneWithTimer();
+            rewardTeam(Str::exploreSolved, i, 1);
+            break;
         }
     }
 }
@@ -61,14 +70,6 @@ void HexExploreScenario::addEpisodeDrawables(DrawablesMap &drawables)
     maze.addDrawablesAndCollisions(drawables, envState);
 
     // adding reward object
-    auto translation = rewardObjectCoords;
-    auto &rootObject = envState.scene->addChild<Object3D>();
-    auto &bottomHalf = rootObject.addChild<Object3D>();
-    bottomHalf.rotateXLocal(180.0_degf).translate({0.0f, -1.0f, 0.0f});
-    const auto scale = 2.2f;
-    rootObject.scale({0.17f * scale, 0.35f * scale, 0.17f * scale});
-    rootObject.translate(translation);
-
-    drawables[DrawableType::Cone].emplace_back(&rootObject, rgb(ColorRgb::VIOLET));
-    drawables[DrawableType::Cone].emplace_back(&bottomHalf, rgb(ColorRgb::VIOLET));
+    const auto scale = 1.9f;
+    addDiamond(drawables, *envState.scene, rewardObjectCoords - Vector3{0, 0.3, 0}, {0.17f * scale, 0.35f * scale, 0.17f * scale}, ColorRgb::VIOLET);
 }

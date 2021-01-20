@@ -38,7 +38,19 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return float(highestTower); }
+    float trueObjective(int) const override { return float(highestTower); }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::teamSpirit, 0.1f},  // replaces the default value
+            {Str::towerPickedUpObject, 0.1f},
+            {Str::towerVisitedBuildingZoneWithObject, 0.1f},
+            {Str::towerBuildingReward, 1.0f},
+        };
+    }
+
+    float episodeLengthSec() const override;
 
     // Callbacks
     bool canPlaceObject(int agentIdx, const VoxelCoords &voxel, Object3D *obj) override;
@@ -47,9 +59,10 @@ public:
 
 private:
     bool isInBuildingZone(const VoxelCoords &c) const;
+    float calculateTowerReward() const;
 
-    float buildingReward(float height) const;
-    void addCollectiveReward(int agentIdx, float rewardDelta) const;
+    static float buildingRewardCoeffForHeight(float height);
+    void addCollectiveReward(int agentIdx);
 
 private:
     VoxelGridComponent<VoxelWithPhysicsObjects> vg;
@@ -58,6 +71,8 @@ private:
 
     int highestTower = 0;
     BoundingBox buildingZone;
+    std::unordered_set<VoxelCoords> objectsInBuildingZone;
+    float currBuildingZoneReward = 0.0f;
 
     std::vector<AgentState> agentState;
 

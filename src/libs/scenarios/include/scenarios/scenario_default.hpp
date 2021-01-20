@@ -73,6 +73,10 @@ public:
         defaultUI.positiveRewardIndicator.resize(numAgents), defaultUI.negativeRewardIndicator.resize(numAgents);
     }
 
+    /**
+     * Override this if your scenario needs agents of a different type or a different logic for spawning agents.
+     * @param agents resulting vector of agents
+     */
     void spawnAgents(std::vector<AbstractAgent *> &agents) override
     {
         const auto numAgents = env.getNumAgents();

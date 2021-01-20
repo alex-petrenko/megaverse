@@ -16,7 +16,6 @@
 namespace VoxelWorld
 {
 
-// TODO: refactor this?
 class RigidBody : public Object3D
 {
 public:

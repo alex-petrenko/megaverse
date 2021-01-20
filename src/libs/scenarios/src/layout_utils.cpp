@@ -8,6 +8,8 @@
 
 
 using namespace Magnum;
+using namespace Magnum::Math::Literals;
+
 using namespace VoxelWorld;
 
 
@@ -101,4 +103,18 @@ Object3D * VoxelWorld::addPillar(DrawablesMap &drawables, Object3D &parent, Magn
     addCylinder(drawables, parent, translation - capTranslation, capScale, color)->setParentKeepTransformation(rootObject);
 
     return rootObject;
+}
+
+Object3D * VoxelWorld::addDiamond(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+{
+    auto &rootObject = parent.addChild<Object3D>();
+    auto &bottomHalf = rootObject.addChild<Object3D>();
+    bottomHalf.rotateXLocal(180.0_degf).translate({0.0f, -1.0f, 0.0f});
+    rootObject.scale(scale);
+    rootObject.translate(translation);
+
+    drawables[DrawableType::Cone].emplace_back(&rootObject, rgb(color));
+    drawables[DrawableType::Cone].emplace_back(&bottomHalf, rgb(color));
+
+    return &rootObject;
 }

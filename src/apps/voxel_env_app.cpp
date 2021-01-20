@@ -41,7 +41,7 @@ bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 600'000 : 2'000'000'000;
 
 // don't ask me, this is what waitKeyEx returns
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;
@@ -88,9 +88,6 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
         tprof().pauseTimer("step");
 
         for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
-//            if (venv.done[envIdx])
-//                TLOG(INFO) << "Episode boundary env: " << envIdx << " frames: " << numFrames;
-
             for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
                 const uint8_t *obsData = renderer.getObservation(envIdx, i);
 

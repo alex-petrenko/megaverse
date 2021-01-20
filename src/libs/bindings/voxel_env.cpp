@@ -172,9 +172,9 @@ public:
         return py::array_t<uint8_t>({renderH, renderW, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
-    float trueObjective(int envIdx) const
+    float trueObjective(int envIdx, int agentIdx) const
     {
-        return vectorEnv->trueObjectives[envIdx];
+        return vectorEnv->trueObjectives[envIdx][agentIdx];
     }
 
     std::map<std::string, float> getRewardShaping(int envIdx, int agentIdx)

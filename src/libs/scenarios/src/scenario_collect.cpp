@@ -13,20 +13,14 @@ CollectScenario::CollectScenario(const std::string &name, Env &env, Env::EnvStat
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
 , fallDetection{*this, vg.grid, *this}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::collectSingle, 1.0f},
-        {Str::collectAll, 5.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 CollectScenario::~CollectScenario() = default;
 
 void CollectScenario::reset()
 {
-    // TODO: auto-reset components??
+    solved = false;
+
     vg.reset(env, envState);
     objectStackingComponent.reset(env, envState);
     fallDetection.reset(env, envState);
@@ -145,13 +139,16 @@ void CollectScenario::step()
             if (voxelPtr->reward > 0)
                 ++positiveRewardsCollected;
 
-            float reward = rewardShaping[i].at(Str::collectSingle) * float(voxelPtr->reward);
-            envState.lastReward[i] += reward;
+            if (voxelPtr->reward > 0)
+                rewardTeam(Str::collectSingleGood, i, 1);
+            else if (voxelPtr->reward < 0)
+                rewardTeam(Str::collectSingleBad, i, 1);
 
-            if (positiveRewardsCollected >= numPositiveRewards) {
+            if (positiveRewardsCollected >= numPositiveRewards && !solved) {
                 TLOG(INFO) << "All rewards collected!";
-                envState.currEpisodeSec = episodeLengthSec() - 1;  // terminate in 1 second
-                envState.lastReward[i] += rewardShaping[i].at(Str::collectAll);
+                solved = true;
+                doneWithTimer();
+                rewardTeam(Str::collectAll, i, 1);
             }
 
             vg.grid.remove(voxel);
@@ -178,15 +175,7 @@ void CollectScenario::addEpisodeDrawables(DrawablesMap &drawables)
     for (const auto &pos : rewardPositions) {
         auto translation = Magnum::Vector3{float(pos.x()) + 0.5f, float(pos.y()) + 0.8f, float(pos.z()) + 0.5f};
 
-        auto &rootObject = envState.scene->addChild<Object3D>();
-        auto &bottomHalf = rootObject.addChild<Object3D>();
-        bottomHalf.rotateXLocal(180.0_degf).translate({0.0f, -1.0f, 0.0f});
-        rootObject.scale({0.17f, 0.45f, 0.17f});
-        rootObject.translate(translation);
-
         auto voxel = makeVoxel<VoxelCollect>(VOXEL_EMPTY);
-        voxel.rewardObject = &rootObject;
-
         ColorRgb color;
 
         if (frand(envState.rng) > 0.3f) {
@@ -198,8 +187,8 @@ void CollectScenario::addEpisodeDrawables(DrawablesMap &drawables)
             color = ColorRgb::RED;
         }
 
-        drawables[DrawableType::Cone].emplace_back(&rootObject, rgb(color));
-        drawables[DrawableType::Cone].emplace_back(&bottomHalf, rgb(color));
+        auto rewardObject = addDiamond(drawables, *envState.scene, translation, {0.17f, 0.45f, 0.17f}, color);
+        voxel.rewardObject = rewardObject;
 
         vg.grid.set(pos, voxel);
     }

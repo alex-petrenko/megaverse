@@ -12,6 +12,11 @@
 namespace VoxelWorld
 {
 
+struct VoxelObstacles : public VoxelWithPhysicsObjects
+{
+    Object3D *rewardObject = nullptr;
+};
+
 class ObstaclesScenario : public DefaultScenario, public ObjectStackingCallbacks, public FallDetectionCallbacks
 {
 public:
@@ -26,7 +31,16 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return solved; }
+    float trueObjective(int) const override { return solved; }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::obstaclesAgentAtExit, 1.0f},
+            {Str::obstaclesAllAgentsAtExit, 5.0f},
+            {Str::obstacleExtraReward, 0.1f},
+        };
+    }
 
     float episodeLengthSec() const override;
 
@@ -35,16 +49,16 @@ public:
     void agentFell(int agentIdx) override;
 
 private:
-    VoxelGridComponent<VoxelWithPhysicsObjects> vg;
+    VoxelGridComponent<VoxelObstacles> vg;
     PlatformsComponent platformsComponent;
-    ObjectStackingComponent<VoxelWithPhysicsObjects> objectStackingComponent;
-    FallDetectionComponent<VoxelWithPhysicsObjects> fallDetection;
+    ObjectStackingComponent<VoxelObstacles> objectStackingComponent;
+    FallDetectionComponent<VoxelObstacles> fallDetection;
 
-    std::vector<VoxelCoords> objectSpawnPositions;
+    std::vector<VoxelCoords> objectSpawnPositions, rewardSpawnPositions;
     std::vector<Magnum::Vector3> agentSpawnPositions;
 
     std::vector<bool> agentReachedExit;
-    bool solved;
+    bool solved = false;
 
     int numPlatforms{};
 };

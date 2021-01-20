@@ -14,7 +14,7 @@ public:
     {
     }
 
-    ~TowerBuildingPlatform() = default;
+    ~TowerBuildingPlatform() override = default;
 
     void init() override
     {
@@ -53,20 +53,21 @@ public:
         const auto maxRandomObjects = std::min(int(spawnCandidates.size()) - numAgents, 25);
         const auto spawnObjects = randRange(0, std::max(1, maxRandomObjects), rng);
 
+        // spawn a bunch of random objects
         objectSpawnCoords = std::vector<VoxelCoords>(
             spawnCandidates.begin() + spawnIdx, spawnCandidates.begin() + spawnIdx + spawnObjects
         );
 
+        // objects that are within the "materials" rectangle will be at y=2, otherwise drop them on the floor
         for (auto &c : objectSpawnCoords) {
             if (c.x() >= materialsXOffset && c.x() < materialsXOffset + materialsLength
                 && c.z() >= materialsZOffset && c.z() < materialsZOffset + materialsWidth) {
                 continue;
             }
-
             c.y() -= 1;  // put the object on the floor
         }
 
-        // add the main bulk of materials
+        // add the main bulk of materials, a random rectangle of boxes
         for (int x = materialsXOffset; x < materialsXOffset + materialsLength; ++x)
             for (int y = 1; y <= 1; ++y)
                 for (int z = materialsZOffset; z < materialsZOffset + materialsWidth; ++z)
@@ -83,8 +84,8 @@ public:
         const VoxelCoords minCoord{buildZoneXOffset, 1, buildZoneZOffset},
                           maxCoord{buildZoneXOffset + buildZoneLength, 1, buildZoneZOffset + buildZoneWidth};
 
-        MagnumAABB buildingZone{*root, {minCoord, maxCoord}};
-        terrainBoxes[TERRAIN_BUILDING_ZONE].emplace_back(buildingZone);
+        MagnumAABB buildingZoneBB{*root, {minCoord, maxCoord}};
+        terrainBoxes[TERRAIN_BUILDING_ZONE].emplace_back(buildingZoneBB);
     }
 
     std::vector<Magnum::Vector3> agentSpawnPoints(int /*numAgents*/) override
@@ -92,10 +93,14 @@ public:
         return agentSpawnCoords;
     }
 
-    // TODO override base class
-    std::vector<VoxelCoords> objectSpawnPositions()
+    std::vector<VoxelCoords> generateObjectPositions(int /*numBoxesToGenerate*/) override
     {
         return objectSpawnCoords;
+    }
+
+    int numMovableBoxes() const
+    {
+        return objectSpawnCoords.size();
     }
 
 private:
@@ -116,14 +121,6 @@ TowerBuildingScenario::TowerBuildingScenario(const std::string &name, Env &env, 
 , platformsComponent{*this}
 , agentState(size_t(env.getNumAgents()))
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::teamSpirit, 0.1f},  // from 0 to 1
-        {Str::pickedUpObject, 0.1f},
-        {Str::visitedBuildingZoneWithObject, 0.1f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 TowerBuildingScenario::~TowerBuildingScenario() = default;
@@ -142,6 +139,9 @@ void TowerBuildingScenario::reset()
     vg.addPlatform(*platform, true);
 
     buildingZone = platform->terrainBoxes[TERRAIN_BUILDING_ZONE].front().boundingBox();
+
+    currBuildingZoneReward = 0.0f;
+    objectsInBuildingZone.clear();
 }
 
 std::vector<Magnum::Vector3> TowerBuildingScenario::agentStartingPositions()
@@ -151,8 +151,6 @@ std::vector<Magnum::Vector3> TowerBuildingScenario::agentStartingPositions()
 
 void TowerBuildingScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    // TODO: repeating code, reuse? Move to platform component
-
     auto boundingBoxesByType = vg.toBoundingBoxes();
     for (auto &[voxelType, bb] : boundingBoxesByType)
         addBoundingBoxes(drawables, envState, bb, voxelType);
@@ -161,7 +159,14 @@ void TowerBuildingScenario::addEpisodeDrawables(DrawablesMap &drawables)
         for (auto &bb : boxes)
             addTerrain(drawables, envState, terrainType, bb.boundingBox());
 
-    objectStackingComponent.addDrawablesAndCollisions(drawables, envState, platform->objectSpawnPositions());
+    const auto objectPositions = platform->generateObjectPositions(-1);
+    for (const auto &pos : objectPositions)
+        if (isInBuildingZone(pos))
+            objectsInBuildingZone.insert(pos);
+    currBuildingZoneReward = calculateTowerReward();
+    TLOG(INFO) << "Initial tower reward: " << currBuildingZoneReward;
+
+    objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectPositions);
 }
 
 void TowerBuildingScenario::step()
@@ -177,7 +182,7 @@ void TowerBuildingScenario::step()
             VoxelCoords voxel = vg.grid.getCoords(t);
             if (isInBuildingZone(voxel)) {
                 if (!agentState[i].visitedBuildingZoneWithObject) {
-                    envState.lastReward[i] += rewardShaping[i].at(Str::visitedBuildingZoneWithObject);
+                    rewardTeam(Str::towerVisitedBuildingZoneWithObject, i, 1);
                     agentState[i].visitedBuildingZoneWithObject = true;
                 }
             }
@@ -190,25 +195,23 @@ bool TowerBuildingScenario::canPlaceObject(int, const VoxelCoords &c, Object3D *
     return isInBuildingZone(c);
 }
 
-void TowerBuildingScenario::placedObject(int agentIdx, const VoxelCoords &voxel, Object3D *obj)
+void TowerBuildingScenario::placedObject(int agentIdx, const VoxelCoords &voxel, Object3D *)
 {
-    int placedHeight = voxel.y();
-    const auto newReward = buildingReward(float(placedHeight));
+    if (isInBuildingZone(voxel))
+        objectsInBuildingZone.insert(voxel);
 
-    auto rewardDelta = newReward - previousReward[obj];
-    previousReward[obj] = newReward;
-
-    TLOG(INFO) << "Curr reward: " << rewardDelta << " new reward: " << newReward;
+    addCollectiveReward(agentIdx);
 
     highestTower = std::max(highestTower, voxel.y() - buildingZone.min.y() + 1);
-
-    addCollectiveReward(agentIdx, rewardDelta);
 }
 
-void TowerBuildingScenario::pickedObject(int agentIdx, const VoxelCoords &, Object3D *)
+void TowerBuildingScenario::pickedObject(int agentIdx, const VoxelCoords &voxel, Object3D *)
 {
+    if (isInBuildingZone(voxel))
+        objectsInBuildingZone.erase(voxel);
+
     if (!agentState[agentIdx].pickedUpObject) {
-        envState.lastReward[agentIdx] += rewardShaping[agentIdx].at(Str::pickedUpObject);
+        rewardAgent(Str::towerPickedUpObject, agentIdx, 1);
         agentState[agentIdx].pickedUpObject = true;
     }
 }
@@ -218,19 +221,38 @@ bool TowerBuildingScenario::isInBuildingZone(const VoxelCoords &c) const
     return c.x() >= buildingZone.min.x() && c.x() < buildingZone.max.x() && c.z() >= buildingZone.min.z() && c.z() < buildingZone.max.z();
 }
 
-float TowerBuildingScenario::buildingReward(float height) const
+float TowerBuildingScenario::calculateTowerReward() const
 {
-    return height * 0.2f;
+    float reward = 0.0f;
+    for (auto &pos : objectsInBuildingZone) {
+        auto height = pos.y();
+        reward += buildingRewardCoeffForHeight(height);
+    }
+
+    return reward;
 }
 
-void TowerBuildingScenario::addCollectiveReward(int agentIdx, float rewardDelta) const
+/**
+ * The higher the agents place the blocks the more we reward them.
+ */
+float TowerBuildingScenario::buildingRewardCoeffForHeight(float height)
 {
-    for (auto i = 0; i < env.getNumAgents(); ++i) {
-        if (i == agentIdx)
-            envState.lastReward[i] += rewardDelta;
-        else {
-            const auto teamSpirit = rewardShaping[i].at(Str::teamSpirit);
-            envState.lastReward[i] += teamSpirit * rewardDelta;
-        }
-    }
+    auto res = height * 0.05f;
+    res += std::min(0.05f * powf(2, height), 20.0f);
+    return res;
+}
+
+void TowerBuildingScenario::addCollectiveReward(int agentIdx)
+{
+    auto newReward = calculateTowerReward();
+    auto rewardDelta = newReward - currBuildingZoneReward;
+    TLOG(INFO) << "Curr reward: " << rewardDelta << " new reward: " << newReward;
+
+    currBuildingZoneReward = newReward;
+    rewardTeam(Str::towerBuildingReward, agentIdx, rewardDelta);
+}
+
+float VoxelWorld::TowerBuildingScenario::episodeLengthSec() const
+{
+    return Scenario::episodeLengthSec() + 4.0f * float(platform->numMovableBoxes());
 }

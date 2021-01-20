@@ -17,9 +17,6 @@
 namespace VoxelWorld
 {
 
-/**
- * TODO: make this interface more compact and flexible
- */
 class AbstractAgent : public Object3D
 {
 public:

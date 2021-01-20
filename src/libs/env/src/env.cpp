@@ -30,17 +30,16 @@ Interact = 1 << 8,
 LookDown = 1 << 9,
 LookUp = 1 << 10,
 **/
-// TODO: make this more flexible, scenario-depenent? Mechanism to disable actions, e.g. when jumping is not needed
 const std::vector<int> Env::actionSpaceSizes = {3, 3, 3, 2, 2, 3};
 
 
-Env::Env(const std::string &scenarioName, int numAgents, FloatParams customFloatParams)
+Env::Env(const std::string &scenarioName, int numAgents, const FloatParams& customFloatParams)
     : scenarioName{scenarioName}
     , state{numAgents}
     , numAgents{numAgents}
 {
     scenario = Scenario::create(scenarioName, *this, state);
-    scenario->initializeDefaultParameters();
+    scenario->init();
     scenario->setCustomParameters(customFloatParams);
 
     // empty list of drawables for each supported drawable type
@@ -87,7 +86,6 @@ void Env::step()
 
     const auto lastFrameDurationSec = state.lastFrameDurationSec;
 
-    // TODO: make this more flexible
     for (int i = 0; i < numAgents; ++i) {
         const auto a = state.currAction[i];
         const auto &agent = state.agents[i];
@@ -163,7 +161,7 @@ float Env::episodeLengthSec() const
     return scenario->episodeLengthSec();
 }
 
-float Env::trueObjective() const
+float Env::trueObjective(int agentIdx) const
 {
-    return scenario->trueObjective();
+    return scenario->trueObjective(agentIdx);
 }

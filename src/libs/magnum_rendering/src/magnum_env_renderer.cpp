@@ -323,7 +323,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
     if (withOverviewCamera && overview.enabled)
         activeCameraPtr = overview.camera;
 
-    // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
+    // Would be nice to implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
+    // Although Vulkan renderer is so much faster, who cares
     activeCameraPtr->draw(envDrawables[envIndex]);
 
     shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());

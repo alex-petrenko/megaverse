@@ -11,6 +11,8 @@ using ConstStr = const char *const;
 
 namespace Str
 {
+    ConstStr teamSpirit = "teamSpirit";
+
     ConstStr episodeLengthSec = "episodeLengthSec",
              verticalLookLimitRad = "verticalLookLimitRad",
              useUIRewardIndicators = "useUIRewardIndicators";
@@ -43,8 +45,6 @@ enum class ColorRgb
     BUILDING_ZONE = DARK_GREY,
 };
 
-// TODO: define more colors?
-
 const ColorRgb allColors[] = {
     ColorRgb::YELLOW,
     ColorRgb::GREEN,
@@ -62,7 +62,7 @@ const ColorRgb allColors[] = {
 };
 const int numColors = ARR_LENGTH(allColors);
 
-const ColorRgb agentColors[] = {ColorRgb::YELLOW, ColorRgb::GREEN, ColorRgb::BLUE, ColorRgb::ORANGE};
+const ColorRgb agentColors[] = {ColorRgb::YELLOW, ColorRgb::GREEN, ColorRgb::BLUE, ColorRgb::ORANGE, ColorRgb::VIOLET, ColorRgb::VERY_DARK_GREY};
 const int numAgentColors = ARR_LENGTH(agentColors);
 
 inline Magnum::Color3 rgb(ColorRgb color) { return toRgbf((unsigned long long)color); }
