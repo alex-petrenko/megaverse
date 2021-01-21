@@ -142,6 +142,7 @@ void TowerBuildingScenario::reset()
 
     currBuildingZoneReward = 0.0f;
     objectsInBuildingZone.clear();
+    highestTower = 0;
 }
 
 std::vector<Magnum::Vector3> TowerBuildingScenario::agentStartingPositions()
