@@ -18,6 +18,7 @@ namespace VoxelWorld
     );
 
     Object3D * addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color);
+    Object3D * addSphere(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color);
     Object3D * addPillar(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color);
     Object3D * addDiamond(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color);
 }

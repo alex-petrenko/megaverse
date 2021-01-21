@@ -106,9 +106,12 @@ public:
                 }
 
                 // placing object on the ground (or another object)
-                VoxelT voxelState;
-                voxelState.physicsObject = obj;
-                grid.set(voxel, voxelState);
+                if (!grid.hasVoxel(voxel)) {
+                    VoxelT voxelState;
+                    grid.set(voxel, voxelState);
+                }
+
+                grid.get(voxel)->physicsObject = obj;
 
                 obj->setParent(envState.scene.get());
 
@@ -149,9 +152,7 @@ public:
                     obj->setParent(agent->interactLocation());
 
                     carryingObject[agentIdx] = obj;
-
-                    grid.remove(voxel);
-
+                    voxelPtr->physicsObject = nullptr;
                     callbacks.pickedObject(agentIdx, voxel, obj);
 
                     break;
@@ -187,9 +188,12 @@ public:
 
             envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
-            VoxelT voxelState;
-            voxelState.physicsObject = &object;
-            grid.set(pos, voxelState);
+            if (!grid.hasVoxel(pos)) {
+                VoxelT voxelState;
+                grid.set(pos, voxelState);
+            }
+
+            grid.get(pos)->physicsObject = &object;
         }
     }
 

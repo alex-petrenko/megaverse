@@ -3,6 +3,8 @@
 #include <scenarios/layout_utils.hpp>
 #include <scenarios/scenario_hex_memory.hpp>
 
+using namespace Magnum;
+
 using namespace VoxelWorld;
 
 
@@ -25,6 +27,7 @@ void HexMemoryScenario::reset()
     goodObjectsCollected = 0;
 
     maze.minSize = 2, maze.maxSize = 10;
+    maze.omitWallsProbabilityMin = 0.1f, maze.omitWallsProbabilityMax = 0.95f;
     maze.reset(env, envState);
 
     auto &hexMaze = maze.getMaze();
@@ -64,7 +67,7 @@ void HexMemoryScenario::reset()
 
     std::shuffle(objectCoordinates.begin(), objectCoordinates.end(), envState.rng);
 
-    float cellWithObjectsFraction = frand(envState.rng) * 0.2f + 0.1f;
+    float cellWithObjectsFraction = frand(envState.rng) * 0.25f + 0.2f;
     long numCellsWithGoodObjects = std::lround(ceilf(cellWithObjectsFraction * objectCoordinates.size()));
     long numCellsWithBadObjects = std::lround(ceilf(cellWithObjectsFraction * objectCoordinates.size()));
 
@@ -128,26 +131,61 @@ std::vector<Magnum::Vector3> HexMemoryScenario::agentStartingPositions()
 
 void HexMemoryScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    const static std::vector<ColorRgb> pillarColors{
+    const static std::vector<ColorRgb> colors{
         ColorRgb::YELLOW, ColorRgb::LIGHT_GREEN, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
         ColorRgb::DARK_GREY, ColorRgb::RED, ColorRgb::VIOLET,
     };
+    enum ShapeType {
+        SHAPE_PILLAR,
+        SHAPE_DIAMOND,
+        SHAPE_SPHERE,
+    };
+    const static std::vector<ShapeType> shapes = {SHAPE_PILLAR, SHAPE_DIAMOND, SHAPE_SPHERE};
 
-    const auto goodPillarColor = randomSample(pillarColors, envState.rng);
-    ColorRgb badPillarColor = randomSample(pillarColors, envState.rng);
-    while (badPillarColor == goodPillarColor)
-        badPillarColor = randomSample(pillarColors, envState.rng);
+    auto goodObjectColor = randomSample(colors, envState.rng), badObjectColor = goodObjectColor;
+    auto goodShape = randomSample(shapes, envState.rng), badShape = goodShape;
+
+    while (badObjectColor == goodObjectColor && badShape == goodShape) {
+        badObjectColor = randomSample(colors, envState.rng);
+        badShape = randomSample(shapes, envState.rng);
+    }
 
     maze.addDrawablesAndCollisions(drawables, envState);
 
+    auto addObject = [&](ShapeType shape, ColorRgb color, const Magnum::Vector3 &loc, const Magnum::Vector3 &scale) -> Object3D * {
+        switch (shape) {
+            case SHAPE_SPHERE:
+                return addSphere(drawables, *envState.scene, loc, scale, color);
+            case SHAPE_DIAMOND:
+                return addDiamond(drawables, *envState.scene, loc, scale, color);
+            case SHAPE_PILLAR:
+            default:
+                return addPillar(drawables, *envState.scene, loc, scale, color);
+        }
+    };
+
+    std::map<ShapeType, Vector3> scale {
+        {SHAPE_SPHERE, {0.75, 0.75, 0.75}},
+        {SHAPE_PILLAR, {0.5, 2, 0.5}},
+        {SHAPE_DIAMOND, Vector3 {0.17f, 0.45f, 0.17f} * 2.2},
+    };
+    std::map<ShapeType, Vector3> shift {
+        {SHAPE_SPHERE, {0, 0.1, 0}},
+        {SHAPE_PILLAR, {0, 0.05, 0}},
+        {SHAPE_DIAMOND, {0, 0.6, 0}},
+    };
+
     // adding landmark object
-    Magnum::Vector3 landmarkScale {0.5, 2, 0.5}, objectScale = landmarkScale * 0.5f;
-    addPillar(drawables, *envState.scene, landmarkLocation, landmarkScale, goodPillarColor);
+    addObject(goodShape, goodObjectColor, landmarkLocation + shift[goodShape], scale[goodShape]);
+    float objScale = 0.6;
 
     bool isGood = true;
     for (const auto &objects : {goodObjects, badObjects}) {
         for (const auto &coord : objects) {
-            const auto object = addPillar(drawables, *envState.scene, coord, objectScale, isGood ? goodPillarColor : badPillarColor);
+            auto shape = isGood ? goodShape : badShape;
+            auto color = isGood ? goodObjectColor : badObjectColor;
+
+            const auto object = addObject(shape, color, coord + shift[shape] * objScale, scale[shape] * objScale);
 
             const auto voxelCoord = vg.grid.getCoords(coord);
             if (!vg.grid.hasVoxel(voxelCoord))

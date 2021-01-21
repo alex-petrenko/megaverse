@@ -85,10 +85,16 @@ void VoxelWorld::addStaticCollidingBox(
 Object3D * VoxelWorld::addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto &rootObject = parent.addChild<Object3D>();
-
     rootObject.scale(scale).translate(translation);
     drawables[DrawableType::Cylinder].emplace_back(&rootObject, rgb(color));
+    return &rootObject;
+}
 
+Object3D * VoxelWorld::addSphere(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+{
+    auto &rootObject = parent.addChild<Object3D>();
+    rootObject.scale(scale).translate(translation);
+    drawables[DrawableType::Sphere].emplace_back(&rootObject, rgb(color));
     return &rootObject;
 }
 
