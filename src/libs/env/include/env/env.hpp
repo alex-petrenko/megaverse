@@ -91,7 +91,7 @@ class Env
 {
 public:
     /**
-     * Physics-related fields (PyBullet)
+     * Physics-related fields (Bullet physics engine)
      */
     struct EnvPhysics
     {
@@ -101,7 +101,7 @@ public:
             bBroadphase.getOverlappingPairCache()->setInternalGhostPairCallback(&ghostPairCallback);
         }
 
-        void reset()
+        ~EnvPhysics()
         {
             collisionShapes.clear();
         }
@@ -125,7 +125,8 @@ public:
     {
     public:
         explicit EnvState(int numAgents)
-        : currAction(size_t(numAgents), Action::Idle)
+        : physics{std::make_unique<EnvPhysics>()}
+        , currAction(size_t(numAgents), Action::Idle)
         , lastReward(size_t(numAgents), 0)
         , totalReward(size_t(numAgents), 0.0f)
         {
@@ -145,11 +146,12 @@ public:
 
             agents.clear();
 
-            physics.reset();
+            // completely reset the whole simulation
+            physics = std::make_unique<EnvPhysics>();
         }
 
     public:
-        EnvPhysics physics;
+        std::unique_ptr<EnvPhysics> physics;
 
         // Basic environment info
         bool done = false;
@@ -180,7 +182,7 @@ public:
 
     Agents & getAgents() { return state.agents; }
 
-    EnvPhysics & getPhysics() { return state.physics; }
+    EnvPhysics & getPhysics() const { return *state.physics; }
 
     /**
      * Main interface between the env and the renderer.

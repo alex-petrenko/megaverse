@@ -33,14 +33,17 @@ void scenariosGlobalInit()
     // used for debugging and testing
     registerScenario<EmptyScenario>("Empty");
 
+    // experimental
+    registerScenario<FootballScenario>("Football");
+    registerScenario<BoxAGoneScenario>("BoxAGone");
+
+    // "main" envs
     registerScenario<TowerBuildingScenario>("TowerBuilding");
     registerScenario<ObstaclesEasyScenario>("ObstaclesEasy");
     registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
     registerScenario<ObstaclesHardScenario>("ObstaclesHard");
-    registerScenario<FootballScenario>("Football");
     registerScenario<CollectScenario>("Collect");
     registerScenario<SokobanScenario>("Sokoban");
-    registerScenario<BoxAGoneScenario>("BoxAGone");
     registerScenario<HexMemoryScenario>("HexMemory");
     registerScenario<HexExploreScenario>("HexExplore");
     registerScenario<RearrangeScenario>("Rearrange");

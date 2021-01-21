@@ -22,7 +22,8 @@ void HexExploreScenario::reset()
 {
     solved = false;
 
-    maze.minSize = 2, maze.maxSize = 6;
+    maze.minSize = 2, maze.maxSize = 7;
+    maze.omitWallsProbabilityMin = 0.1f, maze.omitWallsProbabilityMax = 0.4f;
     maze.reset(env, envState);
 
     auto &hexMaze = maze.getMaze();
@@ -41,6 +42,8 @@ void HexExploreScenario::reset()
             continue;
         }
     }
+
+    rewardObject = nullptr;
 }
 
 void HexExploreScenario::step()
@@ -54,6 +57,7 @@ void HexExploreScenario::step()
             solved = true;
             doneWithTimer();
             rewardTeam(Str::exploreSolved, i, 1);
+            rewardObject->translate({1e3, 1e3, 1e3});
             break;
         }
     }
@@ -71,5 +75,5 @@ void HexExploreScenario::addEpisodeDrawables(DrawablesMap &drawables)
 
     // adding reward object
     const auto scale = 1.9f;
-    addDiamond(drawables, *envState.scene, rewardObjectCoords - Vector3{0, 0.3, 0}, {0.17f * scale, 0.35f * scale, 0.17f * scale}, ColorRgb::VIOLET);
+    rewardObject = addDiamond(drawables, *envState.scene, rewardObjectCoords - Vector3{0, 0.3, 0}, {0.17f * scale, 0.35f * scale, 0.17f * scale}, ColorRgb::VIOLET);
 }

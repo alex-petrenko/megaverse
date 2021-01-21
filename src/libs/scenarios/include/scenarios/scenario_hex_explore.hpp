@@ -35,6 +35,7 @@ private:
     HexagonalMazeComponent maze;
 
     Magnum::Vector3 rewardObjectCoords;
+    Object3D *rewardObject = nullptr;
 };
 
 }

@@ -41,11 +41,11 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
 
         if (voxelType & VOXEL_SOLID) {
             auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1,1,1});
-            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
 
             collisionBox.syncPose();
 
-            envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+            envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
         }
     }
 }
@@ -77,9 +77,9 @@ void VoxelWorld::addStaticCollidingBox(
     drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(color));
 
     auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
-    auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+    auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
     collisionBox.syncPose();
-    envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+    envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 }
 
 Object3D * VoxelWorld::addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)

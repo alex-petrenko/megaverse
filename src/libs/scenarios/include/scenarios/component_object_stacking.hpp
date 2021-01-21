@@ -177,7 +177,7 @@ public:
 
             auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
-            auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+            auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
             object.scale(objScale).translate(translation);
             object.setCollisionScale({1.15f, 1.15f, 1.15f});
             object.setCollisionOffset({0, -0.05f, 0});
@@ -185,7 +185,7 @@ public:
 
             drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::MOVABLE_BOX));
 
-            envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+            envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
             VoxelT voxelState;
             voxelState.physicsObject = &object;

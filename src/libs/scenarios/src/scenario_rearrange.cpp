@@ -239,7 +239,7 @@ void RearrangeScenario::arrangementDrawables(DrawablesMap &drawables, const Arra
 
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
-        auto &object = envState.scene->addChild<ArrangementObject>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &object = envState.scene->addChild<ArrangementObject>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         object.arrangementItem = item;
 
         object.scale(scales.at(item.shape) * objSize).translate(translation);
@@ -252,7 +252,7 @@ void RearrangeScenario::arrangementDrawables(DrawablesMap &drawables, const Arra
 
         drawables[item.shape].emplace_back(&object, rgb(item.color));
 
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         if (interactive) {
             VoxelRearrange voxelState;

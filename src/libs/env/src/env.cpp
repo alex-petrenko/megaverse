@@ -123,7 +123,7 @@ void Env::step()
 
     scenario->preStep();
 
-    state.physics.bWorld.stepSimulation(lastFrameDurationSec, 1, state.simulationStepSeconds);
+    state.physics->bWorld.stepSimulation(lastFrameDurationSec, 1, state.simulationStepSeconds);
 
     for (auto agent : state.agents)
         agent->updateTransform();

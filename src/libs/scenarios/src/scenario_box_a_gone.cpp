@@ -206,13 +206,13 @@ void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
 
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
-        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         object.scale(objScale).translate(translation);
         object.syncPose();
 
         drawables[DrawableType::Box].emplace_back(&object, rgb(color));
 
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         VoxelBoxAGone voxelState;
         voxelState.disappearingPlatform = &object;
@@ -223,12 +223,12 @@ void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
         auto translation = Magnum::Vector3{300, 300, 300} * voxelSize;
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
-        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         object.scale(objScale).translate(translation);
         object.syncPose();
 
         drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::GREEN));
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         extraPlatforms.emplace_back(&object);
     }

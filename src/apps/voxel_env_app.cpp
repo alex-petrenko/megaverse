@@ -25,8 +25,8 @@ using namespace VoxelWorld;
 
 constexpr int delayMs = 1;  // 1000 / 15;
 
-//ConstStr scenario = "Empty";
-ConstStr scenario = "Collect";
+ConstStr scenario = "Empty";
+//ConstStr scenario = "Collect";
 //ConstStr scenario = "ObstaclesEasy";
 //ConstStr scenario = "ObstaclesHard";
 //ConstStr scenario = "Sokoban";

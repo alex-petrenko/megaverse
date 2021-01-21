@@ -116,7 +116,7 @@ void FootballScenario::reset()
 
     collisionShape = std::make_unique<btSphereShape>(2.0);
 
-    auto &object = envState.scene->addChild<DynamicRigidBody>(envState.scene.get(), 1.0f, collisionShape.get(), envState.physics.bWorld);
+    auto &object = envState.scene->addChild<DynamicRigidBody>(envState.scene.get(), 1.0f, collisionShape.get(), envState.physics->bWorld);
     auto translation = Magnum::Vector3{5, 5, 5};
     object.scale({0.5, 0.5, 0.5}).translate(translation);
     object.syncPose();

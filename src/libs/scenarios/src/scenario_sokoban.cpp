@@ -276,11 +276,11 @@ void SokobanScenario::addEpisodeDrawables(DrawablesMap &drawables)
         drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::DARK_BLUE));
 
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
-        auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         collisionBox.setCollisionScale({1.15, 3, 1.15});
         collisionBox.setCollisionOffset({0, 0.6, 0});
         collisionBox.syncPose();
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         if (!g.hasVoxel({box}))
             g.set(box, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_EMPTY));

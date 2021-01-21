@@ -33,7 +33,7 @@ void HexagonalMazeComponent::reset(Env &, Env::EnvState &envState)
 
     mazeScale = 3.5f;
     wallHeight = frand(envState.rng) * 0.55f + 0.85f;
-    omitWallsProbability = frand(envState.rng) * 0.6f + 0.1f;
+    omitWallsProbability = frand(envState.rng) * (omitWallsProbabilityMax - omitWallsProbabilityMin) + omitWallsProbabilityMin;
     wallLandmarkProbability = frand(envState.rng) * 0.15f + 0.15f;
 
     bottomEdgingColor = sampleRandomColor(envState.rng);
@@ -106,9 +106,9 @@ void HexagonalMazeComponent::addDrawablesAndCollisions(DrawablesMap &drawables, 
             drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::DARK_BLUE));
 
             auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
-            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
             collisionBox.syncPose();
-            envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+            envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
             // top and bottom edging
             {

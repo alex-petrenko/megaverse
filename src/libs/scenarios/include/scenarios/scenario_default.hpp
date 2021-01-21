@@ -86,7 +86,7 @@ public:
         for (int i = 0; i < numAgents; ++i) {
             auto randomRotation = frand(envState.rng) * Magnum::Constants::pi() * 2;
             auto &agent = envState.scene->addChild<DefaultKinematicAgent>(
-                envState.scene.get(), envState.physics.bWorld,
+                envState.scene.get(), envState.physics->bWorld,
                 Magnum::Vector3{agentPositions[i]} + Magnum::Vector3{0.5, 0.0, 0.5},
                 randomRotation, verticalLookLimitRad
             );
