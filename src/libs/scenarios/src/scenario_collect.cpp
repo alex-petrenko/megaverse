@@ -193,3 +193,9 @@ void CollectScenario::addEpisodeDrawables(DrawablesMap &drawables)
         vg.grid.set(pos, voxel);
     }
 }
+
+void CollectScenario::agentFell(int agentIdx)
+{
+    // this is just to help agents learn a bit faster
+    rewardAgent(Str::collectSingleBad, agentIdx, 1);
+}

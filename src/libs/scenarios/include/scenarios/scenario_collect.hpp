@@ -31,6 +31,8 @@ public:
 
     void step() override;
 
+    void agentFell(int agentIdx) override;
+
     std::vector<Magnum::Vector3> agentStartingPositions() override;
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
@@ -43,6 +45,7 @@ public:
             {Str::collectSingleGood, 1.0f},
             {Str::collectSingleBad, -1.0f},
             {Str::collectAll, 5.0f},
+            {Str::collectAbyss, -0.5f},
         };
     }
 

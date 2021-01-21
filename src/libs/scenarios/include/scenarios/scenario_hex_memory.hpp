@@ -49,7 +49,7 @@ public:
     float episodeLengthSec() const override
     {
         // add a little bit of time for every extra reward object
-        return Scenario::episodeLengthSec() + 5.0f * goodObjects.size();
+        return Scenario::episodeLengthSec() + 3.0f * goodObjects.size();
     }
 
 private:

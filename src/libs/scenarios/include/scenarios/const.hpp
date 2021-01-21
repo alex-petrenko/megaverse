@@ -19,7 +19,8 @@ namespace VoxelWorld::Str
 
     ConstStr collectSingleGood = "collectSingleGood",
              collectSingleBad = "collectSingleBad",
-             collectAll = "collectAll";
+             collectAll = "collectAll",
+             collectAbyss = "collectAbyss";
 
     ConstStr sokobanBoxOnTarget = "sokobanBoxOnTarget",
              sokobanBoxLeavesTarget = "sokobanBoxLeavesTarget",
