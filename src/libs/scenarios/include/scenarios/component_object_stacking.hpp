@@ -99,7 +99,7 @@ public:
                     }
 
                     auto voxelBelowPtr = grid.get(voxelBelow);
-                    if (voxelBelowPtr)
+                    if (voxelBelowPtr && (voxelBelowPtr->solid() || voxelBelowPtr->physicsObject))
                         break;
                     else
                         voxel = voxelBelow;

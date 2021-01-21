@@ -280,6 +280,8 @@ public:
         return int(lround(params.at(str)));
     }
 
+    virtual bool isMaxDifficulty() const { return false; }
+
 public:
     Rng &rng;
 
@@ -339,7 +341,7 @@ public:
     {
         EmptyPlatform::init();
 
-        wallHeight = randRange(1, 5, rng);
+        wallHeight = randRange(param(Str::obstaclesMinHeight), param(Str::obstaclesMaxHeight) + 1, rng);
         height = randRange(wallHeight + 4, wallHeight + 6, rng);
     }
 
@@ -361,6 +363,8 @@ public:
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(wallHeight - 1); }
 
+    bool isMaxDifficulty() const override { return wallHeight >= param(Str::obstaclesMaxHeight); }
+
 private:
     int wallHeight{};
 };
@@ -377,14 +381,17 @@ public:
     {
         EmptyPlatform::generate();
 
-        lavaLength = randRange(2, std::min(4, length - 1), rng);
+        lavaLength = randRange(param(Str::obstaclesMinLava), std::min(param(Str::obstaclesMaxLava) + 1, length - 1), rng);
+
         const auto lavaX = randRange(1, length - lavaLength, rng);
 
         MagnumAABB lava{*root, {lavaX, 1, 1, lavaX + lavaLength, 2, width - 1}};
         terrainBoxes[TERRAIN_LAVA].emplace_back(lava);
     }
 
-    int requiresMovableBoxesToTraverse() override { return std::max(0, std::min(2, lavaLength - 2)); }
+    int requiresMovableBoxesToTraverse() override { return std::max(1, lavaLength - 1); }
+
+    bool isMaxDifficulty() const override { return lavaLength >= param(Str::obstaclesMaxLava); }
 
 private:
     int lavaLength{};
@@ -402,8 +409,8 @@ public:
     {
         EmptyPlatform::init();
 
-        stepHeight = randRange(1, 4, rng);
-        height = randRange(stepHeight + 3, stepHeight + 5, rng);
+        stepHeight = randRange(param(Str::obstaclesMinHeight), param(Str::obstaclesMaxHeight) + 1, rng);
+        height = randRange(stepHeight + 2, stepHeight + 5, rng);
     }
 
     void generate() override
@@ -429,6 +436,8 @@ public:
     }
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(stepHeight - 1); }
+
+    bool isMaxDifficulty() const override { return stepHeight >= param(Str::obstaclesMaxHeight); }
 
 private:
     int stepHeight{};

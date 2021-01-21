@@ -38,7 +38,7 @@ public:
         return {
             {Str::obstaclesAgentAtExit, 1.0f},
             {Str::obstaclesAllAgentsAtExit, 5.0f},
-            {Str::obstacleExtraReward, 0.1f},
+            {Str::obstacleExtraReward, 0.5f},
         };
     }
 
@@ -81,6 +81,12 @@ public:
 
         fp[Str::obstaclesMinGap] = 1;
         fp[Str::obstaclesMaxGap] = 2;
+
+        fp[Str::obstaclesMinLava] = 1;
+        fp[Str::obstaclesMaxLava] = 4;
+
+        fp[Str::obstaclesMinHeight] = 1;
+        fp[Str::obstaclesMaxHeight] = 3;
     }
 };
 
@@ -90,14 +96,21 @@ public:
     explicit ObstaclesMediumScenario(const std::string &name, Env &env, Env::EnvState &envState)
     : ObstaclesScenario(name, env, envState)
     {
+    }
+
+    void initializeDefaultParameters() override
+    {
         ObstaclesScenario::initializeDefaultParameters();
 
         auto &fp = floatParams;
         fp[Str::obstaclesMinNumPlatforms] = 2;
         fp[Str::obstaclesMaxNumPlatforms] = 4;
 
-        fp[Str::obstaclesMinGap] = 1;
-        fp[Str::obstaclesMaxGap] = 3;
+        fp[Str::obstaclesMinLava] = 2;
+        fp[Str::obstaclesMaxLava] = 5;
+
+        fp[Str::obstaclesMinHeight] = 1;
+        fp[Str::obstaclesMaxHeight] = 3;
     }
 };
 
@@ -107,6 +120,10 @@ public:
     explicit ObstaclesHardScenario(const std::string &name, Env &env, Env::EnvState &envState)
     : ObstaclesScenario(name, env, envState)
     {
+    }
+
+    void initializeDefaultParameters() override
+    {
         ObstaclesScenario::initializeDefaultParameters();
 
         auto &fp = floatParams;
@@ -115,6 +132,12 @@ public:
 
         fp[Str::obstaclesMinGap] = 2;
         fp[Str::obstaclesMaxGap] = 3;
+
+        fp[Str::obstaclesMinLava] = 2;
+        fp[Str::obstaclesMaxLava] = 8;
+
+        fp[Str::obstaclesMinHeight] = 2;
+        fp[Str::obstaclesMaxHeight] = 4;
     }
 };
 

@@ -9,6 +9,10 @@ namespace VoxelWorld::Str
              obstaclesMaxNumPlatforms = "obstaclesMaxNumPlatforms",
              obstaclesMinGap = "obstaclesMinGap",
              obstaclesMaxGap = "obstaclesMaxGap",
+             obstaclesMinLava = "obstaclesMinLava",
+             obstaclesMaxLava = "obstaclesMaxLava",
+             obstaclesMinHeight = "obstaclesMinHeight",
+             obstaclesMaxHeight = "obstaclesMaxHeight",
              obstaclesAgentAtExit = "obstaclesAgentAtExit",
              obstaclesAllAgentsAtExit = "obstaclesAllAgentsAtExit",
              obstacleExtraReward = "obstacleExtraReward";

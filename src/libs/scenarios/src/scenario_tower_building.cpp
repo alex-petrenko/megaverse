@@ -136,7 +136,7 @@ void TowerBuildingScenario::reset()
 
     platform = std::make_unique<TowerBuildingPlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
-    vg.addPlatform(*platform, true);
+    vg.addPlatform(*platform, bool(randRange(0, 2, envState.rng)));
 
     buildingZone = platform->terrainBoxes[TERRAIN_BUILDING_ZONE].front().boundingBox();
 

@@ -85,11 +85,21 @@ void ObstaclesScenario::reset()
 
         platformsComponent.addPlatform(std::move(startPlatformPtr));
 
+        int numMaxDifficultyObstacles = 0;
+
         for (int i = 0; i < numPlatforms; ++i) {
             auto orientation = randomSample(orientations, envState.rng);
             requiredWidth = orientation == ORIENTATION_STRAIGHT ? requiredWidth : -1;
 
-            platformsComponent.addPlatform(makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth));
+            auto newPlatform = makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
+            while (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= 2)
+                newPlatform = makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
+
+            if (newPlatform->isMaxDifficulty())
+                ++numMaxDifficultyObstacles;
+
+            platformsComponent.addPlatform(std::move(newPlatform));
+
             auto platform = platforms.back().get();
 
             platform->init(), platform->generate();
@@ -232,7 +242,7 @@ void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
     objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectSpawnPositions);
 
     for (const auto &pos : rewardSpawnPositions) {
-        auto rewardObject = addDiamond(drawables, *envState.scene, Vector3{pos} + Vector3{0.5, 0.7, 0.5}, {0.17f, 0.45f, 0.17f}, ColorRgb::GREEN);
+        auto rewardObject = addDiamond(drawables, *envState.scene, Vector3{pos} + Vector3{0.5, 0.7, 0.5}, Vector3{0.17f, 0.45f, 0.17f} * 0.8f, ColorRgb::GREEN);
         if (!vg.grid.hasVoxel(pos))
             vg.grid.set(pos, makeVoxel<VoxelObstacles>(VOXEL_EMPTY));
 

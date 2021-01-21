@@ -43,9 +43,9 @@ using namespace VoxelWorld;
 const bool useVulkan = false;
 
 // "main" envs
-//const auto scenarioName = "ObstaclesHard";  // *
+const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
-const auto scenarioName = "Collect";    // *
+//const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
