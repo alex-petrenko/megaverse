@@ -72,21 +72,27 @@ void DefaultKinematicAgent::updateTransform()
 {
     auto worldTrans = ghostObject.getWorldTransform();
 
-    Vector3 position = Vector3{worldTrans.getOrigin()};
-    const Vector3 axis = Vector3{worldTrans.getRotation().getAxis()};
+    auto position = Vector3{worldTrans.getOrigin()};
+    const auto axis = Vector3{worldTrans.getRotation().getAxis()};
+    const auto normalizedAxis = axis.normalized();
     const Float rotation = worldTrans.getRotation().getAngle();
 
     /* Bullet sometimes reports NaNs for all the parameters and nobody is sure
        why: https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12080. The body
        gets stuck in that state, so print the warning just once. */
-    if(Math::isNan(position).any() || Math::isNan(axis).any() || Math::isNan(rotation)) {
-        Warning{} << "BulletIntegration::MotionState: Bullet reported NaN transform for" << this << Debug::nospace << ", ignoring";
+    if (Math::isNan(position).any() || Math::isNan(rotation)) {
+        Error{} << "BulletIntegration::MotionState: Bullet reported NaN transform for" << this << Debug::nospace << ", ignoring";
+        return;
+    }
+
+    if (Math::isNan(normalizedAxis).any()) {
+        Error{} << "BulletIntegration::MotionState: NaN normalized axis" << this << Debug::nospace << ", ignoring";
         return;
     }
 
     position += Vector3{0, 0.05f, 0.0f};
 
-    this->resetTransformation().rotate(Rad{rotation}, axis.normalized()).translate(position);
+    this->resetTransformation().rotate(Rad{rotation}, normalizedAxis).translate(position);
 }
 
 void DefaultKinematicAgent::lookLeft(float dt)
