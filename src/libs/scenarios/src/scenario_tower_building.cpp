@@ -134,9 +134,13 @@ void TowerBuildingScenario::reset()
     std::fill(agentState.begin(), agentState.end(), AgentState{});
     previousReward.clear();
 
+    auto layoutColor = randomLayoutColor(envState.rng);
+    while (layoutColor == ColorRgb::BUILDING_ZONE)
+        layoutColor = randomLayoutColor(envState.rng);
+
     platform = std::make_unique<TowerBuildingPlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
-    vg.addPlatform(*platform, bool(randRange(0, 2, envState.rng)));
+    vg.addPlatform(*platform, layoutColor, randomLayoutColor(envState.rng), randomBool(envState.rng));
 
     buildingZone = platform->terrainBoxes[TERRAIN_BUILDING_ZONE].front().boundingBox();
 
@@ -152,9 +156,7 @@ std::vector<Magnum::Vector3> TowerBuildingScenario::agentStartingPositions()
 
 void TowerBuildingScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     for (auto &[terrainType, boxes] : platform->terrainBoxes)
         for (auto &bb : boxes)

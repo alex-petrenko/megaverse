@@ -92,7 +92,7 @@ void ObstaclesScenario::reset()
             requiredWidth = orientation == ORIENTATION_STRAIGHT ? requiredWidth : -1;
 
             auto newPlatform = makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
-            while (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= 2)
+            while (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= 1)
                 newPlatform = makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
 
             if (newPlatform->isMaxDifficulty())
@@ -155,8 +155,10 @@ void ObstaclesScenario::reset()
             break;
     }
 
+    auto layoutColor = randomLayoutColor(envState.rng);
+    auto wallColor = randomLayoutColor(envState.rng);
     for (auto &p : platforms)
-        vg.addPlatform(*p, drawWalls);
+        vg.addPlatform(*p, layoutColor, wallColor, drawWalls);
 
     assert(startPlatform);
     agentSpawnPositions = startPlatform->agentSpawnPoints(env.getNumAgents());
@@ -228,10 +230,7 @@ void ObstaclesScenario::step()
 
 void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     // add terrains
     for (auto &platform : platformsComponent.platforms)

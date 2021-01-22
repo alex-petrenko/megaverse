@@ -34,13 +34,7 @@ struct ArrangementItem
 
 
         const auto shape = randomSample(shapes, rng);
-
-        const static std::vector<ColorRgb> colors{
-            ColorRgb::YELLOW, ColorRgb::LIGHT_GREEN, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
-            ColorRgb::DARK_GREY, ColorRgb::RED, ColorRgb::VIOLET,
-        };
-
-        const auto color = randomSample(colors, rng);
+        const auto color = randomObjectColor(rng);
 
         ArrangementItem item{shape, color, offset};
         return item;

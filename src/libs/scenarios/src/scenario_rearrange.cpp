@@ -20,7 +20,7 @@ public:
 
     void init() override
     {
-        height = 8;
+        height = randRange(4, 7, rng);
         length = 19;
         width = 14;
     }
@@ -53,7 +53,7 @@ void RearrangeScenario::reset()
 
     platform = std::make_unique<RearrangePlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
-    vg.addPlatform(*platform, false);
+    vg.addPlatform(*platform, ColorRgb::DARK_GREY, ColorRgb::DARK_GREY, randomBool(envState.rng));
 
     arrangement = Arrangement{};
     arrangementObjects.clear();
@@ -146,8 +146,6 @@ int RearrangeScenario::countMatchingObjects() const
         if (arrangement.contains(obj->arrangementItem.shape, obj->arrangementItem.color, offset))
             ++matching;
     }
-
-    // TLOG(DEBUG) << "Matching " << matching << " objects";
 
     return matching;
 }
@@ -268,9 +266,7 @@ void RearrangeScenario::arrangementDrawables(DrawablesMap &drawables, const Arra
 
 void RearrangeScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType, 1);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     for (int dx = -3; dx <= 3; ++dx)
         for (int dz = -3; dz <= 3; ++dz) {
@@ -291,10 +287,10 @@ void RearrangeScenario::addEpisodeDrawables(DrawablesMap &drawables)
     addStaticCollidingBox(drawables, envState, {8.35, 0.5, 5.65}, Vector3{platformCenter} + Vector3 {0.0, 1, 0.0}, ColorRgb::DARK_GREY);
 
     // add pedestal for the desired arrangement
-    addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {0.5, -0.5, 0.5}, ColorRgb::LAYOUT);
+    addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {0.5, -0.5, 0.5}, ColorRgb::LAYOUT_DEFAULT);
     addStaticCollidingBox(drawables, envState, {1.5, 0.5, 1.5}, Vector3{leftCenter} + Vector3 {0.5, -0.45, 0.5}, ColorRgb::DARK_GREY);
-    addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {1.0, -0.66, 1.0}, ColorRgb::LAYOUT);
-    addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {1.5, -0.82, 1.5}, ColorRgb::LAYOUT);
+    addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {1.0, -0.66, 1.0}, ColorRgb::LAYOUT_DEFAULT);
+    addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{leftCenter} + Vector3 {1.5, -0.82, 1.5}, ColorRgb::LAYOUT_DEFAULT);
 
     // add pedestal for the working area
     addStaticCollidingBox(drawables, envState, {3, 0.5, 3}, Vector3{rightCenter} + Vector3 {0.5, -0.5, 0.5}, ColorRgb::BLUE);

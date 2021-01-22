@@ -122,13 +122,22 @@ void SokobanScenario::createLayout()
     constexpr int wallHeight = 2;
     auto &g = vg.grid;
 
+    static const std::vector<ColorRgb> floorColors = {
+        ColorRgb::LAYOUT_DEFAULT,
+        ColorRgb::VERY_LIGHT_YELLOW,
+        ColorRgb::VERY_LIGHT_BLUE,
+        ColorRgb::VERY_LIGHT_ORANGE,
+        ColorRgb::DARK_GREY,
+    };
+    auto floorColor = randomSample(floorColors, envState.rng);
+
     length = int(currLevel.rows.size());
     for (int x = 0; x < length; ++x) {
         const auto &row = currLevel.rows[x];
         width = std::max(width, int(row.size()));
 
         for (int z = 0; z < int(row.size()); ++z) {
-            g.set({x, 0, z}, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_SOLID | VOXEL_OPAQUE));
+            g.set({x, 0, z}, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_SOLID | VOXEL_OPAQUE, TERRAIN_NONE, floorColor));
 
             if (row[z] == WALL_CELL) {
                 for (int y = 1; y <= wallHeight; ++y)
@@ -230,11 +239,7 @@ std::vector<Magnum::Vector3> SokobanScenario::agentStartingPositions()
 
 void SokobanScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType) {
-        addBoundingBoxes(drawables, envState, bb, voxelType, vg.grid.getVoxelSize());
-        TLOG(INFO) << "Num bounding boxes: " << voxelType << " " << bb.size();
-    }
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, vg.grid.getVoxelSize());
 
     const static std::map<SokobanTerrain, ColorRgb> colors = {
         {SOKO_WALL, ColorRgb::LIGHT_ORANGE},

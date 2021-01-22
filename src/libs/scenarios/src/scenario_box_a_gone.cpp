@@ -53,7 +53,7 @@ void BoxAGoneScenario::reset()
 
     platform = std::make_unique<BoxAGonePlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
-    vg.addPlatform(*platform, true);
+    vg.addPlatform(*platform, ColorRgb::LAYOUT_DEFAULT, ColorRgb::LAYOUT_DEFAULT, true);
 
     const int numLevels = randRange(2, 4, envState.rng);
 
@@ -183,9 +183,7 @@ std::vector<Magnum::Vector3> BoxAGoneScenario::agentStartingPositions()
 
 void BoxAGoneScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType, voxelSize);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, voxelSize);
 
     // add terrain
     for (auto &[terrainType, boxes] : platform->terrainBoxes)

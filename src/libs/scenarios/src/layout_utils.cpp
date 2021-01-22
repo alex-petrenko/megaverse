@@ -14,7 +14,7 @@ using namespace VoxelWorld;
 
 
 // TODO: add different types of layouts
-void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, float voxelSize)
+void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, ColorRgb color, float voxelSize)
 {
     if (voxelType == VOXEL_EMPTY)
         return;
@@ -37,7 +37,7 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
         layoutBox.scale(scale).translate(translation);
 
         if (voxelType & VOXEL_OPAQUE)
-            drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::LAYOUT)); // TODO support multiple layout colors
+            drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(color));
 
         if (voxelType & VOXEL_SOLID) {
             auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1,1,1});

@@ -33,6 +33,14 @@ inline int randRange(int low, int high, Rng &rng)
 }
 
 /**
+ * @return random boolean.
+ */
+inline bool randomBool(Rng &rng)
+{
+    return bool(randRange(0, 2, rng));
+}
+
+/**
  * @return random number in [0, 1)
  */
 inline float frand(Rng &rng)

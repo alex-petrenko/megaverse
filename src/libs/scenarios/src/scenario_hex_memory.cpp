@@ -131,10 +131,6 @@ std::vector<Magnum::Vector3> HexMemoryScenario::agentStartingPositions()
 
 void HexMemoryScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    const static std::vector<ColorRgb> colors{
-        ColorRgb::YELLOW, ColorRgb::LIGHT_GREEN, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
-        ColorRgb::DARK_GREY, ColorRgb::RED, ColorRgb::VIOLET,
-    };
     enum ShapeType {
         SHAPE_PILLAR,
         SHAPE_DIAMOND,
@@ -142,11 +138,11 @@ void HexMemoryScenario::addEpisodeDrawables(DrawablesMap &drawables)
     };
     const static std::vector<ShapeType> shapes = {SHAPE_PILLAR, SHAPE_DIAMOND, SHAPE_SPHERE};
 
-    auto goodObjectColor = randomSample(colors, envState.rng), badObjectColor = goodObjectColor;
+    auto goodObjectColor = randomObjectColor(envState.rng), badObjectColor = goodObjectColor;
     auto goodShape = randomSample(shapes, envState.rng), badShape = goodShape;
 
     while (badObjectColor == goodObjectColor && badShape == goodShape) {
-        badObjectColor = randomSample(colors, envState.rng);
+        badObjectColor = randomObjectColor(envState.rng);
         badShape = randomSample(shapes, envState.rng);
     }
 

@@ -27,6 +27,7 @@ enum PlatformOrientation
 
 enum TerrainType
 {
+    TERRAIN_NONE = 0,
     TERRAIN_EXIT = 1,
     TERRAIN_LAVA = 1 << 1,
     TERRAIN_BUILDING_ZONE = 1 << 2,
@@ -377,11 +378,19 @@ public:
     {
     }
 
+    void init() override
+    {
+        EmptyPlatform::init();
+        length = randRange(6, 12, rng);
+    }
+
     void generate() override
     {
         EmptyPlatform::generate();
 
-        lavaLength = randRange(param(Str::obstaclesMinLava), std::min(param(Str::obstaclesMaxLava) + 1, length - 1), rng);
+        auto minLava = std::min(param(Str::obstaclesMinLava), length - 2);
+        auto maxLava = std::min(param(Str::obstaclesMaxLava) + 1, length - 1);
+        lavaLength = randRange(minLava, maxLava, rng);
 
         const auto lavaX = randRange(1, length - lavaLength, rng);
 

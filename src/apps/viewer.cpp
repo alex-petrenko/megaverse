@@ -40,12 +40,12 @@ using namespace Magnum::Math::Literals;
 using namespace VoxelWorld;
 
 // TODO: CLI parameters
-const bool useVulkan = false;
+const bool useVulkan = true;
 
 // "main" envs
-const auto scenarioName = "ObstaclesHard";  // *
+//const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
-//const auto scenarioName = "Collect";    // *
+const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
@@ -323,7 +323,7 @@ void Viewer::keyPressEvent(KeyEvent& event)
 {
 //    TLOG(INFO) << "Key event " << event.keyName();
 
-    Overview *overview{};
+    Overview *overview;
     if (!useVulkan)
         overview = &(dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview());  // TODO
 

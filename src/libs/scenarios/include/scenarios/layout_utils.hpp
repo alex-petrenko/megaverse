@@ -9,7 +9,15 @@
 
 namespace VoxelWorld
 {
-    void addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, float voxelSize = 1.0f);
+    template<typename VoxelT>
+    void addDrawablesAndCollisionObjectsFromVoxelGrid(VoxelGridComponent<VoxelT> &vg, DrawablesMap &drawables, Env::EnvState &envState, float voxelSize)
+    {
+        auto boundingBoxesByType = vg.toBoundingBoxes();
+        for (auto &[bbInfo, bb] : boundingBoxesByType)
+            addBoundingBoxes(drawables, envState, bb, bbInfo.type, bbInfo.color, voxelSize);
+    }
+
+    void addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, ColorRgb color, float voxelSize);
     void addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb, float voxelSize = 1.0f);
 
     void addStaticCollidingBox(

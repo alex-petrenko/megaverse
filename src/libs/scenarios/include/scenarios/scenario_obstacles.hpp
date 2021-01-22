@@ -133,8 +133,8 @@ public:
         fp[Str::obstaclesMinGap] = 2;
         fp[Str::obstaclesMaxGap] = 3;
 
-        fp[Str::obstaclesMinLava] = 2;
-        fp[Str::obstaclesMaxLava] = 8;
+        fp[Str::obstaclesMinLava] = 3;
+        fp[Str::obstaclesMaxLava] = 10;
 
         fp[Str::obstaclesMinHeight] = 2;
         fp[Str::obstaclesMaxHeight] = 4;

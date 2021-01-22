@@ -125,7 +125,7 @@ void FootballScenario::reset()
 
     layout = std::make_unique<FootballLayout>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams);
     layout->init(), layout->generate();
-    vg.addPlatform(*layout, true);
+    vg.addPlatform(*layout, ColorRgb::LAYOUT_DEFAULT, ColorRgb::LAYOUT_DEFAULT, true);
 }
 
 std::vector<Magnum::Vector3> FootballScenario::agentStartingPositions()
@@ -135,9 +135,7 @@ std::vector<Magnum::Vector3> FootballScenario::agentStartingPositions()
 
 void FootballScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     drawables[DrawableType::Sphere].emplace_back(footballObject, rgb(ColorRgb::ORANGE));
 }

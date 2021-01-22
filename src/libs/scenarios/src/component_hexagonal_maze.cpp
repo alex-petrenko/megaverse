@@ -46,7 +46,7 @@ void HexagonalMazeComponent::addDrawablesAndCollisions(DrawablesMap &drawables, 
 {
     auto scale = Magnum::Vector3{float(xMax - xMin), 0.0001f, float(yMax - yMin)};
     auto translation = Magnum::Vector3{float(xMax + xMin) / 2, 0.0f, float(yMax + yMin) / 2};
-    addStaticCollidingBox(drawables, envState, scale, translation, ColorRgb::LAYOUT);
+    addStaticCollidingBox(drawables, envState, scale, translation, randomLayoutColor(envState.rng));
 
     std::set<std::pair<int, int>> existingWalls;
 

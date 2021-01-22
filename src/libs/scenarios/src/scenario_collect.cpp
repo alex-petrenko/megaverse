@@ -35,6 +35,25 @@ void CollectScenario::reset()
 void CollectScenario::createLandscape()
 {
     auto &rng = envState.rng;
+
+    static const std::vector<ColorRgb> landscapeColors = {
+        ColorRgb::LAYOUT_DEFAULT,
+        ColorRgb::VERY_LIGHT_GREEN,
+        ColorRgb::VERY_LIGHT_BLUE,
+        ColorRgb::VERY_LIGHT_GREY,
+        ColorRgb::VERY_LIGHT_ORANGE,
+        ColorRgb::GREY,
+        ColorRgb::DARK_GREY,
+    };
+    static const std::vector<ColorRgb> floorColors = {
+        ColorRgb::GREY,
+        ColorRgb::DARK_GREY,
+        ColorRgb::DARK_GREY,
+    };
+
+    auto landscapeColor = randomSample(landscapeColors, rng);
+    auto floorColor = randomSample(floorColors, rng);
+
     constexpr static int maxWidth = 42, maxLength = maxWidth;
 
     const int width = randRange(8, maxWidth, rng);
@@ -66,7 +85,7 @@ void CollectScenario::createLandscape()
                 const int yCoordRound = int(lround(yCoord));
                 for (int y = yCoordRound; y >= 1; --y) {
                     VoxelCoords v{x, y, z};
-                    vg.grid.set(v, makeVoxel<VoxelCollect>(VOXEL_SOLID | VOXEL_OPAQUE));
+                    vg.grid.set(v, makeVoxel<VoxelCollect>(VOXEL_SOLID | VOXEL_OPAQUE, TERRAIN_NONE, landscapeColor));
                 }
 
                 spawnHeight[x * width + z] = yCoordRound + 1;
@@ -76,7 +95,7 @@ void CollectScenario::createLandscape()
     // floor
     for (int x = 0; x < length; ++x)
         for (int z = 0; z < width; ++z)
-            vg.grid.set({x, 0, z}, makeVoxel<VoxelCollect>(VOXEL_SOLID | VOXEL_OPAQUE));
+            vg.grid.set({x, 0, z}, makeVoxel<VoxelCollect>(VOXEL_SOLID | VOXEL_OPAQUE, TERRAIN_NONE, floorColor));
 
     std::vector<VoxelCoords> spawnPositions;
 
@@ -114,7 +133,9 @@ void CollectScenario::createLandscape()
     offset += numRewards - numRewardsPlacedRandomly;
 
     std::shuffle(spawnPositions.begin() + offset, spawnPositions.end(), rng);
-    const int numObjects = std::min(randRange(1, int(lround(0.05 * width * length)) + 2, rng), int(spawnPositions.size()) - offset);
+    auto objectsMin = std::max(3, int(length * width * 0.04));
+    auto objectsMax = std::min(objectsMin + 1, int(lround(0.07 * width * length)) + 2);
+    const int numObjects = std::min(randRange(objectsMin, objectsMax, rng), int(spawnPositions.size()) - offset);
     if (offset + numObjects < int(spawnPositions.size())) {
         objectPositions = std::vector<VoxelCoords>(spawnPositions.begin() + offset, spawnPositions.begin() + offset + numObjects);
         offset += numObjects;
@@ -163,11 +184,7 @@ std::vector<Magnum::Vector3> CollectScenario::agentStartingPositions()
 
 void CollectScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType) {
-        addBoundingBoxes(drawables, envState, bb, voxelType);
-        // TLOG(INFO) << "Num bounding boxes: " << voxelType << " " << bb.size();
-    }
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectPositions);
 
