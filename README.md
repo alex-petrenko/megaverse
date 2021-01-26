@@ -25,7 +25,7 @@ sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.154-bionic.list https://
 sudo apt update
 sudo apt install vulkan-sdk
 
-(or install manually from https://vulkan.lunarg.com/sdk/home#linux
+(or install manually from https://vulkan.lunarg.com/sdk/home#linux, then ./setup-env.sh to set envvars) 
 
 6) Install PyBullet
 sudo apt install libbullet-dev 
