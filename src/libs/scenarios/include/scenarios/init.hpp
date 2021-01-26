@@ -40,13 +40,14 @@ void scenariosGlobalInit()
     // "main" envs
     registerScenario<TowerBuildingScenario>("TowerBuilding");
     registerScenario<ObstaclesEasyScenario>("ObstaclesEasy");
-    registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
     registerScenario<ObstaclesHardScenario>("ObstaclesHard");
     registerScenario<CollectScenario>("Collect");
     registerScenario<SokobanScenario>("Sokoban");
     registerScenario<HexMemoryScenario>("HexMemory");
     registerScenario<HexExploreScenario>("HexExplore");
     registerScenario<RearrangeScenario>("Rearrange");
+
+    registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
 }
 
 }
