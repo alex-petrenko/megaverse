@@ -40,15 +40,15 @@ using namespace Magnum::Math::Literals;
 using namespace VoxelWorld;
 
 // TODO: CLI parameters
-const bool useVulkan = true;
+const bool useVulkan = false;
 
 // "main" envs
 //const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
 //const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
-const auto scenarioName = "TowerBuilding";
-//const auto scenarioName = "HexMemory";  // *
+//const auto scenarioName = "TowerBuilding";
+const auto scenarioName = "HexMemory";  // *
 //const auto scenarioName = "HexExplore";  // *
 //const auto scenarioName = "Rearrange";  // *
 
@@ -118,7 +118,7 @@ Viewer::Viewer(const Arguments& arguments)
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
-    const int numAgents = 2;
+    const int numAgents = 3;
 
     FloatParams params{{Str::useUIRewardIndicators, 1.0f}};
 //    FloatParams params{};

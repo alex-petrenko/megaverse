@@ -266,18 +266,18 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
     {
         envDrawables[envIndex] = SceneGraph::DrawableGroup3D{};
 
-        for ([[maybe_unused]] const auto &[k, v] : meshes)
-            arrayResize(instanceData[k], 0);
+        for (const auto &it : meshes)
+            arrayResize(instanceData[it.first], 0);
     }
 
     // drawables
     {
         const auto &drawables = env.getDrawables();
 
-        for ([[maybe_unused]] const auto &[k, v] : meshes) {
-            for (const auto &sceneObjectInfo : drawables.at(k)) {
+        for (auto &it : meshes) {
+            for (const auto &sceneObjectInfo : drawables.at(it.first)) {
                 const auto &color = sceneObjectInfo.color;
-                sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(instanceData[k], color, envDrawables[envIndex]);
+                sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(instanceData[it.first], color, envDrawables[envIndex]);
             }
         }
     }
@@ -316,8 +316,8 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
         .clearDepth(1.0f)
         .bind();
 
-    for ([[maybe_unused]] const auto &[k, v] : meshes)
-        arrayResize(instanceData[k], 0);
+    for (auto &it : meshes)
+        arrayResize(instanceData[it.first], 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
     if (withOverviewCamera && overview.enabled)
