@@ -29,9 +29,10 @@ constexpr int delayMs = 1;  // 1000 / 15;
 //ConstStr scenario = "Collect";
 //ConstStr scenario = "ObstaclesEasy";
 //ConstStr scenario = "ObstaclesHard";
-ConstStr scenario = "Sokoban";
+//ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
 //ConstStr scenario = "Rearrange";
+ConstStr scenario = "HexMemory";
 
 constexpr bool useVulkan = true;
 
@@ -41,7 +42,7 @@ bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 600'000 : 2'000'000'000;
+constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
 
 // don't ask me, this is what waitKeyEx returns
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;

@@ -101,3 +101,12 @@ python -m unittest
 
 ```
 
+Dealing with Docker:
+
+```
+Install docker-compose:
+
+pip install docker-compose
+
+
+```

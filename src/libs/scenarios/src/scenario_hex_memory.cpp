@@ -26,7 +26,7 @@ void HexMemoryScenario::reset()
     goodObjects.clear(), badObjects.clear();
     goodObjectsCollected = 0;
 
-    maze.minSize = 2, maze.maxSize = 10;
+    maze.minSize = 2, maze.maxSize = 8;
     maze.omitWallsProbabilityMin = 0.1f, maze.omitWallsProbabilityMax = 0.95f;
     maze.reset(env, envState);
 
@@ -129,6 +129,28 @@ std::vector<Magnum::Vector3> HexMemoryScenario::agentStartingPositions()
     return pos;
 }
 
+void HexMemoryScenario::spawnAgents(std::vector<AbstractAgent *> &agents)
+{
+    const auto numAgents = env.getNumAgents();
+    const auto verticalLookLimitRad = floatParams[Str::verticalLookLimitRad];
+    const auto agentPositions = agentStartingPositions();
+
+    const auto rotationBetweenAgents = float(2 * M_PI / env.getNumAgents());
+
+    for (int i = 0; i < numAgents; ++i) {
+        auto randomRotation = rotationBetweenAgents * i;
+        auto &agent = envState.scene->addChild<DefaultKinematicAgent>(
+            envState.scene.get(), envState.physics->bWorld,
+            Magnum::Vector3{agentPositions[i]} + Magnum::Vector3{0.5, 0.0, 0.5},
+            randomRotation, verticalLookLimitRad
+        );
+        agent.updateTransform();
+
+        agents.emplace_back(&agent);
+    }
+}
+
+
 void HexMemoryScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
     enum ShapeType {
@@ -166,9 +188,9 @@ void HexMemoryScenario::addEpisodeDrawables(DrawablesMap &drawables)
         {SHAPE_DIAMOND, Vector3 {0.17f, 0.45f, 0.17f} * 2.2},
     };
     std::map<ShapeType, Vector3> shift {
-        {SHAPE_SPHERE, {0, 0.1, 0}},
-        {SHAPE_PILLAR, {0, 0.05, 0}},
-        {SHAPE_DIAMOND, {0, 0.6, 0}},
+        {SHAPE_SPHERE, {0.5, 0.1, 0.5}},
+        {SHAPE_PILLAR, {0.5, 0.05, 0.5}},
+        {SHAPE_DIAMOND, {0.5, 0.6, 0.5}},
     };
 
     // adding landmark object

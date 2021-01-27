@@ -34,6 +34,8 @@ public:
 
     std::vector<Magnum::Vector3> agentStartingPositions() override;
 
+    void spawnAgents(std::vector<AbstractAgent *> &agents) override;
+
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
     [[nodiscard]] float trueObjective(int /*agentIdx*/) const override { return solved; }
