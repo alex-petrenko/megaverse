@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.2-cudnn7-runtime-ubuntu18.04
+FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
 
 # Set up locale to prevent bugs with encoding
 ENV LC_ALL=C.UTF-8 LANG=C.UTF-8
@@ -33,14 +33,21 @@ WORKDIR sample-factory
 
 RUN conda env create -f environment.yml
 RUN conda init bash
-RUN /root/.bashrc
-RUN conda activate sample-factory
-
+SHELL ["conda", "run", "-n", "sample-factory", "/bin/bash", "-c"]
 RUN conda install -c conda-forge bullet
 RUN conda install -c anaconda cmake
 
 WORKDIR /workspace/voxel-rl
 
-ADD ../* .
+COPY src /workspace/voxel-rl/src
+COPY voxel_env /workspace/voxel-rl/voxel_env
+COPY *.cfg /workspace/voxel-rl/
+COPY *.py /workspace/voxel-rl/
 
-RUN ls
+RUN apt-get update || true && apt-get install -y libgl1-mesa-dev libegl1-mesa-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN python setup.py develop
+RUN pip install -e .
+
