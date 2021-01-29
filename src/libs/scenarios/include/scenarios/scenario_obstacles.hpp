@@ -42,6 +42,24 @@ public:
         };
     }
 
+    void initializeDefaultParameters() override
+    {
+        DefaultScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::obstaclesMinNumPlatforms] = 1;
+        fp[Str::obstaclesMaxNumPlatforms] = 2;
+
+        fp[Str::obstaclesMinGap] = 1;
+        fp[Str::obstaclesMaxGap] = 2;
+
+        fp[Str::obstaclesMinLava] = 1;
+        fp[Str::obstaclesMaxLava] = 4;
+
+        fp[Str::obstaclesMinHeight] = 1;
+        fp[Str::obstaclesMaxHeight] = 3;
+    }
+
     float episodeLengthSec() const override;
 
     void agentTouchedLava(int agentIdx);
@@ -61,6 +79,25 @@ private:
     bool solved = false;
 
     int numPlatforms{};
+};
+
+class TestScenario : public ObstaclesScenario
+{
+public:
+    explicit TestScenario(const std::string &name, Env &env, Env::EnvState &envState)
+        : ObstaclesScenario(name, env, envState)
+    {
+    }
+
+    void initializeDefaultParameters() override
+    {
+        ObstaclesScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::obstaclesMinNumPlatforms] = 0;
+        fp[Str::obstaclesMaxNumPlatforms] = 0;
+        fp[Str::episodeLengthSec] = 6.0f;
+    }
 };
 
 class ObstaclesEasyScenario : public ObstaclesScenario

@@ -32,6 +32,7 @@ void scenariosGlobalInit()
 
     // used for debugging and testing
     registerScenario<EmptyScenario>("Empty");
+    registerScenario<TestScenario>("Test");
 
     // experimental
     registerScenario<FootballScenario>("Football");
