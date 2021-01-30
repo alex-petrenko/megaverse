@@ -237,9 +237,9 @@ V4REnvRenderer::Impl::~Impl()
 
 void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 {
+    auto [fov, near, far] = cameraParameters();
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
-        auto [fov, near, far] = cameraParameters();
         renderEnvs[idx] = cmdStream.makeEnvironment(scene, fov, near, far);
     }
 
