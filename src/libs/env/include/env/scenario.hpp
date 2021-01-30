@@ -255,6 +255,15 @@ protected:
      */
     virtual int teamAffinity(int /*agentIdx*/) const { return 0; }
 
+    virtual int teamSize(const int agentIdx) const {
+        const int currTeam = teamAffinity(agentIdx);
+        int size = 0;
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            size += currTeam == teamAffinity(i) ? 1 : 0;
+
+        return size;
+    }
+
     /**
      * Reward all agents, taking teamSpirit into account. Can be useful for collaborative tasks.
      * TeamSpirit is expected to be in [0, 1] range.
@@ -263,10 +272,10 @@ protected:
     virtual void rewardTeam(const std::string &rewardName, int agentIdx, float multiplier)
     {
         const auto currTeam = teamAffinity(agentIdx);
-        rewardAgent(rewardName, agentIdx, multiplier);
+        rewardAgent(rewardName, agentIdx, multiplier * (1 - teamSpirit(agentIdx)));
         for (int i = 0; i < env.getNumAgents(); ++i)
-            if (i != agentIdx && teamAffinity(i) == currTeam)
-                envState.lastReward[i] += getReward(rewardName, i) * teamSpirit(i) * multiplier;
+            if (teamAffinity(i) == currTeam)
+                envState.lastReward[i] += getReward(rewardName, i) * teamSpirit(i) * multiplier / teamSize(i);
     }
 
     /**
