@@ -12,6 +12,8 @@
 namespace VoxelWorld
 {
 
+enum class PlatformType { EMPTY, WALL, LAVA, STEP, GAP };
+
 struct VoxelObstacles : public VoxelWithPhysicsObjects
 {
     Object3D *rewardObject = nullptr;
@@ -46,6 +48,8 @@ public:
     {
         DefaultScenario::initializeDefaultParameters();
 
+        platformTypes = {PlatformType::WALL, PlatformType::LAVA, PlatformType::STEP, PlatformType::GAP};
+
         auto &fp = floatParams;
         fp[Str::obstaclesMinNumPlatforms] = 1;
         fp[Str::obstaclesMaxNumPlatforms] = 2;
@@ -65,6 +69,9 @@ public:
     void agentTouchedLava(int agentIdx);
 
     void agentFell(int agentIdx) override;
+
+protected:
+    std::vector<PlatformType> platformTypes;
 
 private:
     VoxelGridComponent<VoxelObstacles> vg;
@@ -175,6 +182,76 @@ public:
 
         fp[Str::obstaclesMinHeight] = 2;
         fp[Str::obstaclesMaxHeight] = 4;
+    }
+};
+
+class ObstaclesOnePlatformTypeScenario : public ObstaclesScenario
+{
+public:
+    explicit ObstaclesOnePlatformTypeScenario(const std::string &name, Env &env, Env::EnvState &envState)
+        : ObstaclesScenario(name, env, envState)
+    {
+    }
+
+    void initializeDefaultParameters() override
+    {
+        ObstaclesScenario::initializeDefaultParameters();
+
+        auto &fp = floatParams;
+        fp[Str::obstaclesMinNumPlatforms] = 1;
+        fp[Str::obstaclesMaxNumPlatforms] = 4;
+
+        fp[Str::obstaclesMinGap] = 1;
+        fp[Str::obstaclesMaxGap] = 3;
+        fp[Str::obstaclesMinLava] = 2;
+        fp[Str::obstaclesMaxLava] = 10;
+        fp[Str::obstaclesMinHeight] = 1;
+        fp[Str::obstaclesMaxHeight] = 3;
+    }
+};
+
+class ObstaclesOnlyWallsScenario : public ObstaclesOnePlatformTypeScenario
+{
+public:
+    explicit ObstaclesOnlyWallsScenario(const std::string &name, Env &env, Env::EnvState &envState)
+        : ObstaclesOnePlatformTypeScenario(name, env, envState)
+    {
+    }
+
+    void initializeDefaultParameters() override
+    {
+        ObstaclesOnePlatformTypeScenario::initializeDefaultParameters();
+        platformTypes = {PlatformType::WALL};
+    }
+};
+
+class ObstaclesOnlyStepsScenario : public ObstaclesOnePlatformTypeScenario
+{
+public:
+    explicit ObstaclesOnlyStepsScenario(const std::string &name, Env &env, Env::EnvState &envState)
+        : ObstaclesOnePlatformTypeScenario(name, env, envState)
+    {
+    }
+
+    void initializeDefaultParameters() override
+    {
+        ObstaclesOnePlatformTypeScenario::initializeDefaultParameters();
+        platformTypes = {PlatformType::STEP};
+    }
+};
+
+class ObstaclesOnlyLavaScenario : public ObstaclesOnePlatformTypeScenario
+{
+public:
+    explicit ObstaclesOnlyLavaScenario(const std::string &name, Env &env, Env::EnvState &envState)
+        : ObstaclesOnePlatformTypeScenario(name, env, envState)
+    {
+    }
+
+    void initializeDefaultParameters() override
+    {
+        ObstaclesOnePlatformTypeScenario::initializeDefaultParameters();
+        platformTypes = {PlatformType::LAVA};
     }
 };
 

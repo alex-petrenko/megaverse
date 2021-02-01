@@ -49,6 +49,11 @@ void scenariosGlobalInit()
     registerScenario<RearrangeScenario>("Rearrange");
 
     registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
+
+    // auxiliary obstacle scenarios, for "curriculum"
+    registerScenario<ObstaclesOnlyWallsScenario>("ObstaclesWalls");
+    registerScenario<ObstaclesOnlyStepsScenario>("ObstaclesSteps");
+    registerScenario<ObstaclesOnlyLavaScenario>("ObstaclesLava");
 }
 
 }

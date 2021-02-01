@@ -14,22 +14,23 @@ using namespace VoxelWorld;
 namespace
 {
 
-std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int width)
+std::unique_ptr<Platform> makePlatform(
+    const std::vector<PlatformType> &platformTypes, Object3D *parent, Rng &rng,
+    int walls, const FloatParams &params, int width
+)
 {
-    enum { EMPTY, WALL, LAVA, STEP, GAP };
-    const static std::vector<int> supportedPlatforms = {WALL, LAVA, STEP, GAP};
-    const auto platformType = randomSample(supportedPlatforms, rng);
+    const auto platformType = randomSample(platformTypes, rng);
 
     switch (platformType) {
-        case STEP:
+        case PlatformType::STEP:
             return std::make_unique<StepPlatform>(parent, rng, walls, params, width);
-        case GAP:
+        case PlatformType::GAP:
             return std::make_unique<GapPlatform>(parent, rng, walls, params, width);
-        case LAVA:
+        case PlatformType::LAVA:
             return std::make_unique<LavaPlatform>(parent, rng, walls, params, width);
-        case WALL:
+        case PlatformType::WALL:
             return std::make_unique<WallPlatform>(parent, rng, walls, params, width);
-        case EMPTY:
+        case PlatformType::EMPTY:
         default:
             return std::make_unique<EmptyPlatform>(parent, rng, walls, params, width);
     }
@@ -91,9 +92,9 @@ void ObstaclesScenario::reset()
             auto orientation = randomSample(orientations, envState.rng);
             requiredWidth = orientation == ORIENTATION_STRAIGHT ? requiredWidth : -1;
 
-            auto newPlatform = makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
+            auto newPlatform = makePlatform(platformTypes, previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
             while (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= 1)
-                newPlatform = makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
+                newPlatform = makePlatform(platformTypes, previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
 
             if (newPlatform->isMaxDifficulty())
                 ++numMaxDifficultyObstacles;

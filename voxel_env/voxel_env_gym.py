@@ -8,7 +8,7 @@ from gym.spaces import Discrete
 from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
-MULTI_TASK_ENVS = [
+VOXELWORLD8 = [
     'TowerBuilding',
     'ObstaclesEasy',
     'ObstaclesHard',
@@ -19,10 +19,22 @@ MULTI_TASK_ENVS = [
     'Rearrange',
 ]
 
+OBSTACLES_MULTITASK = [
+    'ObstaclesWalls', 'ObstaclesSteps', 'ObstaclesLava', 'ObstaclesEasy', 'ObstaclesHard',
+]
 
-def make_env_multitask(task_idx, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
-    scenario_idx = task_idx % len(MULTI_TASK_ENVS)
-    scenario = MULTI_TASK_ENVS[scenario_idx]
+
+def make_env_multitask(multitask_name, task_idx, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
+    assert 'multitask' in multitask_name
+    if multitask_name.endswith('voxelworld8'):
+        tasks = VOXELWORLD8
+    elif multitask_name.endswith('obstacles'):
+        tasks = OBSTACLES_MULTITASK
+    else:
+        raise NotImplementedError()
+
+    scenario_idx = task_idx % len(tasks)
+    scenario = tasks[scenario_idx]
     print('Multi-task, scenario', scenario_idx, scenario)
     return VoxelEnv(scenario, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
 
