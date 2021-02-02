@@ -30,7 +30,10 @@
 #include <magnum_rendering/windowless_context.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
+#if !defined(CORRADE_TARGET_APPLE)
 #include <v4r_rendering/v4r_env_renderer.hpp>
+#endif
+
 
 
 using namespace Magnum;
@@ -40,13 +43,20 @@ using namespace Magnum::Math::Literals;
 using namespace VoxelWorld;
 
 // TODO: CLI parameters
-const bool useVulkan = true;
+#if defined(CORRADE_TARGET_APPLE)
+constexpr bool useVulkan = false;
+
+static_assert(!useVulkan, "Vulkan not supported on MacOS");
+#else
+constexpr bool useVulkan = true;
+#endif
+
 
 //const auto scenarioName = "Empty";
 //const auto scenarioName = "ObstaclesHard";  // *
-//const auto scenarioName = "ObstaclesEasy";  // *
+const auto scenarioName = "ObstaclesEasy";  // *
 //const auto scenarioName = "Collect";    // *
-const auto scenarioName = "Sokoban";  // *
+// const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
@@ -74,7 +84,7 @@ private:
     void moveOverviewCamera();
 
 private:
-    int width = 1800, height = 1000;
+    int width = 1280, height = 720;
 
     Envs envs;
     std::unique_ptr<EnvRenderer> renderer;
@@ -132,14 +142,19 @@ Viewer::Viewer(const Arguments& arguments)
     ctx = std::make_unique<WindowRenderingContext>();
 
     if (useVulkan) {
+#if defined (CORRADE_TARGET_APPLE)
+        TLOG(ERROR) << "Vulkan not supported on MacOS";
+#else
         framebuffer = GL::Framebuffer{Range2Di{{}, Vector2i{width, height}}};
         framebuffer.attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer);
         framebuffer.mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}}});
         framebuffer.clearColor(0, Color3{0.125f}).clearDepth(1.0).bind();
 
         renderer = std::make_unique<V4REnvRenderer>(envs, width, height);
+#endif
     } else {
-        renderer = std::make_unique<MagnumEnvRenderer>(envs, width, height, withDebugDraw, true, ctx.get());
+        Magnum::Vector2i fbSize = framebufferSize();
+        renderer = std::make_unique<MagnumEnvRenderer>(envs, fbSize[0], fbSize[1], withDebugDraw, true, ctx.get());
         dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
     }
 
@@ -152,6 +167,7 @@ Viewer::Viewer(const Arguments& arguments)
 void Viewer::drawEvent()
 {
     if (useVulkan) {
+#if !defined(CORRADE_TARGET_APPLE)
         for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
             renderer->preDraw(*envs[envIdx], envIdx);
 
@@ -178,7 +194,7 @@ void Viewer::drawEvent()
         // blit color to window framebuffer
         GL::defaultFramebuffer.bind();
         GL::AbstractFramebuffer::blit(framebuffer, GL::defaultFramebuffer, {{}, framebuffer.viewport().size()}, GL::FramebufferBlit::Color);
-
+#endif
     } else {
         auto &magnumRenderer = dynamic_cast<MagnumEnvRenderer &>(*renderer);
 

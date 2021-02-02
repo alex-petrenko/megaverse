@@ -15,8 +15,10 @@
 
 #include <scenarios/init.hpp>
 
-#include <v4r_rendering/v4r_env_renderer.hpp>
 #include <magnum_rendering/magnum_env_renderer.hpp>
+#if !defined(CORRADE_TARGET_APPLE)
+#include <v4r_rendering/v4r_env_renderer.hpp>
+#endif
 
 
 namespace py = pybind11;
@@ -75,7 +77,11 @@ public:
     {
         if (!vectorEnv) {
             if (useVulkan)
+#if defined (CORRADE_TARGET_APPLE)
+                TLOG(ERROR) << "Vulkan not supported on MacOS";
+#else
                 renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
+#endif
             else
                 renderer = std::make_unique<MagnumEnvRenderer>(envs, w, h);
 
@@ -153,7 +159,11 @@ public:
     {
         if (!hiresRenderer) {
             if (useVulkan)
-                hiresRenderer = std::make_unique<V4REnvRenderer>(envs, renderW, renderH);
+#if defined (CORRADE_TARGET_APPLE)
+                TLOG(ERROR) << "Vulkan not supported on MacOS";
+#else
+                renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
+#endif
             else
                 hiresRenderer = std::make_unique<MagnumEnvRenderer>(envs, renderW, renderH);
 

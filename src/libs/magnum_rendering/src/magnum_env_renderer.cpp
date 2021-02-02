@@ -17,7 +17,6 @@
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/Context.h>
-#include <Magnum/Platform/WindowlessEglApplication.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/BulletIntegration/DebugDraw.h>
 
@@ -26,9 +25,8 @@
 #include <rendering/render_utils.hpp>
 
 #include <magnum_rendering/windowless_context.hpp>
+
 #include <magnum_rendering/magnum_env_renderer.hpp>
-
-
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;

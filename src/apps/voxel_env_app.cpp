@@ -1,5 +1,7 @@
 #include <cstdlib>
 
+#include <Corrade/configure.h>
+
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
@@ -15,7 +17,9 @@
 
 #include <scenarios/init.hpp>
 
+#if !defined(CORRADE_TARGET_APPLE)
 #include <v4r_rendering/v4r_env_renderer.hpp>
+#endif
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
@@ -31,7 +35,14 @@ ConstStr scenario = "Collect";
 //ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
 
+
+#if defined(CORRADE_TARGET_APPLE)
+constexpr bool useVulkan = false;
+
+static_assert(!useVulkan, "Vulkan not supported on MacOS");
+#else
 constexpr bool useVulkan = true;
+#endif
 
 constexpr bool viz = true;
 constexpr bool hires = false;
@@ -204,7 +215,11 @@ int main(int argc, char** argv)
 
     std::unique_ptr<EnvRenderer> renderer;
     if constexpr (useVulkan)
-        renderer = std::make_unique<V4REnvRenderer>(envs, W, H);
+#if defined (CORRADE_TARGET_APPLE)
+        TLOG(ERROR) << "Vulkan not supported on MacOS";
+#else
+        renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
+#endif
     else {
         const auto debugDraw = false;
         renderer = std::make_unique<MagnumEnvRenderer>(envs, W, H, debugDraw);
