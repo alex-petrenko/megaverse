@@ -57,9 +57,9 @@ const bool useVulkan = false;
 //const auto scenarioName = "Empty";
 //const auto scenarioName = "BoxAGone";
 //const auto scenarioName = "Football";
-//const auto scenarioName = "ObstaclesWalls";
+const auto scenarioName = "ObstaclesWalls";
 //const auto scenarioName = "ObstaclesSteps";
-const auto scenarioName = "ObstaclesLava";
+//const auto scenarioName = "ObstaclesLava";
 
 
 class Viewer: public Magnum::Platform::Application

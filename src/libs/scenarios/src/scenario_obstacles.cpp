@@ -87,23 +87,27 @@ void ObstaclesScenario::reset()
         platformsComponent.addPlatform(std::move(startPlatformPtr));
 
         int numMaxDifficultyObstacles = 0;
+        int numAllowedMaxDifficultyObstacles = int(floatParams.at(Str::obstaclesNumAllowedMaxDifficulty));
 
         for (int i = 0; i < numPlatforms; ++i) {
             auto orientation = randomSample(orientations, envState.rng);
             requiredWidth = orientation == ORIENTATION_STRAIGHT ? requiredWidth : -1;
 
-            auto newPlatform = makePlatform(platformTypes, previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
-            while (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= 1)
+            std::unique_ptr<Platform> newPlatform;
+            while (!newPlatform || (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= numAllowedMaxDifficultyObstacles)) {
                 newPlatform = makePlatform(platformTypes, previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
+                newPlatform->init();
+            }
 
-            if (newPlatform->isMaxDifficulty())
+            if (newPlatform->isMaxDifficulty()) {
+                TLOG(INFO) << "Max difficulty obstacle!";
                 ++numMaxDifficultyObstacles;
+            }
 
             platformsComponent.addPlatform(std::move(newPlatform));
 
             auto platform = platforms.back().get();
-
-            platform->init(), platform->generate();
+            platform->generate();
 
             switch (orientation) {
                 case ORIENTATION_STRAIGHT:
@@ -217,7 +221,7 @@ void ObstaclesScenario::step()
             if (voxelData->rewardObject) {
                 voxelData->rewardObject->translate({1000, 1000, 1000});
                 voxelData->rewardObject = nullptr;  // remove the reference, but the object will be later cleaned when we destroy the scene graph
-                rewardTeam(Str::obstacleExtraReward, i, 1);
+                rewardTeam(Str::obstaclesExtraReward, i, 1);
             }
         }
     }

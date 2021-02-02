@@ -364,7 +364,10 @@ public:
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(wallHeight - 1); }
 
-    bool isMaxDifficulty() const override { return wallHeight >= param(Str::obstaclesMaxHeight); }
+    bool isMaxDifficulty() const override
+    {
+        return wallHeight >= param(Str::obstaclesMaxHeight);
+    }
 
 private:
     int wallHeight{};
@@ -382,15 +385,14 @@ public:
     {
         EmptyPlatform::init();
         length = randRange(6, 12, rng);
+        auto minLava = std::min(param(Str::obstaclesMinLava), length - 2);
+        auto maxLava = std::min(param(Str::obstaclesMaxLava) + 1, length - 1);
+        lavaLength = randRange(minLava, maxLava, rng);
     }
 
     void generate() override
     {
         EmptyPlatform::generate();
-
-        auto minLava = std::min(param(Str::obstaclesMinLava), length - 2);
-        auto maxLava = std::min(param(Str::obstaclesMaxLava) + 1, length - 1);
-        lavaLength = randRange(minLava, maxLava, rng);
 
         const auto lavaX = randRange(1, length - lavaLength, rng);
 
@@ -446,7 +448,10 @@ public:
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(stepHeight - 1); }
 
-    bool isMaxDifficulty() const override { return stepHeight >= param(Str::obstaclesMaxHeight); }
+    bool isMaxDifficulty() const override
+    {
+        return stepHeight >= param(Str::obstaclesMaxHeight);
+    }
 
 private:
     int stepHeight{};
