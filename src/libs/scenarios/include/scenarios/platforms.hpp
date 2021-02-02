@@ -27,6 +27,7 @@ enum PlatformOrientation
 
 enum TerrainType
 {
+    TERRAIN_NONE = 0,
     TERRAIN_EXIT = 1,
     TERRAIN_LAVA = 1 << 1,
     TERRAIN_BUILDING_ZONE = 1 << 2,
@@ -112,11 +113,10 @@ public:
 struct MagnumAABB
 {
     MagnumAABB(Object3D &parent, const BoundingBox &bb)
+    : min(&parent.addChild<Object3D>())
+    , max(&parent.addChild<Object3D>())
     {
-        min = &parent.addChild<Object3D>();
         min->translateLocal(Magnum::Vector3(bb.min));
-
-        max = &parent.addChild<Object3D>();
         max->translateLocal(Magnum::Vector3(bb.max));
     }
 
@@ -245,12 +245,12 @@ public:
 
     virtual int requiresMovableBoxesToTraverse() { return 0; }
 
-    virtual std::vector<VoxelCoords> generateMovableBoxes(int numBoxesToGenerate)
+    virtual std::vector<VoxelCoords> generateObjectPositions(int numPositionsToGenerate)
     {
         std::vector<VoxelCoords> boxes;
         constexpr int maxAttempts = 10;
 
-        for (int i = 0; i < numBoxesToGenerate; ++i) {
+        for (int i = 0; i < numPositionsToGenerate; ++i) {
             for (int attempt = 0; attempt < 10; ++attempt) {
                 const int x = randRange(1, length - 1, rng);
                 const int z = randRange(1, width - 1, rng);
@@ -279,6 +279,8 @@ public:
     {
         return int(lround(params.at(str)));
     }
+
+    virtual bool isMaxDifficulty() const { return false; }
 
 public:
     Rng &rng;
@@ -339,7 +341,7 @@ public:
     {
         EmptyPlatform::init();
 
-        wallHeight = randRange(1, 5, rng);
+        wallHeight = randRange(param(Str::obstaclesMinHeight), param(Str::obstaclesMaxHeight) + 1, rng);
         height = randRange(wallHeight + 4, wallHeight + 6, rng);
     }
 
@@ -361,6 +363,11 @@ public:
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(wallHeight - 1); }
 
+    bool isMaxDifficulty() const override
+    {
+        return wallHeight >= param(Str::obstaclesMaxHeight);
+    }
+
 private:
     int wallHeight{};
 };
@@ -373,18 +380,28 @@ public:
     {
     }
 
+    void init() override
+    {
+        EmptyPlatform::init();
+        length = randRange(6, 12, rng);
+        auto minLava = std::min(param(Str::obstaclesMinLava), length - 2);
+        auto maxLava = std::min(param(Str::obstaclesMaxLava) + 1, length - 1);
+        lavaLength = randRange(minLava, maxLava, rng);
+    }
+
     void generate() override
     {
         EmptyPlatform::generate();
 
-        lavaLength = randRange(2, std::min(4, length - 1), rng);
         const auto lavaX = randRange(1, length - lavaLength, rng);
 
         MagnumAABB lava{*root, {lavaX, 1, 1, lavaX + lavaLength, 2, width - 1}};
         terrainBoxes[TERRAIN_LAVA].emplace_back(lava);
     }
 
-    int requiresMovableBoxesToTraverse() override { return std::max(0, std::min(2, lavaLength - 2)); }
+    int requiresMovableBoxesToTraverse() override { return std::max(1, lavaLength - 1); }
+
+    bool isMaxDifficulty() const override { return lavaLength >= param(Str::obstaclesMaxLava); }
 
 private:
     int lavaLength{};
@@ -402,8 +419,8 @@ public:
     {
         EmptyPlatform::init();
 
-        stepHeight = randRange(1, 4, rng);
-        height = randRange(stepHeight + 3, stepHeight + 5, rng);
+        stepHeight = randRange(param(Str::obstaclesMinHeight), param(Str::obstaclesMaxHeight) + 1, rng);
+        height = randRange(stepHeight + 2, stepHeight + 5, rng);
     }
 
     void generate() override
@@ -429,6 +446,11 @@ public:
     }
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(stepHeight - 1); }
+
+    bool isMaxDifficulty() const override
+    {
+        return stepHeight >= param(Str::obstaclesMaxHeight);
+    }
 
 private:
     int stepHeight{};
@@ -467,7 +489,7 @@ public:
 
     int requiresMovableBoxesToTraverse() override { return triangularNumber(std::max(0, gap - 2)); }
 
-    std::vector<VoxelCoords> generateMovableBoxes(int numBoxesToGenerate) override
+    std::vector<VoxelCoords> generateObjectPositions(int numPositionsToGenerate) override
     {
         std::vector<VoxelCoords> boxes, candidates;
 
@@ -478,7 +500,7 @@ public:
                 candidates.emplace_back(x, 1, z);
             }
 
-        for (int i = 0; i < numBoxesToGenerate; ++i) {
+        for (int i = 0; i < numPositionsToGenerate; ++i) {
             const auto v = randomSample(candidates, rng);
             const int y = ++occupancy[{v.x(), v.z()}];
             boxes.emplace_back(v.x(), y, v.z());

@@ -1,0 +1,53 @@
+FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
+
+# Set up locale to prevent bugs with encoding
+ENV LC_ALL=C.UTF-8 LANG=C.UTF-8
+
+RUN apt-get update || true && apt-get install -y \
+    wget curl git zlib1g-dev \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    python3 python3-pip cmake \
+    && wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add - \
+    && wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.162-bionic.list https://packages.lunarg.com/vulkan/1.2.162/lunarg-vulkan-1.2.162-bionic.list \
+    && apt update || true && apt install -y vulkan-sdk \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN vulkaninfo
+
+RUN cd /usr/bin \
+    && ln -s python3 python \
+    && ln -s pip3 pip
+
+RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b && \
+    rm Miniconda3-latest-Linux-x86_64.sh
+
+ENV PATH=/miniconda/bin:${PATH}
+RUN conda update -y conda && conda --version
+
+WORKDIR /workspace
+
+RUN git clone https://github.com/alex-petrenko/sample-factory.git
+WORKDIR sample-factory
+
+RUN conda env create -f environment.yml
+RUN conda init bash
+SHELL ["conda", "run", "-n", "sample-factory", "/bin/bash", "-c"]
+RUN conda install -c conda-forge bullet
+RUN conda install -c anaconda cmake
+
+WORKDIR /workspace/voxel-rl
+
+COPY src /workspace/voxel-rl/src
+COPY voxel_env /workspace/voxel-rl/voxel_env
+COPY *.cfg /workspace/voxel-rl/
+COPY *.py /workspace/voxel-rl/
+
+RUN apt-get update || true && apt-get install -y libgl1-mesa-dev libegl1-mesa-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN python setup.py develop
+RUN pip install -e .
+

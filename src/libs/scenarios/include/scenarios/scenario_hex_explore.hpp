@@ -22,12 +22,20 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    [[nodiscard]] float trueObjective() const override { return 0; }//TODO
+    [[nodiscard]] float trueObjective(int) const override { return solved; }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {{Str::exploreSolved, 5.0f}};
+    }
 
 private:
+    bool solved = false;
+
     HexagonalMazeComponent maze;
 
     Magnum::Vector3 rewardObjectCoords;
+    Object3D *rewardObject = nullptr;
 };
 
 }

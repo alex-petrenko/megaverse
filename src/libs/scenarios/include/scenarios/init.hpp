@@ -32,18 +32,28 @@ void scenariosGlobalInit()
 
     // used for debugging and testing
     registerScenario<EmptyScenario>("Empty");
+    registerScenario<TestScenario>("Test");
 
+    // experimental
+    registerScenario<FootballScenario>("Football");
+    registerScenario<BoxAGoneScenario>("BoxAGone");
+
+    // "main" envs
     registerScenario<TowerBuildingScenario>("TowerBuilding");
     registerScenario<ObstaclesEasyScenario>("ObstaclesEasy");
-    registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
     registerScenario<ObstaclesHardScenario>("ObstaclesHard");
-    registerScenario<FootballScenario>("Football");
     registerScenario<CollectScenario>("Collect");
     registerScenario<SokobanScenario>("Sokoban");
-    registerScenario<BoxAGoneScenario>("BoxAGone");
     registerScenario<HexMemoryScenario>("HexMemory");
     registerScenario<HexExploreScenario>("HexExplore");
     registerScenario<RearrangeScenario>("Rearrange");
+
+    registerScenario<ObstaclesMediumScenario>("ObstaclesMedium");
+
+    // auxiliary obstacle scenarios, for "curriculum"
+    registerScenario<ObstaclesOnlyWallsScenario>("ObstaclesWalls");
+    registerScenario<ObstaclesOnlyStepsScenario>("ObstaclesSteps");
+    registerScenario<ObstaclesOnlyLavaScenario>("ObstaclesLava");
 }
 
 }

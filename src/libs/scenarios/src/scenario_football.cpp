@@ -116,7 +116,7 @@ void FootballScenario::reset()
 
     collisionShape = std::make_unique<btSphereShape>(2.0);
 
-    auto &object = envState.scene->addChild<DynamicRigidBody>(envState.scene.get(), 1.0f, collisionShape.get(), envState.physics.bWorld);
+    auto &object = envState.scene->addChild<DynamicRigidBody>(envState.scene.get(), 1.0f, collisionShape.get(), envState.physics->bWorld);
     auto translation = Magnum::Vector3{5, 5, 5};
     object.scale({0.5, 0.5, 0.5}).translate(translation);
     object.syncPose();
@@ -125,7 +125,7 @@ void FootballScenario::reset()
 
     layout = std::make_unique<FootballLayout>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams);
     layout->init(), layout->generate();
-    vg.addPlatform(*layout, true);
+    vg.addPlatform(*layout, ColorRgb::LAYOUT_DEFAULT, ColorRgb::LAYOUT_DEFAULT, true);
 }
 
 std::vector<Magnum::Vector3> FootballScenario::agentStartingPositions()
@@ -135,9 +135,7 @@ std::vector<Magnum::Vector3> FootballScenario::agentStartingPositions()
 
 void FootballScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     drawables[DrawableType::Sphere].emplace_back(footballObject, rgb(ColorRgb::ORANGE));
 }

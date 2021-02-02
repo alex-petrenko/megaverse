@@ -114,7 +114,6 @@ public:
     void preDraw(Env &env, int envIndex);
     void draw(Envs &envs);
     void drawAgent(Env &env, int envIndex, int agentIdx, bool readToBuffer);
-    void postDraw(Env &env, int envIndex);
 
     uint8_t * getObservation(int envIdx, int agentIdx);
 
@@ -265,18 +264,18 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
     {
         envDrawables[envIndex] = SceneGraph::DrawableGroup3D{};
 
-        for ([[maybe_unused]] const auto &[k, v] : meshes)
-            arrayResize(instanceData[k], 0);
+        for (const auto &it : meshes)
+            arrayResize(instanceData[it.first], 0);
     }
 
     // drawables
     {
         const auto &drawables = env.getDrawables();
 
-        for ([[maybe_unused]] const auto &[k, v] : meshes) {
-            for (const auto &sceneObjectInfo : drawables.at(k)) {
+        for (auto &it : meshes) {
+            for (const auto &sceneObjectInfo : drawables.at(it.first)) {
                 const auto &color = sceneObjectInfo.color;
-                sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(instanceData[k], color, envDrawables[envIndex]);
+                sceneObjectInfo.objectPtr->addFeature<CustomDrawable>(instanceData[it.first], color, envDrawables[envIndex]);
             }
         }
     }
@@ -315,14 +314,15 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
         .clearDepth(1.0f)
         .bind();
 
-    for ([[maybe_unused]] const auto &[k, v] : meshes)
-        arrayResize(instanceData[k], 0);
+    for (auto &it : meshes)
+        arrayResize(instanceData[it.first], 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
     if (withOverviewCamera && overview.enabled)
         activeCameraPtr = overview.camera;
 
-    // TODO!!! implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
+    // Would be nice to implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
+    // Although Vulkan renderer is so much faster, who cares
     activeCameraPtr->draw(envDrawables[envIndex]);
 
     shaderInstanced.setProjectionMatrix(activeCameraPtr->projectionMatrix());
@@ -347,10 +347,6 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
         framebuffer.mapForRead(GL::Framebuffer::ColorAttachment{0});
         framebuffer.read(framebuffer.viewport(), *agentImageViews[envIndex][agentIdx]);
     }
-}
-
-void MagnumEnvRenderer::Impl::postDraw(Env &, int)
-{
 }
 
 void MagnumEnvRenderer::Impl::draw(Envs &envs)
@@ -388,11 +384,6 @@ void MagnumEnvRenderer::preDraw(Env &env, int envIdx)
 void MagnumEnvRenderer::draw(Envs &envs)
 {
     pimpl->draw(envs);
-}
-
-void MagnumEnvRenderer::postDraw(Env &env, int envIdx)
-{
-    pimpl->postDraw(env, envIdx);
 }
 
 void MagnumEnvRenderer::drawAgent(Env &env, int envIndex, int agentIndex, bool readToBuffer)

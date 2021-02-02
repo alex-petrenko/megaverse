@@ -3,6 +3,8 @@
 #include <scenarios/layout_utils.hpp>
 #include <scenarios/scenario_hex_memory.hpp>
 
+using namespace Magnum;
+
 using namespace VoxelWorld;
 
 
@@ -11,25 +13,21 @@ HexMemoryScenario::HexMemoryScenario(const std::string &name, Env &env, Env::Env
 , maze{*this}
 , vg{*this, 100, 0, 0, 0, 1.0}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::memoryCollectGood, 1.0f},
-        {Str::memoryCollectBad, -1.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 HexMemoryScenario::~HexMemoryScenario() = default;
 
 void HexMemoryScenario::reset()
 {
+    solved = false;
+
     vg.reset(env, envState);
 
     goodObjects.clear(), badObjects.clear();
     goodObjectsCollected = 0;
 
-    maze.minSize = 2, maze.maxSize = 10;
+    maze.minSize = 2, maze.maxSize = 8;
+    maze.omitWallsProbabilityMin = 0.1f, maze.omitWallsProbabilityMax = 0.95f;
     maze.reset(env, envState);
 
     auto &hexMaze = maze.getMaze();
@@ -69,7 +67,7 @@ void HexMemoryScenario::reset()
 
     std::shuffle(objectCoordinates.begin(), objectCoordinates.end(), envState.rng);
 
-    float cellWithObjectsFraction = frand(envState.rng) * 0.2f + 0.1f;
+    float cellWithObjectsFraction = frand(envState.rng) * 0.25f + 0.2f;
     long numCellsWithGoodObjects = std::lround(ceilf(cellWithObjectsFraction * objectCoordinates.size()));
     long numCellsWithBadObjects = std::lround(ceilf(cellWithObjectsFraction * objectCoordinates.size()));
 
@@ -82,8 +80,10 @@ void HexMemoryScenario::step()
 {
     constexpr auto collectRadius = 1.0f;
 
-    if (goodObjectsCollected >= int(goodObjects.size()))
-        envState.done = true;
+    if (goodObjectsCollected >= int(goodObjects.size()) && !solved) {
+        solved = true;
+        doneWithTimer();
+    }
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
@@ -106,7 +106,8 @@ void HexMemoryScenario::step()
                     const auto distance = (pillarPos - t).length();
                     if (distance < collectRadius) {
                         // collecting the object
-                        envState.lastReward[i] += it->good ? rewardShaping[i].at(Str::memoryCollectGood) : rewardShaping[i].at(Str::memoryCollectBad);
+                        rewardTeam(it->good ? Str::memoryCollectGood : Str::memoryCollectBad, i, 1);
+
                         goodObjectsCollected += it->good;
                         it->object->translate({100, 100, 100});
                         it = voxel->objects.erase(it);
@@ -128,28 +129,81 @@ std::vector<Magnum::Vector3> HexMemoryScenario::agentStartingPositions()
     return pos;
 }
 
+void HexMemoryScenario::spawnAgents(std::vector<AbstractAgent *> &agents)
+{
+    const auto numAgents = env.getNumAgents();
+    const auto verticalLookLimitRad = floatParams[Str::verticalLookLimitRad];
+    const auto agentPositions = agentStartingPositions();
+
+    const auto rotationBetweenAgents = float(2 * M_PI / env.getNumAgents());
+
+    for (int i = 0; i < numAgents; ++i) {
+        auto randomRotation = rotationBetweenAgents * i;
+        auto &agent = envState.scene->addChild<DefaultKinematicAgent>(
+            envState.scene.get(), envState.physics->bWorld,
+            Magnum::Vector3{agentPositions[i]} + Magnum::Vector3{0.5, 0.0, 0.5},
+            randomRotation, verticalLookLimitRad
+        );
+        agent.updateTransform();
+
+        agents.emplace_back(&agent);
+    }
+}
+
+
 void HexMemoryScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    const static std::vector<ColorRgb> pillarColors{
-        ColorRgb::YELLOW, ColorRgb::LIGHT_GREEN, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
-        ColorRgb::DARK_GREY, ColorRgb::RED, ColorRgb::VIOLET,
+    enum ShapeType {
+        SHAPE_PILLAR,
+        SHAPE_DIAMOND,
+        SHAPE_SPHERE,
     };
+    const static std::vector<ShapeType> shapes = {SHAPE_PILLAR, SHAPE_DIAMOND, SHAPE_SPHERE};
 
-    const auto goodPillarColor = randomSample(pillarColors, envState.rng);
-    ColorRgb badPillarColor = randomSample(pillarColors, envState.rng);
-    while (badPillarColor == goodPillarColor)
-        badPillarColor = randomSample(pillarColors, envState.rng);
+    auto goodObjectColor = randomObjectColor(envState.rng), badObjectColor = goodObjectColor;
+    auto goodShape = randomSample(shapes, envState.rng), badShape = goodShape;
+
+    while (badObjectColor == goodObjectColor && badShape == goodShape) {
+        badObjectColor = randomObjectColor(envState.rng);
+        badShape = randomSample(shapes, envState.rng);
+    }
 
     maze.addDrawablesAndCollisions(drawables, envState);
 
+    auto addObject = [&](ShapeType shape, ColorRgb color, const Magnum::Vector3 &loc, const Magnum::Vector3 &scale) -> Object3D * {
+        switch (shape) {
+            case SHAPE_SPHERE:
+                return addSphere(drawables, *envState.scene, loc, scale, color);
+            case SHAPE_DIAMOND:
+                return addDiamond(drawables, *envState.scene, loc, scale, color);
+            case SHAPE_PILLAR:
+            default:
+                return addPillar(drawables, *envState.scene, loc, scale, color);
+        }
+    };
+
+    std::map<ShapeType, Vector3> scale {
+        {SHAPE_SPHERE, {0.75, 0.75, 0.75}},
+        {SHAPE_PILLAR, {0.5, 2, 0.5}},
+        {SHAPE_DIAMOND, Vector3 {0.17f, 0.45f, 0.17f} * 2.2},
+    };
+    std::map<ShapeType, Vector3> shift {
+        {SHAPE_SPHERE, {0.5, 0.1, 0.5}},
+        {SHAPE_PILLAR, {0.5, 0.05, 0.5}},
+        {SHAPE_DIAMOND, {0.5, 0.6, 0.5}},
+    };
+
     // adding landmark object
-    Magnum::Vector3 landmarkScale {0.5, 2, 0.5}, objectScale = landmarkScale * 0.5f;
-    addPillar(drawables, *envState.scene, landmarkLocation, landmarkScale, goodPillarColor);
+    addObject(goodShape, goodObjectColor, landmarkLocation + shift[goodShape], scale[goodShape]);
+    float objScale = 0.6;
 
     bool isGood = true;
     for (const auto &objects : {goodObjects, badObjects}) {
         for (const auto &coord : objects) {
-            const auto object = addPillar(drawables, *envState.scene, coord, objectScale, isGood ? goodPillarColor : badPillarColor);
+            auto shape = isGood ? goodShape : badShape;
+            auto color = isGood ? goodObjectColor : badObjectColor;
+
+            const auto object = addObject(shape, color, coord + shift[shape] * objScale, scale[shape] * objScale);
 
             const auto voxelCoord = vg.grid.getCoords(coord);
             if (!vg.grid.hasVoxel(voxelCoord))

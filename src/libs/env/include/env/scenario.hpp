@@ -45,9 +45,7 @@ public:
         auto &scenarioRegistry = getScenarioRegistry();
         const auto scenarioNameLowercase = toLower(scenarioName);
         scenarioRegistry[scenarioNameLowercase] = factoryFunc;
-        TLOG(INFO) << "Scenario " << scenarioNameLowercase << " registered!";
-        TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
-        TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
+        TLOG(INFO) << "Scenario " << scenarioNameLowercase << " registered! " << scenarioRegistry.size() << " scenarios.";
     }
 
     static ScenarioPtr create(const std::string &scenarioName, Env &env, Env::EnvState &envState)
@@ -55,10 +53,10 @@ public:
         const auto scenarioNameLowercase = toLower(scenarioName);
         const auto &scenarioRegistry = getScenarioRegistry();
 
-        TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
-        TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
-        for (const auto &[k,v]: scenarioRegistry)
-            TLOG(INFO) << k;
+        // TLOG(INFO) << "Num scenarios " << scenarioRegistry.size();
+        // TLOG(INFO) << "Registry ptr " << &scenarioRegistry;
+        // for (const auto &[k,v]: scenarioRegistry)
+        //    TLOG(INFO) << k;
 
         if (!scenarioRegistry.count(scenarioNameLowercase))
             TLOG(FATAL) << "Unknown scenario " << scenarioNameLowercase << ". Did you register the scenario in scenariosGlobalInit()?";
@@ -79,6 +77,21 @@ public:
  * Interface between environment and scenario objects.
  */
 public:
+    /**
+     * Called once after construction.
+     * We can't call virtual methods in the ctor, therefore this method can be useful.
+     */
+    virtual void init()
+    {
+        initializeDefaultParameters();
+
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            rewardShaping[i] = {{Str::teamSpirit, 0.0f}};
+
+        // initialize default reward shaping specific for this scenario
+        initRewardShaping();
+    }
+
     /**
      * Called on the episode boundary.
      */
@@ -134,7 +147,7 @@ public:
      * @return unshaped reward for the current episode (i.e. 1 for success 0 for failure)
      * Typically called only on the last frame of the episode, when done=True
      */
-    virtual float trueObjective() const = 0;
+    virtual float trueObjective(int agentIdx) const = 0;
 
     /**
      * @return episode duration in seconds, this can be overridden
@@ -143,6 +156,31 @@ public:
     {
         const auto episodeLengthSec = getFloatParams().at(Str::episodeLengthSec);
         return episodeLengthSec;
+    }
+
+    /**
+     * Each environment should provide the reward shaping dictionary which allows changing rewards through API
+     * (even during training)
+     */
+    virtual RewardShaping defaultRewardShaping() const = 0;
+
+    /**
+     * Utility function, used by initRewardShaping() implementations.
+     * Replaces rewards in rewardShaping with those provided by rs (or adds them to the map if they don't exist).
+     */
+    void initRewards(const RewardShaping &rs)
+    {
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            for (const auto &[rewardName, value] : rs)
+                rewardShaping[i][rewardName] = value;
+    }
+
+    /**
+     * Initialize default reward shaping for this scenario. Should be overloaded by all scenarios.
+     */
+    virtual void initRewardShaping()
+    {
+        initRewards(defaultRewardShaping());
     }
 
     /**
@@ -170,6 +208,7 @@ public:
         auto &fp = floatParams;
         fp[Str::episodeLengthSec] = 60.0f;
         fp[Str::verticalLookLimitRad] = 0.2f;
+        fp[Str::useUIRewardIndicators] = 0.0f;
     }
 
     virtual const FloatParams & getFloatParams() const { return floatParams; }
@@ -183,14 +222,84 @@ public:
             floatParams[k] = v;
     }
 
-private:
+protected:
+    /**
+     * @return reward for a specific string key for a particular agent in the environment
+     * Since different agents can be controlled by different policies, they can also have different reward shaping
+     * associated with them (e.g. when we're doing PBT).
+     * Therefore we need a separate rewardShaping dictionary for every agent.
+     */
+    virtual float getReward(const std::string &rewardName, int agentIdx) const
+    {
+        return rewardShaping[agentIdx].at(rewardName);
+    }
 
+    /**
+     * Reward agent individually, do not reward other agents even if teamSpirit > 0
+     */
+    virtual void rewardAgent(const std::string &rewardName, int agentIdx, float multiplier)
+    {
+        envState.lastReward[agentIdx] += getReward(rewardName, agentIdx) * multiplier;
+    }
+
+    /**
+     * @return teamSpirit configured for this agent, can be used in collaborative tasks.
+     */
+    virtual float teamSpirit(int agentIdx) const
+    {
+        return getReward(Str::teamSpirit, agentIdx);
+    }
+
+    /**
+     * Which team the agent belongs to. By default all agents are on the same team.
+     */
+    virtual int teamAffinity(int /*agentIdx*/) const { return 0; }
+
+    virtual int teamSize(const int agentIdx) const {
+        const int currTeam = teamAffinity(agentIdx);
+        int size = 0;
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            size += currTeam == teamAffinity(i) ? 1 : 0;
+
+        return size;
+    }
+
+    /**
+     * Reward all agents, taking teamSpirit into account. Can be useful for collaborative tasks.
+     * TeamSpirit is expected to be in [0, 1] range.
+     * The agent whose action was rewarded gets the full reward. Other agents get teamSpirit * reward.
+     */
+    virtual void rewardTeam(const std::string &rewardName, int agentIdx, float multiplier)
+    {
+        const auto currTeam = teamAffinity(agentIdx);
+        rewardAgent(rewardName, agentIdx, multiplier * (1 - teamSpirit(agentIdx)));
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            if (teamAffinity(i) == currTeam)
+                envState.lastReward[i] += getReward(rewardName, i) * teamSpirit(i) * multiplier / teamSize(i);
+    }
+
+    /**
+     * Reward all agents equally, regardless of team spirit.
+     */
+    virtual void rewardAll(const std::string &rewardName, float multiplier)
+    {
+        for (int i = 0; i < env.getNumAgents(); ++i)
+            rewardAgent(rewardName, i, multiplier);
+    }
+
+    /**
+     * Easy way to terminate the episode a bit more smoothly, rather than abruptly (i.e. on the same frame the last
+     * reward was collected).
+     */
+    void doneWithTimer(float remainingTimeSeconds=0.3f)
+    {
+        envState.currEpisodeSec = std::max(envState.currEpisodeSec, episodeLengthSec() - remainingTimeSeconds);
+    }
+
+private:
     static ScenarioRegistry & getScenarioRegistry()
     {
         static ScenarioRegistry scenarioRegistry;
-        static int counter = 0;
-        ++counter;
-        TLOG(INFO) << counter << " " << &scenarioRegistry;
         return scenarioRegistry;
     }
 

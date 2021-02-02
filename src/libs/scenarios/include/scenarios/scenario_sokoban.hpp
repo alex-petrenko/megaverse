@@ -36,7 +36,16 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return float(solved); }
+    float trueObjective(int) const override { return float(solved); }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::sokobanBoxOnTarget, 1.0f},
+            {Str::sokobanBoxLeavesTarget, -1.0f},
+            {Str::sokobanAllBoxesOnTarget, 10.0f},
+        };
+    }
 
     void initializeDefaultParameters() override
     {
@@ -47,7 +56,7 @@ public:
 private:
     std::string boxobanLevelsDir{};
     std::vector<std::string> allSokobanLevelFiles{};
-    constexpr static ConstStr levelSet = "unfiltered", levelSplit = "train";  // TODO: make configurable
+    constexpr static ConstStr levelSet = "unfiltered", levelSplit = "train";
 
     std::vector<SokobanLevel> levels;
     SokobanLevel currLevel;

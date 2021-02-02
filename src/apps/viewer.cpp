@@ -51,18 +51,24 @@ static_assert(!useVulkan, "Vulkan not supported on MacOS");
 constexpr bool useVulkan = true;
 #endif
 
-
-//const auto scenarioName = "Empty";
+// "main" envs
 //const auto scenarioName = "ObstaclesHard";  // *
-const auto scenarioName = "ObstaclesEasy";  // *
+//const auto scenarioName = "ObstaclesEasy";  // *
 //const auto scenarioName = "Collect";    // *
-// const auto scenarioName = "Sokoban";  // *
-//const auto scenarioName = "BoxAGone";
+//const auto scenarioName = "Sokoban";  // *
 //const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
 //const auto scenarioName = "HexExplore";  // *
-//const auto scenarioName = "Football";
 //const auto scenarioName = "Rearrange";  // *
+
+// test and experimental envs
+//const auto scenarioName = "Test";
+//const auto scenarioName = "Empty";
+//const auto scenarioName = "BoxAGone";
+//const auto scenarioName = "Football";
+const auto scenarioName = "ObstaclesWalls";
+//const auto scenarioName = "ObstaclesSteps";
+//const auto scenarioName = "ObstaclesLava";
 
 
 class Viewer: public Magnum::Platform::Application
@@ -125,9 +131,11 @@ Viewer::Viewer(const Arguments& arguments)
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
-    const int numAgents = 2;
+    const int numAgents = 3;
 
-    auto env = std::make_unique<Env>(scenarioName, numAgents);
+    FloatParams params{{Str::useUIRewardIndicators, 1.0f}};
+//    FloatParams params{};
+    auto env = std::make_unique<Env>(scenarioName, numAgents, params);
 //    env->seed(42);
     env->reset();
 
@@ -141,19 +149,19 @@ Viewer::Viewer(const Arguments& arguments)
 
     ctx = std::make_unique<WindowRenderingContext>();
 
+    const Magnum::Vector2i fbSize = framebufferSize();
     if (useVulkan) {
 #if defined (CORRADE_TARGET_APPLE)
         TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-        framebuffer = GL::Framebuffer{Range2Di{{}, Vector2i{width, height}}};
+        framebuffer = GL::Framebuffer{Range2Di{{}, fbSize}};
         framebuffer.attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer);
         framebuffer.mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}}});
         framebuffer.clearColor(0, Color3{0.125f}).clearDepth(1.0).bind();
 
-        renderer = std::make_unique<V4REnvRenderer>(envs, width, height);
+        renderer = std::make_unique<V4REnvRenderer>(envs, fbSize[0], fbSize[1], nullptr);
 #endif
     } else {
-        Magnum::Vector2i fbSize = framebufferSize();
         renderer = std::make_unique<MagnumEnvRenderer>(envs, fbSize[0], fbSize[1], withDebugDraw, true, ctx.get());
         dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
     }
@@ -233,11 +241,13 @@ void Viewer::tickEvent() {
             TLOG(INFO) << "Done!";
 
         std::ostringstream s;
-        for (int i = 0; i < env->getNumAgents(); ++i)
-            s << " " << env->getTotalReward(i);
+        for (int i = 0; i < env->getNumAgents(); ++i) s << " " << env->getTotalReward(i);
+        TLOG(INFO) << "Total reward: " << s.str();
+        s.clear();
 
-        TLOG(INFO) << "Total reward " << s.str();
-        TLOG(INFO) << "True objective " << env->trueObjective();
+        for (int i = 0; i < env->getNumAgents(); ++i) s << " " << env->trueObjective(i);
+        TLOG(INFO) << "True objectives: " << s.str();
+
         env->reset();
         renderer->reset(*env, activeEnv);
         forceReset = false;
@@ -332,7 +342,7 @@ void Viewer::keyPressEvent(KeyEvent& event)
 {
 //    TLOG(INFO) << "Key event " << event.keyName();
 
-    Overview *overview{};
+    Overview *overview;
     if (!useVulkan)
         overview = &(dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview());  // TODO
 
@@ -360,7 +370,8 @@ void Viewer::keyPressEvent(KeyEvent& event)
             }
             break;
         case KeyEvent::Key::Enter:
-            dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
+            if (!useVulkan)
+                dynamic_cast<MagnumEnvRenderer &>(*renderer).toggleDebugMode();
             break;
         case KeyEvent::Key::Esc:
             exit(0);

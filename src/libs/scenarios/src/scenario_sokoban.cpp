@@ -39,15 +39,6 @@ SokobanScenario::SokobanScenario(const std::string &name, Env &env, Env::EnvStat
 : DefaultScenario(name, env, envState)
 , vg{*this, 100, 0, 0, 0, 2}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::sokobanBoxOnTarget, 1.0f},
-        {Str::sokobanBoxLeavesTarget, -1.0f},
-        {Str::sokobanAllBoxesOnTarget, 10.0f},
-    };
-
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
-
     auto envvarBoxobanPath = std::getenv("BOXOBAN_LEVELS");
     if (!envvarBoxobanPath || strlen(envvarBoxobanPath) == 0)
         TLOG(DEBUG) << "Could not find Boxoban levels through the environment variable 'BOXOBAN_LEVELS'";
@@ -131,13 +122,22 @@ void SokobanScenario::createLayout()
     constexpr int wallHeight = 2;
     auto &g = vg.grid;
 
+    static const std::vector<ColorRgb> floorColors = {
+        ColorRgb::LAYOUT_DEFAULT,
+        ColorRgb::VERY_LIGHT_YELLOW,
+        ColorRgb::VERY_LIGHT_BLUE,
+        ColorRgb::VERY_LIGHT_ORANGE,
+        ColorRgb::DARK_GREY,
+    };
+    auto floorColor = randomSample(floorColors, envState.rng);
+
     length = int(currLevel.rows.size());
     for (int x = 0; x < length; ++x) {
         const auto &row = currLevel.rows[x];
         width = std::max(width, int(row.size()));
 
         for (int z = 0; z < int(row.size()); ++z) {
-            g.set({x, 0, z}, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_SOLID | VOXEL_OPAQUE));
+            g.set({x, 0, z}, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_SOLID | VOXEL_OPAQUE, TERRAIN_NONE, floorColor));
 
             if (row[z] == WALL_CELL) {
                 for (int y = 1; y <= wallHeight; ++y)
@@ -167,14 +167,7 @@ void SokobanScenario::createLayout()
 
 void SokobanScenario::step()
 {
-    // TODO: in multi-agent envs they can push each other and move unmovable boxes. Fix
-
-    if (numBoxesOnGoal == numBoxes) {
-        TLOG(INFO) << "Done!";
-        solved = envState.done = true;
-        for (int i = 0; i < env.getNumAgents(); ++i)
-            envState.lastReward[i] += rewardShaping[i].at(Str::sokobanAllBoxesOnTarget);  // TODO: team spirit rewards?
-    }
+    // TODO: in multi-agent envs they can push each other and thus move unmovable boxes. Fix
 
     // moving the boxes logic
     for (int i = 0; i < env.getNumAgents(); ++i) {
@@ -217,11 +210,19 @@ void SokobanScenario::step()
                             if (voxel->terrain != SOKO_GOAL && desiredPosVoxel->terrain == SOKO_GOAL) {
                                 // moved the box to the goal position
                                 ++numBoxesOnGoal;
-                                envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxOnTarget);
+                                rewardTeam(Str::sokobanBoxOnTarget, i, 1);
+
+                                if (numBoxesOnGoal == numBoxes && !solved) {
+                                    TLOG(INFO) << "Done!";
+                                    solved = true;
+                                    rewardTeam(Str::sokobanAllBoxesOnTarget, i, 1);
+                                    doneWithTimer();
+                                }
+
                             } else if (voxel->terrain == SOKO_GOAL && desiredPosVoxel->terrain != SOKO_GOAL) {
                                 // moved the box from the goal position - penalty
                                 --numBoxesOnGoal;
-                                envState.lastReward[i] += rewardShaping[i].at(Str::sokobanBoxLeavesTarget);
+                                rewardTeam(Str::sokobanBoxLeavesTarget, i, 1);
                             }
                         }
                     }
@@ -238,11 +239,7 @@ std::vector<Magnum::Vector3> SokobanScenario::agentStartingPositions()
 
 void SokobanScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType) {
-        addBoundingBoxes(drawables, envState, bb, voxelType, vg.grid.getVoxelSize());
-        TLOG(INFO) << "Num bounding boxes: " << voxelType << " " << bb.size();
-    }
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, vg.grid.getVoxelSize());
 
     const static std::map<SokobanTerrain, ColorRgb> colors = {
         {SOKO_WALL, ColorRgb::LIGHT_ORANGE},
@@ -284,11 +281,11 @@ void SokobanScenario::addEpisodeDrawables(DrawablesMap &drawables)
         drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::DARK_BLUE));
 
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
-        auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         collisionBox.setCollisionScale({1.15, 3, 1.15});
         collisionBox.setCollisionOffset({0, 0.6, 0});
         collisionBox.syncPose();
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         if (!g.hasVoxel({box}))
             g.set(box, makeVoxel<VoxelWithPhysicsObjects>(VOXEL_EMPTY));

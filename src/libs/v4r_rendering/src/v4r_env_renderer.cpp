@@ -29,7 +29,7 @@ using namespace Magnum::Math::Literals;
 using namespace VoxelWorld;
 
 
-class V4RDrawable : public SceneGraph::Drawable3D
+class VoxelWorld::V4RDrawable : public SceneGraph::Drawable3D
 {
 public:
     explicit V4RDrawable(
@@ -72,7 +72,7 @@ struct ColorCompare
 struct V4REnvRenderer::Impl
 {
 public:
-    explicit Impl(Envs &envs, int w, int h);
+    explicit Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer);
 
     ~Impl();
 
@@ -84,9 +84,14 @@ public:
 
     void preDraw(Env &env, int envIdx);
     void draw(Envs &envs);
-    void postDraw(Env &env, int envIdx);
 
     const uint8_t * getObservation(int envIdx, int agentIdx) const;
+
+    /**
+     * Assuming preDraw() and draw() were already called for this renderer before the next renderer in the chain
+     * requests dirty drawables.
+     */
+    std::vector<int> getDirtyDrawables(int envIdx) const { return dirtyDrawables[envIdx]; }
 
 private:
     int batchSize(const Envs &envs) const
@@ -112,16 +117,19 @@ public:
 //    vector<uint8_t> cpuFrames;
 
     std::vector<SceneGraph::DrawableGroup3D> envDrawables;
+    std::vector<std::vector<V4RDrawable *>> v4rDrawables;  // to avoid dynamic cast on every step()
+    std::vector<std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>>> drawablesObjects;
+
+    std::vector<std::vector<int>> dirtyDrawables;
 
     std::map<Color3, int, ColorCompare> materialIndices;
-
-    // Fake camera for only object transformations
-    std::vector<SceneGraph::Camera3D *> fakeCameras;
 
 //    v4r::RenderDoc rdoc;
 
     std::map<DrawableType, Trade::MeshData> meshData;
     std::map<DrawableType, int> meshIndices;
+
+    V4REnvRenderer *previousRenderer = nullptr;
 };
 
 using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
@@ -129,27 +137,22 @@ using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
                                  v4r::DataSource::Uniform,
                                  v4r::DataSource::Uniform>;
 
-V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h)
-    : renderer({ 0, 1, 1,
-                 static_cast<uint32_t>(batchSize(envs)),
-                 static_cast<uint32_t>(w),
-                 static_cast<uint32_t>(h), 
-                 glm::mat4(1.f) },
-               v4r::RenderFeatures<Pipeline> {
-                   v4r::RenderOptions::CpuSynchronization
-               }),
-    loader(renderer.makeLoader()),
-    cmdStream(renderer.makeCommandStream()),
-    renderEnvs(),
-    framebufferSize(w, h)
+V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer)
+    : renderer({ 0, 1, 1, uint32_t(batchSize(envs)), uint32_t(w), uint32_t(h), glm::mat4(1.f) },
+               v4r::RenderFeatures<Pipeline> {v4r::RenderOptions::CpuSynchronization})
+    , loader(renderer.makeLoader())
+    , cmdStream(renderer.makeCommandStream())
+    , renderEnvs()
+    , framebufferSize(w, h)
+    , previousRenderer{previousRenderer}
     // cpuFrames(),
     // rdoc()
 {
     // Need to reserve numAgents here so references remain stable
     envs.reserve(size_t(batchSize(envs)));
 
-    envDrawables = std::vector<SceneGraph::DrawableGroup3D>(envs.size());
-    fakeCameras = std::vector<SceneGraph::Camera3D *>(envs.size());
+    auto numEnvs = envs.size();
+    envDrawables.resize(numEnvs), drawablesObjects.resize(numEnvs), v4rDrawables.resize(numEnvs), dirtyDrawables.resize(numEnvs);
 
 //    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x * framebufferSize.y * 4 * env.getNumAgents()));
 
@@ -234,12 +237,9 @@ V4REnvRenderer::Impl::~Impl()
 
 void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 {
-    auto fakeCameraObj = &env.getScene().addChild<Object3D>();
-    fakeCameras[envIdx] = &fakeCameraObj->addFeature<SceneGraph::Camera3D>();
-
+    auto [fov, near, far] = cameraParameters();
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
-        auto [fov, near, far] = cameraParameters();
         renderEnvs[idx] = cmdStream.makeEnvironment(scene, fov, near, far);
     }
 
@@ -265,13 +265,28 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
                 }
             }
         }
+
+        drawablesObjects[envIdx].clear(), v4rDrawables[envIdx].clear();
+
+        for (size_t i = 0; i < envDrawables[envIdx].size(); ++i) {
+            auto &object = envDrawables[envIdx][i].object();
+            drawablesObjects[envIdx].emplace_back(object);
+
+            auto v4rDrawable = dynamic_cast<V4RDrawable *>(&envDrawables[envIdx][i]);
+            v4rDrawables[envIdx].emplace_back(v4rDrawable);
+        }
+
+        dirtyDrawables[envIdx].clear();
     }
 }
 
 void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
 {
-    for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
-        const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
+    dirtyDrawables[envIdx].clear();
+
+    const auto numAgents = env.getNumAgents();
+    for (int agentIdx = 0; agentIdx < numAgents; ++agentIdx) {
+        const auto renderEnvIdx = envIdx * numAgents + agentIdx;
         v4r::Environment &renderEnv = renderEnvs[renderEnvIdx];
 
         auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
@@ -280,24 +295,25 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
         renderEnv.setCameraView(view);
     }
 
-    // this does extra work (e.g. multiplications by the fake identity camera transformation)
-//    fakeCameras[envIdx]->draw(envDrawables[envIdx]);
+    if (previousRenderer) {
+        dirtyDrawables[envIdx] = previousRenderer->getDirtyDrawables(envIdx);
+    } else {
+        std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>> dirtyObjects;
 
-    // Collapsing the scene graph transformations "manually", somehow this is barely faster, if at all
-    std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>> objects;
-    objects.reserve(envDrawables[envIdx].size());
+        for (size_t i = 0; i < drawablesObjects[envIdx].size(); ++i) {
+            auto &obj = drawablesObjects[envIdx][i].get();
+            if (obj.isDirty()) {
+                dirtyObjects.emplace_back(drawablesObjects[envIdx][i]);
+                dirtyDrawables[envIdx].emplace_back(i);
+            }
+        }
 
-    for (size_t i = 0; i < envDrawables[envIdx].size(); ++i) {
-        auto &object = envDrawables[envIdx][i].object();
-        objects.emplace_back(object);
+        // Collapsing the scene graph transformations "manually", somehow this is barely faster, if at all
+        SceneGraph::AbstractObject3D::setClean(dirtyObjects);
     }
 
-    SceneGraph::AbstractObject3D::setClean(objects);
-
-    for (size_t i = 0; i < envDrawables[envIdx].size(); ++i) {
-        auto &drawable = dynamic_cast<V4RDrawable &>(envDrawables[envIdx][i]);
-        drawable.updateAbsoluteTransformation();
-    }
+    for (auto &drawableIdx : dirtyDrawables[envIdx])
+        v4rDrawables[envIdx][drawableIdx]->updateAbsoluteTransformation();
 }
 
 void V4REnvRenderer::Impl::draw(Envs &)
@@ -319,10 +335,6 @@ void V4REnvRenderer::Impl::draw(Envs &)
 //        abort();
 }
 
-void V4REnvRenderer::Impl::postDraw(Env &, int)
-{
-}
-
 const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) const
 {
     const auto startIdx = envIdx * pixelsPerEnv;
@@ -330,9 +342,9 @@ const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) c
 //    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
-V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h)
+V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer)
 {
-    pimpl = std::make_unique<Impl>(envs, w, h);
+    pimpl = std::make_unique<Impl>(envs, w, h, previousRenderer);
 }
 
 V4REnvRenderer::~V4REnvRenderer() = default;
@@ -353,12 +365,12 @@ void V4REnvRenderer::draw(Envs &envs)
     pimpl->draw(envs);
 }
 
-void V4REnvRenderer::postDraw(Env &env, int envIndex)
-{
-    pimpl->postDraw(env, envIndex);
-}
-
 const uint8_t * V4REnvRenderer::getObservation(int envIdx, int agentIdx) const
 {
     return pimpl->getObservation(envIdx, agentIdx);
+}
+
+std::vector<int> V4REnvRenderer::getDirtyDrawables(int envIdx) const
+{
+    return pimpl->getDirtyDrawables(envIdx);
 }

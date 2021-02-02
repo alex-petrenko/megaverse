@@ -14,22 +14,23 @@ using namespace VoxelWorld;
 namespace
 {
 
-std::unique_ptr<Platform> makePlatform(Object3D *parent, Rng &rng, int walls, const FloatParams &params, int width)
+std::unique_ptr<Platform> makePlatform(
+    const std::vector<PlatformType> &platformTypes, Object3D *parent, Rng &rng,
+    int walls, const FloatParams &params, int width
+)
 {
-    enum { EMPTY, WALL, LAVA, STEP, GAP };
-    const static std::vector<int> supportedPlatforms = {WALL, LAVA, STEP, GAP};
-    const auto platformType = randomSample(supportedPlatforms, rng);
+    const auto platformType = randomSample(platformTypes, rng);
 
     switch (platformType) {
-        case STEP:
+        case PlatformType::STEP:
             return std::make_unique<StepPlatform>(parent, rng, walls, params, width);
-        case GAP:
+        case PlatformType::GAP:
             return std::make_unique<GapPlatform>(parent, rng, walls, params, width);
-        case LAVA:
+        case PlatformType::LAVA:
             return std::make_unique<LavaPlatform>(parent, rng, walls, params, width);
-        case WALL:
+        case PlatformType::WALL:
             return std::make_unique<WallPlatform>(parent, rng, walls, params, width);
-        case EMPTY:
+        case PlatformType::EMPTY:
         default:
             return std::make_unique<EmptyPlatform>(parent, rng, walls, params, width);
     }
@@ -54,7 +55,9 @@ void ObstaclesScenario::reset()
     objectStackingComponent.reset(env, envState);
     fallDetection.reset(env, envState);
 
-    agentSpawnPositions.clear(), objectSpawnPositions.clear();
+    agentSpawnPositions.clear(), objectSpawnPositions.clear(), rewardSpawnPositions.clear();
+    agentReachedExit = std::vector<bool>(env.getNumAgents(), false);
+    solved = false;
 
     auto &platforms = platformsComponent.platforms;
 
@@ -83,14 +86,28 @@ void ObstaclesScenario::reset()
 
         platformsComponent.addPlatform(std::move(startPlatformPtr));
 
+        int numMaxDifficultyObstacles = 0;
+        int numAllowedMaxDifficultyObstacles = int(floatParams.at(Str::obstaclesNumAllowedMaxDifficulty));
+
         for (int i = 0; i < numPlatforms; ++i) {
             auto orientation = randomSample(orientations, envState.rng);
             requiredWidth = orientation == ORIENTATION_STRAIGHT ? requiredWidth : -1;
 
-            platformsComponent.addPlatform(makePlatform(previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth));
-            auto platform = platforms.back().get();
+            std::unique_ptr<Platform> newPlatform;
+            while (!newPlatform || (newPlatform->isMaxDifficulty() && numMaxDifficultyObstacles >= numAllowedMaxDifficultyObstacles)) {
+                newPlatform = makePlatform(platformTypes, previousPlatform->nextPlatformAnchor, envState.rng, WALLS_WEST | WALLS_EAST, floatParams, requiredWidth);
+                newPlatform->init();
+            }
 
-            platform->init(), platform->generate();
+            if (newPlatform->isMaxDifficulty()) {
+                TLOG(INFO) << "Max difficulty obstacle!";
+                ++numMaxDifficultyObstacles;
+            }
+
+            platformsComponent.addPlatform(std::move(newPlatform));
+
+            auto platform = platforms.back().get();
+            platform->generate();
 
             switch (orientation) {
                 case ORIENTATION_STRAIGHT:
@@ -143,8 +160,10 @@ void ObstaclesScenario::reset()
             break;
     }
 
+    auto layoutColor = randomLayoutColor(envState.rng);
+    auto wallColor = randomLayoutColor(envState.rng);
     for (auto &p : platforms)
-        vg.addPlatform(*p, drawWalls);
+        vg.addPlatform(*p, layoutColor, wallColor, drawWalls);
 
     assert(startPlatform);
     agentSpawnPositions = startPlatform->agentSpawnPoints(env.getNumAgents());
@@ -161,8 +180,17 @@ void ObstaclesScenario::reset()
     }
 
     for (int i = 0; i < int(platforms.size()); ++i) {
-        const auto coords = platforms[i]->generateMovableBoxes(numBoxes[i]);
+        float randomBoxesFraction = frand(envState.rng) * 0.5f;
+        auto randomBoxes = int(lround(randomBoxesFraction * numBoxes[i])) + randRange(0, 2, envState.rng);
+
+        const auto coords = platforms[i]->generateObjectPositions(numBoxes[i] + randomBoxes);
         objectSpawnPositions.insert(objectSpawnPositions.end(), coords.cbegin(), coords.cend());
+    }
+
+    for (int i = 1; i < int(platforms.size()) - 1; ++i) {
+        auto numRewardObjects = randRange(0, 2, envState.rng);
+        const auto coords = platforms[i]->generateObjectPositions(numRewardObjects);
+        rewardSpawnPositions.insert(rewardSpawnPositions.end(), coords.cbegin(), coords.cend());
     }
 }
 
@@ -179,25 +207,35 @@ void ObstaclesScenario::step()
 
         if (vg.grid.hasVoxel(voxel)) {
             const auto terrainType = vg.grid.get(voxel)->terrain;
-            if (terrainType & TERRAIN_EXIT)
+            if (terrainType & TERRAIN_EXIT) {
                 ++numAgentsAtExit;
-            else if (terrainType & TERRAIN_LAVA)
+                if (!agentReachedExit[i]) {
+                    agentReachedExit[i] = true;
+                    rewardTeam(Str::obstaclesAgentAtExit, i, 1);
+                }
+            } else if (terrainType & TERRAIN_LAVA)
                 agentTouchedLava(i);
+
+            // additional reward objects promote exploration
+            auto voxelData = vg.grid.get(voxel);
+            if (voxelData->rewardObject) {
+                voxelData->rewardObject->translate({1000, 1000, 1000});
+                voxelData->rewardObject = nullptr;  // remove the reference, but the object will be later cleaned when we destroy the scene graph
+                rewardTeam(Str::obstaclesExtraReward, i, 1);
+            }
         }
     }
 
-    if (numAgentsAtExit == env.getNumAgents()) {
-        envState.done = true;
-        // TODO reward
+    if (numAgentsAtExit == env.getNumAgents() && !solved) {
+        solved = true;
+        doneWithTimer();
+        rewardAll(Str::obstaclesAllAgentsAtExit, 1);
     }
 }
 
 void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, 1);
 
     // add terrains
     for (auto &platform : platformsComponent.platforms)
@@ -206,17 +244,26 @@ void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
                 addTerrain(drawables, envState, terrainType, bb.boundingBox());
 
     objectStackingComponent.addDrawablesAndCollisions(drawables, envState, objectSpawnPositions);
+
+    for (const auto &pos : rewardSpawnPositions) {
+        auto rewardObject = addDiamond(drawables, *envState.scene, Vector3{pos} + Vector3{0.5, 0.7, 0.5}, Vector3{0.17f, 0.45f, 0.17f} * 0.8f, ColorRgb::GREEN);
+        if (!vg.grid.hasVoxel(pos))
+            vg.grid.set(pos, makeVoxel<VoxelObstacles>(VOXEL_EMPTY));
+
+        vg.grid.get(pos)->rewardObject = rewardObject;
+    }
 }
 
 float ObstaclesScenario::episodeLengthSec() const
 {
     const auto minDuration = Scenario::episodeLengthSec();
-    return std::max(minDuration, float(numPlatforms) * 30);
+    return std::max(minDuration, float(numPlatforms) * 30 + float(objectSpawnPositions.size()) * 1);
 }
 
 void ObstaclesScenario::agentFell(int)
 {
-    // TODO reward
+    // we don't penalize the agent for stepping onto lava or falling
+    // otherwise they get discouraged and never even go near these obstacles
 }
 
 void ObstaclesScenario::agentTouchedLava(int agentIdx)

@@ -15,7 +15,7 @@ void initPrimitives(std::map<DrawableType, Magnum::Trade::MeshData> &meshData);
 
 inline std::tuple<float, float, float> cameraParameters()
 {
-    float fov = 100, near = 0.001, far = 150.0;
+    float fov = 100, near = 0.01, far = 120.0;
     return std::make_tuple(fov, near, far);
 }
 

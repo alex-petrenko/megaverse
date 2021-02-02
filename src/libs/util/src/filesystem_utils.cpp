@@ -27,7 +27,7 @@ bool fileExists(const std::string& filename)
     return f.good();
 }
 
-// TODO: this crashes on GCC 8.4 due to some obscure linking error (let's just wait for a new compiler I guess lol)
+// This crashes on GCC 8.4 due to some obscure linking error (let's just wait for a new compiler I guess lol)
 //std::vector<std::string> listFilesInDirectory(const std::string &dir)
 //{
 //    std::vector<std::string> result;

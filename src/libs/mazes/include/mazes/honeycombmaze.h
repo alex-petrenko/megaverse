@@ -5,10 +5,10 @@
 
 class HoneyCombMaze : public Maze {
  public:
-  HoneyCombMaze(int);
-  void InitialiseGraph();
+  explicit HoneyCombMaze(int);
+  void InitialiseGraph() override;
 
-  virtual std::tuple<double, double, double, double> GetCoordinateBounds() const;
+  std::tuple<double, double, double, double> GetCoordinateBounds() const override;
 
 public:
     bool bordersForEntranceAndExit = true;

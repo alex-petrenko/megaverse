@@ -16,6 +16,8 @@ include(cmake/util.cmake)
 common_settings()
 
 add_subdirectory(3rdparty)
+
+add_compile_options(-Wall -Wextra -Wdelete-non-virtual-dtor -pedantic -Werror)
 add_subdirectory(libs)
 add_subdirectory(apps)
 add_subdirectory(examples)

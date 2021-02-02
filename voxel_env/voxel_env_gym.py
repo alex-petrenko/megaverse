@@ -8,11 +8,43 @@ from gym.spaces import Discrete
 from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
 
 
+VOXELWORLD8 = [
+    'TowerBuilding',
+    'ObstaclesEasy',
+    'ObstaclesHard',
+    'Collect',
+    'Sokoban',
+    'HexMemory',
+    'HexExplore',
+    'Rearrange',
+]
+
+OBSTACLES_MULTITASK = [
+    'ObstaclesWalls', 'ObstaclesSteps', 'ObstaclesLava', 'ObstaclesEasy', 'ObstaclesHard',
+]
+
+
+def make_env_multitask(multitask_name, task_idx, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
+    assert 'multitask' in multitask_name
+    if multitask_name.endswith('voxelworld8'):
+        tasks = VOXELWORLD8
+    elif multitask_name.endswith('obstacles'):
+        tasks = OBSTACLES_MULTITASK
+    else:
+        raise NotImplementedError()
+
+    scenario_idx = task_idx % len(tasks)
+    scenario = tasks[scenario_idx]
+    print('Multi-task, scenario', scenario_idx, scenario)
+    return VoxelEnv(scenario, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
+
+
 class VoxelEnv(gym.Env):
     def __init__(self, scenario_name, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
-        self.is_multiagent = True
-
+        scenario_name = scenario_name.casefold()
         self.scenario_name = scenario_name
+
+        self.is_multiagent = True
 
         set_voxel_env_log_level(2)
 
@@ -35,7 +67,7 @@ class VoxelEnv(gym.Env):
                 else:
                     raise Exception('Params of type %r not supported', type(v))
 
-        # float_params['episodeLengthSec'] = 0.1
+        # float_params['episodeLengthSec'] = 1.0
 
         self.env = VoxelEnvGym(
             self.scenario_name,
@@ -117,8 +149,7 @@ class VoxelEnv(gym.Env):
             done = self.env.is_done(env_i)  # currently no individual done per agent
             dones.extend([done for _ in range(self.num_agents_per_env)])
             if done:
-                true_objective = self.env.true_objective(env_i)
-                infos.extend([dict(true_reward=float(true_objective)) for _ in range(self.num_agents_per_env)])
+                infos.extend([dict(true_reward=float(self.env.true_objective(env_i, j))) for j in range(self.num_agents_per_env)])
             else:
                 infos.extend([{} for _ in range(self.num_agents_per_env)])
 

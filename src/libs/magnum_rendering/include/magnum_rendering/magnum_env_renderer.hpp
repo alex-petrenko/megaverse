@@ -24,14 +24,13 @@ public:
         verticalTiltTransformation = verticalTilt->transformation();
     }
 
-    void restoreTransformation()
+    void restoreTransformation() const
     {
         root->setTransformation(rootTransformation);
         verticalTilt->setTransformation(verticalTiltTransformation);
     }
 
 public:
-    // TODO: we can use only one object, but this works for now
     Object3D *root{}, *verticalTilt{};
 
     Magnum::SceneGraph::Camera3D *camera{};
@@ -58,8 +57,6 @@ public:
     void draw(Envs &envs) override;
 
     void drawAgent(Env &env, int envIdx, int agentIndex, bool readToBuffer);
-
-    void postDraw(Env &env, int envIdx) override;
 
     const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 

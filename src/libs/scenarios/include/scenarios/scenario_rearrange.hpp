@@ -34,13 +34,7 @@ struct ArrangementItem
 
 
         const auto shape = randomSample(shapes, rng);
-
-        const static std::vector<ColorRgb> colors{
-            ColorRgb::YELLOW, ColorRgb::LIGHT_GREEN, ColorRgb::LIGHT_BLUE, ColorRgb::ORANGE,
-            ColorRgb::DARK_GREY, ColorRgb::RED, ColorRgb::VIOLET,
-        };
-
-        const auto color = randomSample(colors, rng);
+        const auto color = randomObjectColor(rng);
 
         ArrangementItem item{shape, color, offset};
         return item;
@@ -98,7 +92,15 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return 0; } // TODO
+    float trueObjective(int /*agentIdx*/) const override { return solved; }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::rearrangeOneMoreObjectCorrectPosition, 1},
+            {Str::rearrangeAllObjectsCorrectPosition, 10},
+        };
+    }
 
     void generateArrangement();
 
@@ -123,10 +125,12 @@ private:
     Arrangement arrangement;
     std::vector<ArrangementObject *> arrangementObjects;
 
-    int matchingObjects = 0;
+    int maxMatchingObjects = 0;
 
     const VoxelCoords leftCenter = {5, 2, 5};
     const VoxelCoords rightCenter = {13, 2, 5};
+
+    bool solved = false;
 };
 
 }

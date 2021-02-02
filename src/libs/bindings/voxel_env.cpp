@@ -1,17 +1,12 @@
-#include <utility>
-
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
 #include <opencv2/core/mat.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 #include <util/tiny_logger.hpp>
 
 #include <env/env.hpp>
-#include <env/scenario.hpp>
 
 #include <scenarios/init.hpp>
 
@@ -36,11 +31,11 @@ class VoxelEnvGym
 {
 public:
     VoxelEnvGym(
-        std::string scenario,
+        const std::string& scenario,
         int w, int h,
         int numEnvs, int numAgentsPerEnv, int numSimulationThreads,
         bool useVulkan,
-        std::map<std::string, float> floatParams
+        const std::map<std::string, float>& floatParams
     )
     : numEnvs{numEnvs}
     , numAgentsPerEnv{numAgentsPerEnv}
@@ -80,7 +75,7 @@ public:
 #if defined (CORRADE_TARGET_APPLE)
                 TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-                renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
+                renderer = std::make_unique<V4REnvRenderer>(envs, w, h, nullptr);
 #endif
             else
                 renderer = std::make_unique<MagnumEnvRenderer>(envs, w, h);
@@ -96,7 +91,7 @@ public:
                 hiresRenderer->reset(*envs[envIdx], envIdx);
     }
 
-    std::vector<int> actionSpaceSizes()
+    std::vector<int> actionSpaceSizes() const
     {
         return Env::actionSpaceSizes;
     }
@@ -162,7 +157,7 @@ public:
 #if defined (CORRADE_TARGET_APPLE)
                 TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-                renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
+                hiresRenderer = std::make_unique<V4REnvRenderer>(envs, renderW, renderH, dynamic_cast<V4REnvRenderer *>(renderer.get()));
 #endif
             else
                 hiresRenderer = std::make_unique<MagnumEnvRenderer>(envs, renderW, renderH);
@@ -179,8 +174,6 @@ public:
         }
 
         hiresRenderer->draw(envs);
-        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
-            hiresRenderer->postDraw(*envs[envIdx], envIdx);
     }
 
     py::array_t<uint8_t> getHiresObservation(int envIdx, int agentIdx)
@@ -189,9 +182,9 @@ public:
         return py::array_t<uint8_t>({renderH, renderW, 4}, obsData, py::none{});  // numpy object does not own memory
     }
 
-    float trueObjective(int envIdx) const
+    float trueObjective(int envIdx, int agentIdx) const
     {
-        return vectorEnv->trueObjectives[envIdx];
+        return vectorEnv->trueObjectives[envIdx][agentIdx];
     }
 
     std::map<std::string, float> getRewardShaping(int envIdx, int agentIdx)
@@ -244,7 +237,7 @@ PYBIND11_MODULE(voxel_env, m)
     m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
 
     py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
-        .def(py::init<std::string, int, int, int, int, int, bool, FloatParams>())
+        .def(py::init<const std::string &, int, int, int, int, int, bool, const FloatParams &>())
         .def("num_agents", &VoxelEnvGym::numAgents)
         .def("action_space_sizes", &VoxelEnvGym::actionSpaceSizes)
         .def("seed", &VoxelEnvGym::seed)

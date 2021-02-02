@@ -20,13 +20,14 @@ public:
 
     void addDrawablesAndCollisions(DrawablesMap &drawables, Env::EnvState &envState) const;
 
-    HoneyCombMaze & getMaze() { return *maze; }
+    HoneyCombMaze & getMaze() const { return *maze; }
 
     [[nodiscard]] float getScale() const { return mazeScale; }
     [[nodiscard]] int getSize() const { return mazeSize; }
 
 public:
     int minSize = 2, maxSize = 10;
+    float omitWallsProbabilityMin = 0.1f, omitWallsProbabilityMax = 0.7f;
 
 private:
     int mazeSize = 0;

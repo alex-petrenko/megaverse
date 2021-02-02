@@ -30,6 +30,26 @@ inline CoordRange startEndCoord(int bboxMin, int bboxMax, int direction)
 using Boxes = std::vector<BoundingBox>;
 
 
+struct BBoxInfo
+{
+public:
+    BBoxInfo() = default;
+    BBoxInfo(uint8_t type, ColorRgb color)
+    : type{type}
+    , color{color}
+    {}
+
+    bool operator <(const BBoxInfo &info) const
+    {
+        return type == info.type ? color < info.color : type < info.type;
+    }
+
+public:
+    uint8_t type{};
+    ColorRgb color{};
+};
+
+
 /**
  * Environments that use voxel grids for layouts or runtime checks should include this component.
  * @tparam VoxelT data stored in each non-empty voxel cell.
@@ -46,12 +66,12 @@ public:
 
     void reset(Env &, Env::EnvState &) override { grid.clear(); }
 
-    void addPlatform(const Platform &p, bool drawWalls = true)
+    void addPlatform(const Platform &p, ColorRgb layoutColor, ColorRgb wallColor, bool drawWalls = true)
     {
         for (auto &bb : p.layoutBoxes)
-            addBoundingBox(bb.boundingBox(), VOXEL_OPAQUE | VOXEL_SOLID);
+            addBoundingBox(bb.boundingBox(), VoxelState::generateType(true, true), TERRAIN_NONE, layoutColor);
         for (auto &bb : p.wallBoxes)
-            addBoundingBox(bb.boundingBox(), VOXEL_SOLID | (drawWalls ? VOXEL_OPAQUE : 0));
+            addBoundingBox(bb.boundingBox(), VoxelState::generateType(true, drawWalls), TERRAIN_NONE, wallColor);
 
         for (auto &[terrainType, v] : p.terrainBoxes)
             for (auto &bb : v)
@@ -81,7 +101,7 @@ public:
                 }
     }
 
-    std::map<int, Boxes> toBoundingBoxes()
+    std::map<BBoxInfo, Boxes> toBoundingBoxes()
     {
         const static Magnum::Vector3i directions[] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
@@ -89,12 +109,13 @@ public:
 
         const auto gridHashMap = grid.getHashMap();
 
-        std::map<int, Boxes> boxesByVoxelType;
+        std::map<BBoxInfo, Boxes> boxesByVoxelType;
 
         for (auto it : gridHashMap) {
             const auto &coord = it.first;
             const auto &voxel = it.second;
             const auto voxelType = voxel.voxelType;
+            const auto color = voxel.color;
 
             if (visited.count(coord)) {
                 // already processed this voxel
@@ -126,7 +147,7 @@ public:
                                 for (auto z = zlim.min; z <= zlim.max; ++z) {
                                     const VoxelCoords coords{x, y, z};
                                     const auto v = grid.get(coords);
-                                    if (!v || v->voxelType != voxelType || visited.count(coords)) {
+                                    if (!v || v->voxelType != voxelType || v->color != color || visited.count(coords)) {
                                         // we could not expand in this direction
                                         canExpand = false;
                                         goto afterLoop;
@@ -151,7 +172,7 @@ public:
             // finished expanding in all possible directions
             // the bounding box defines the parallepiped completely filled by solid voxels
             // we can draw only this parallelepiped (8 vertices) instead of drawing individual voxels, saving a ton of time
-            boxesByVoxelType[voxelType].emplace_back(bbox);
+            boxesByVoxelType[{voxelType, color}].emplace_back(bbox);
         }
 
         return boxesByVoxelType;

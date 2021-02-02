@@ -33,19 +33,14 @@ BoxAGoneScenario::BoxAGoneScenario(const std::string &name, Env &env, Env::EnvSt
 , platformsComponent{*this}
 , fallDetection{*this, vg.grid, *this}
 {
-    std::map<std::string, float> rewardShapingScheme{
-        {Str::boxagoneTouchedFloor,  -0.1f},
-        {Str::boxagonePerStepReward, 0.01f},
-        {Str::boxagoneLastManStanding, 0.05f},
-    };
-    for (int i = 0; i < env.getNumAgents(); ++i)
-        rewardShaping[i] = rewardShapingScheme;
 }
 
 BoxAGoneScenario::~BoxAGoneScenario() = default;
 
 void BoxAGoneScenario::reset()
 {
+    finished = false;
+
     vg.reset(env, envState);
     platformsComponent.reset(env, envState);
     fallDetection.reset(env, envState);
@@ -58,7 +53,7 @@ void BoxAGoneScenario::reset()
 
     platform = std::make_unique<BoxAGonePlatform>(platformsComponent.levelRoot.get(), envState.rng, WALLS_ALL, floatParams, env.getNumAgents());
     platform->init(), platform->generate();
-    vg.addPlatform(*platform, true);
+    vg.addPlatform(*platform, ColorRgb::LAYOUT_DEFAULT, ColorRgb::LAYOUT_DEFAULT, true);
 
     const int numLevels = randRange(2, 4, envState.rng);
 
@@ -102,7 +97,6 @@ void BoxAGoneScenario::reset()
 void BoxAGoneScenario::step()
 {
     int agentsTouchingFloor = 0;
-    int doesNotTouchFloorIdx = -1;
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         auto agent = envState.agents[i];
@@ -112,12 +106,12 @@ void BoxAGoneScenario::step()
         const bool touchesFloor = coords.y() < 3;
 
         if (touchesFloor) {
-            envState.lastReward[i] += rewardShaping[i].at(Str::boxagoneTouchedFloor);
+            rewardTeam(Str::boxagoneTouchedFloor, i, 1);  // the rewards here are purely individual (each agent belongs to their own team, although this can be changed)
             ++agentsTouchingFloor;
         }
         else {
-            envState.lastReward[i] += rewardShaping[i].at(Str::boxagonePerStepReward);
-            doesNotTouchFloorIdx = i;
+            rewardTeam(Str::boxagonePerStepReward, i, 1);
+            agentStates[i].secondsBeforeTouchedFloor = envState.currEpisodeSec;
         }
 
         auto voxel = vg.grid.get(coords);
@@ -176,12 +170,10 @@ void BoxAGoneScenario::step()
         }
     }
 
-    if (agentsTouchingFloor == env.getNumAgents() - 1 && env.getNumAgents() > 1)
-        if (doesNotTouchFloorIdx >= 0)
-            envState.lastReward[doesNotTouchFloorIdx] += rewardShaping[doesNotTouchFloorIdx].at(Str::boxagoneLastManStanding);
-
-    if (agentsTouchingFloor >= env.getNumAgents())
-        envState.done = true;  // TODO: true reward
+    if (agentsTouchingFloor >= env.getNumAgents() && !finished) {
+        finished = true;
+        doneWithTimer();
+    }
 }
 
 std::vector<Magnum::Vector3> BoxAGoneScenario::agentStartingPositions()
@@ -191,9 +183,7 @@ std::vector<Magnum::Vector3> BoxAGoneScenario::agentStartingPositions()
 
 void BoxAGoneScenario::addEpisodeDrawables(DrawablesMap &drawables)
 {
-    auto boundingBoxesByType = vg.toBoundingBoxes();
-    for (auto &[voxelType, bb] : boundingBoxesByType)
-        addBoundingBoxes(drawables, envState, bb, voxelType, voxelSize);
+    addDrawablesAndCollisionObjectsFromVoxelGrid(vg, drawables, envState, voxelSize);
 
     // add terrain
     for (auto &[terrainType, boxes] : platform->terrainBoxes)
@@ -214,13 +204,13 @@ void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
 
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
-        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         object.scale(objScale).translate(translation);
         object.syncPose();
 
         drawables[DrawableType::Box].emplace_back(&object, rgb(color));
 
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         VoxelBoxAGone voxelState;
         voxelState.disappearingPlatform = &object;
@@ -231,12 +221,12 @@ void BoxAGoneScenario::addDisappearingPlatforms(DrawablesMap &drawables)
         auto translation = Magnum::Vector3{300, 300, 300} * voxelSize;
         auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
 
-        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+        auto &object = envState.scene->addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
         object.scale(objScale).translate(translation);
         object.syncPose();
 
         drawables[DrawableType::Box].emplace_back(&object, rgb(ColorRgb::GREEN));
-        envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+        envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 
         extraPlatforms.emplace_back(&object);
     }

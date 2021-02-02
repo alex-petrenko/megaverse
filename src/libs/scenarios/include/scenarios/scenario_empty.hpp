@@ -22,7 +22,9 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return 0; }
+    float trueObjective(int) const override { return 0; }
+
+    RewardShaping defaultRewardShaping() const override { return {}; }
 };
 
 }

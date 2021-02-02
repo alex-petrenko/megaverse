@@ -28,7 +28,9 @@ public:
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return 0; }//TODO
+    float trueObjective(int) const override { return 0; }//TODO
+
+    RewardShaping defaultRewardShaping() const override { return {}; }
 
 private:
     VoxelGridComponent<VoxelState> vg;

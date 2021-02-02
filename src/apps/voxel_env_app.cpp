@@ -27,13 +27,16 @@
 using namespace VoxelWorld;
 
 
-constexpr int delayMs = 20;  // 1000 / 15;
+constexpr int delayMs = 1;  // 1000 / 15;
 
 //ConstStr scenario = "Empty";
-ConstStr scenario = "Collect";
-//ConstStr scenario = "Obstacles";
+//ConstStr scenario = "Collect";
+//ConstStr scenario = "ObstaclesEasy";
+//ConstStr scenario = "ObstaclesHard";
 //ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
+//ConstStr scenario = "Rearrange";
+ConstStr scenario = "HexMemory";
 
 
 #if defined(CORRADE_TARGET_APPLE)
@@ -44,14 +47,13 @@ static_assert(!useVulkan, "Vulkan not supported on MacOS");
 constexpr bool useVulkan = true;
 #endif
 
-constexpr bool viz = true;
+constexpr bool viz = false;
 constexpr bool hires = false;
 bool randomActions = true;
 
 constexpr bool performanceTest = !viz;
 constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? int(1e5) * 8'000 : 2'000'000'000;
-constexpr int maxNumEpisodes = performanceTest ? 2'000'000'000 : 20;
+constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
 
 // don't ask me, this is what waitKeyEx returns
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;
@@ -59,7 +61,7 @@ constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364
 
 std::string windowName(int envIdx, int agentIdx)
 {
-    const auto wname = std::to_string(envIdx) + std::to_string(agentIdx);
+    auto wname = std::to_string(envIdx) + std::to_string(agentIdx);
     return wname;
 }
 
@@ -98,9 +100,6 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
         tprof().pauseTimer("step");
 
         for (int envIdx = 0; envIdx < int(venv.envs.size()); ++envIdx) {
-//            if (venv.done[envIdx])
-//                TLOG(INFO) << "Episode boundary env: " << envIdx << " frames: " << numFrames;
-
             for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
                 const uint8_t *obsData = renderer.getObservation(envIdx, i);
 
@@ -169,7 +168,8 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
             venv.envs.front()->setAction(activeAgent, Action(1 << randomAction));
         }
 
-        ++numFrames;
+        numFrames += numAgents * numEnvs;
+
         if (numFrames > maxNumFrames) {
             shouldExit = true;
             TLOG(INFO) << "Done: " << numFrames;
@@ -201,11 +201,17 @@ int main(int argc, char** argv)
 
     scenariosGlobalInit();
 
-    const int numEnvs = 4;  // to test vectorized env interface
+    /**
+     * FPS single-core benchmark config: 64, 1, 1, default env params (i.e. episode length)
+     * On Core i9 expecting 28000 FPS on "Collect" and 66000 FPS on "Empty"
+     */
+
+    const int numEnvs = 64;  // to test vectorized env interface
     const int numAgentsPerEnv = 1;
     const int numSimulationThreads = 1;
 
-    FloatParams params{{Str::episodeLengthSec, 10.0f}};
+//    FloatParams params{{Str::episodeLengthSec, 0.1f}};
+    FloatParams params{{}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
@@ -218,7 +224,7 @@ int main(int argc, char** argv)
 #if defined (CORRADE_TARGET_APPLE)
         TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-        renderer = std::make_unique<V4REnvRenderer>(envs, w, h);
+        renderer = std::make_unique<V4REnvRenderer>(envs, W, H, nullptr);
 #endif
     else {
         const auto debugDraw = false;
@@ -236,9 +242,8 @@ int main(int argc, char** argv)
     vectorEnv.close();
 
     const auto fps = nFrames / (usecPassed / 1e6);
-    const auto totalNumAgents = envs.front()->getNumAgents() * envs.size();
 
-    TLOG(DEBUG) << "\n\n" << fps * totalNumAgents << " FPS! (" << totalNumAgents << "*" << fps << ") for " << nFrames << " frames";
+    TLOG(DEBUG) << "\n\n" << fps << " FPS! " << nFrames << " frames";
 
     return EXIT_SUCCESS;
 }

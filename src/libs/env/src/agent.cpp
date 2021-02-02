@@ -24,18 +24,17 @@ AbstractAgent::AbstractAgent(Object3D *parent, btDynamicsWorld &bWorld, float ve
 DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &bWorld, const Vector3 &startingPosition,
                                              float rotationRad, float verticalLookLimitRad)
 : AbstractAgent(parent, bWorld, verticalLookLimitRad)
+, cameraObject{&(addChild<Object3D>())}
+, camera{&(cameraObject->addFeature<SceneGraph::Camera3D>())}
+, pickupSpot{&(cameraObject->addChild<Object3D>())}
 {
-    cameraObject = &(addChild<Object3D>());
     // cameraObject.rotateY(0.0_degf);
     cameraObject->translate(Magnum::Vector3{0, 0.41f, 0});
-
-    camera = &(cameraObject->addFeature<SceneGraph::Camera3D>());
 
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
         .setProjectionMatrix(Matrix4::perspectiveProjection(100.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
         .setViewport(GL::defaultFramebuffer.viewport().size());
 
-    pickupSpot = &(cameraObject->addChild<Object3D>());
     pickupSpot->translate({0.0f, -0.44f, -1.0f});
 
     btTransform startTransform;
@@ -58,11 +57,9 @@ DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &
     auto stepHeight = btScalar(0.2f);
     bCharacter = std::make_unique<KinematicCharacterController>(&ghostObject, capsuleShape.get(), stepHeight, btVector3(0.0, 1.0, 0.0));
 
-//    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter); // TODO!!!
-    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter); // TODO!!!
+//    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter);
+    bWorld.addCollisionObject(&ghostObject, btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::StaticFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::DefaultFilter);
     bWorld.addAction(bCharacter.get());
-
-    this->updateTransform();
 }
 
 DefaultKinematicAgent::~DefaultKinematicAgent()
@@ -75,21 +72,27 @@ void DefaultKinematicAgent::updateTransform()
 {
     auto worldTrans = ghostObject.getWorldTransform();
 
-    Vector3 position = Vector3{worldTrans.getOrigin()};
-    const Vector3 axis = Vector3{worldTrans.getRotation().getAxis()};
+    auto position = Vector3{worldTrans.getOrigin()};
+    const auto axis = Vector3{worldTrans.getRotation().getAxis()};
+    const auto normalizedAxis = axis.normalized();
     const Float rotation = worldTrans.getRotation().getAngle();
 
     /* Bullet sometimes reports NaNs for all the parameters and nobody is sure
        why: https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=12080. The body
        gets stuck in that state, so print the warning just once. */
-    if(Math::isNan(position).any() || Math::isNan(axis).any() || Math::isNan(rotation)) {
-        Warning{} << "BulletIntegration::MotionState: Bullet reported NaN transform for" << this << Debug::nospace << ", ignoring";
+    if (Math::isNan(position).any() || Math::isNan(rotation)) {
+        Error{} << "BulletIntegration::MotionState: Bullet reported NaN transform for" << this << Debug::nospace << ", ignoring";
+        return;
+    }
+
+    if (Math::isNan(normalizedAxis).any()) {
+        Error{} << "BulletIntegration::MotionState: NaN normalized axis" << this << Debug::nospace << ", ignoring";
         return;
     }
 
     position += Vector3{0, 0.05f, 0.0f};
 
-    this->resetTransformation().rotate(Rad{rotation}, axis.normalized()).translate(position);
+    this->resetTransformation().rotate(Rad{rotation}, normalizedAxis).translate(position);
 }
 
 void DefaultKinematicAgent::lookLeft(float dt)

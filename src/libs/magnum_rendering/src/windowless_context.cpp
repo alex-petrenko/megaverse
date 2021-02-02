@@ -157,7 +157,6 @@ struct ContextEGL {
     EGLContext context_;
     Mn::Platform::GLContext magnumGlContext_;
     bool isValid_ = false;
-    int gpuDevice_;
 };
 
 struct WindowlessContext::Impl {

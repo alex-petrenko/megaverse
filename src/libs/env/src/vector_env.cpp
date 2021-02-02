@@ -40,7 +40,9 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs, EnvRenderer &rende
     }
 
     done = std::vector<bool>(envs.size());
-    trueObjectives = std::vector<float>(envs.size());
+    trueObjectives = std::vector<std::vector<float>>(envs.size());
+    for (int envIdx = 0; envIdx < numEnvs; ++envIdx)
+        trueObjectives[envIdx] = std::vector<float>(envs[envIdx]->getNumAgents());
 }
 
 void VectorEnv::stepEnv(int envIdx)
@@ -87,32 +89,34 @@ void VectorEnv::executeTask(Task task)
 void VectorEnv::step()
 {
     executeTask(Task::STEP);
-    renderer.draw(envs);
-
-    // do this in background thread?? (tried, isn't faster really with current postDraw)
-    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
-        renderer.postDraw(*envs[envIdx], envIdx);
 
     // do this in background thread??
     for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
         if (envs[envIdx]->isDone()) {
             done[envIdx] = true;
-            trueObjectives[envIdx] = envs[envIdx]->trueObjective();
+            for (int agentIdx = 0; agentIdx < envs[envIdx]->getNumAgents(); ++agentIdx)
+                trueObjectives[envIdx][agentIdx] = envs[envIdx]->trueObjective(agentIdx);
             envs[envIdx]->reset();
             renderer.reset(*envs[envIdx], envIdx);
+            renderer.preDraw(*envs[envIdx], envIdx);
         } else {
             done[envIdx] = false;
         }
     }
+
+    renderer.draw(envs);
 }
 
 void VectorEnv::reset()
 {
     // reset renderer on the main thread
     for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
-        envs[envIdx]->reset(); // TODO parallelize
+        envs[envIdx]->reset();
         renderer.reset(*envs[envIdx], envIdx);
+        renderer.preDraw(*envs[envIdx], envIdx);
     }
+
+    renderer.draw(envs);
 }
 
 void VectorEnv::close()

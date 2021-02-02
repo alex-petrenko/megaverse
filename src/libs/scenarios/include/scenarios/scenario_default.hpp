@@ -73,6 +73,10 @@ public:
         defaultUI.positiveRewardIndicator.resize(numAgents), defaultUI.negativeRewardIndicator.resize(numAgents);
     }
 
+    /**
+     * Override this if your scenario needs agents of a different type or a different logic for spawning agents.
+     * @param agents resulting vector of agents
+     */
     void spawnAgents(std::vector<AbstractAgent *> &agents) override
     {
         const auto numAgents = env.getNumAgents();
@@ -82,10 +86,11 @@ public:
         for (int i = 0; i < numAgents; ++i) {
             auto randomRotation = frand(envState.rng) * Magnum::Constants::pi() * 2;
             auto &agent = envState.scene->addChild<DefaultKinematicAgent>(
-                envState.scene.get(), envState.physics.bWorld,
+                envState.scene.get(), envState.physics->bWorld,
                 Magnum::Vector3{agentPositions[i]} + Magnum::Vector3{0.5, 0.0, 0.5},
                 randomRotation, verticalLookLimitRad
             );
+            agent.updateTransform();
 
             agents.emplace_back(&agent);
         }
@@ -135,18 +140,20 @@ public:
             drawables[DrawableType::Box].emplace_back(&remainingTimeBar, rgb(ColorRgb::BLUE));
             defaultUI.remainingTimeBars[i] = UIElement{&remainingTimeBarAnchor, &remainingTimeBar};
 
-            auto addRewardIndicator = [&](float xOffset, ColorRgb color, std::vector<UIElement> &container) {
-                auto &indicatorAnchor = uiObject.addChild<Object3D>();
-                indicatorAnchor.translate({xOffset, 0, 0});
-                auto &indicator = indicatorAnchor.addChild<Object3D>();
-                indicator.scaleLocal({0.01, 0.03, 0.0001});
-                drawables[DrawableType::Box].emplace_back(&indicator, rgb(color));
-                container[i] = UIElement{&indicatorAnchor, &indicator};
-                container[i].hide();
-            };
+            if (floatParams[Str::useUIRewardIndicators] > 0) {
+                auto addRewardIndicator = [&](float xOffset, ColorRgb color, std::vector<UIElement> &container) {
+                    auto &indicatorAnchor = uiObject.addChild<Object3D>();
+                    indicatorAnchor.translate({xOffset, 0, 0});
+                    auto &indicator = indicatorAnchor.addChild<Object3D>();
+                    indicator.scaleLocal({0.01, 0.03, 0.0001});
+                    drawables[DrawableType::Box].emplace_back(&indicator, rgb(color));
+                    container[i] = UIElement{&indicatorAnchor, &indicator};
+                    container[i].hide();
+                };
 
-            addRewardIndicator(-0.23f, ColorRgb::GREEN, defaultUI.positiveRewardIndicator);
-            addRewardIndicator(0.23f, ColorRgb::RED, defaultUI.negativeRewardIndicator);
+                addRewardIndicator(-0.23f, ColorRgb::GREEN, defaultUI.positiveRewardIndicator);
+                addRewardIndicator(0.23f, ColorRgb::RED, defaultUI.negativeRewardIndicator);
+            }
         }
     }
 
@@ -157,17 +164,19 @@ public:
             auto &bar = defaultUI.remainingTimeBars[i];
             bar.rescale({env.remainingTimeFraction() * defaultUI.initialRemainingTimeBarScale, 0.0015, 0.001});
 
-            if (envState.lastReward[i] > FLT_EPSILON) {
-                defaultUI.positiveRewardIndicator[i].show();
-                defaultUI.positiveRewardIndicator[i].rescale({0.06, 0.04f * envState.lastReward[i], 0.0001});
-                defaultUI.negativeRewardIndicator[i].hide();
-            } else if (envState.lastReward[i] < -FLT_EPSILON) {
-                defaultUI.negativeRewardIndicator[i].show();
-                defaultUI.negativeRewardIndicator[i].rescale({0.06, -0.04f * envState.lastReward[i], 0.0001});
-                defaultUI.positiveRewardIndicator[i].hide();
-            } else {
-                defaultUI.positiveRewardIndicator[i].hide();
-                defaultUI.negativeRewardIndicator[i].hide();
+            if (floatParams[Str::useUIRewardIndicators] > 0) {
+                if (envState.lastReward[i] > FLT_EPSILON) {
+                    defaultUI.positiveRewardIndicator[i].show();
+                    defaultUI.positiveRewardIndicator[i].rescale({0.06, 0.04f * envState.lastReward[i], 0.0001});
+                    defaultUI.negativeRewardIndicator[i].hide();
+                } else if (envState.lastReward[i] < -FLT_EPSILON) {
+                    defaultUI.negativeRewardIndicator[i].show();
+                    defaultUI.negativeRewardIndicator[i].rescale({0.06, -0.04f * envState.lastReward[i], 0.0001});
+                    defaultUI.positiveRewardIndicator[i].hide();
+                } else {
+                    defaultUI.positiveRewardIndicator[i].hide();
+                    defaultUI.negativeRewardIndicator[i].hide();
+                }
             }
         }
     }

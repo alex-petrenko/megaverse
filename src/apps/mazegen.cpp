@@ -233,6 +233,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  int status = 0;
+
   std::cout << "Initialising graph..." << std::endl;
   maze->InitialiseGraph();
   std::cout << "Generating maze..." << std::endl;
@@ -247,7 +249,7 @@ int main(int argc, char *argv[]) {
     maze->PrintMazeGnuplot(outputprefix);
     std::cout << "Rendering maze to '" << outputprefix
               << ".png' using gnuplot..." << std::endl;
-    system(("gnuplot '" + outputprefix + ".plt'").c_str());
+    status = system(("gnuplot '" + outputprefix + ".plt'").c_str());
   }
-  return 0;
+  return status;
 }

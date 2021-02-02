@@ -8,11 +8,13 @@
 
 
 using namespace Magnum;
+using namespace Magnum::Math::Literals;
+
 using namespace VoxelWorld;
 
 
 // TODO: add different types of layouts
-void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, float voxelSize)
+void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, ColorRgb color, float voxelSize)
 {
     if (voxelType == VOXEL_EMPTY)
         return;
@@ -35,15 +37,15 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
         layoutBox.scale(scale).translate(translation);
 
         if (voxelType & VOXEL_OPAQUE)
-            drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(ColorRgb::LAYOUT)); // TODO support multiple layout colors
+            drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(color));
 
         if (voxelType & VOXEL_SOLID) {
             auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1,1,1});
-            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+            auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
 
             collisionBox.syncPose();
 
-            envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+            envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
         }
     }
 }
@@ -75,18 +77,24 @@ void VoxelWorld::addStaticCollidingBox(
     drawables[DrawableType::Box].emplace_back(&layoutBox, rgb(color));
 
     auto bBoxShape = std::make_unique<btBoxShape>(btVector3{1, 1, 1});
-    auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics.bWorld);
+    auto &collisionBox = layoutBox.addChild<RigidBody>(envState.scene.get(), 0.0f, bBoxShape.get(), envState.physics->bWorld);
     collisionBox.syncPose();
-    envState.physics.collisionShapes.emplace_back(std::move(bBoxShape));
+    envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 }
 
 Object3D * VoxelWorld::addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto &rootObject = parent.addChild<Object3D>();
-
     rootObject.scale(scale).translate(translation);
     drawables[DrawableType::Cylinder].emplace_back(&rootObject, rgb(color));
+    return &rootObject;
+}
 
+Object3D * VoxelWorld::addSphere(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+{
+    auto &rootObject = parent.addChild<Object3D>();
+    rootObject.scale(scale).translate(translation);
+    drawables[DrawableType::Sphere].emplace_back(&rootObject, rgb(color));
     return &rootObject;
 }
 
@@ -101,4 +109,18 @@ Object3D * VoxelWorld::addPillar(DrawablesMap &drawables, Object3D &parent, Magn
     addCylinder(drawables, parent, translation - capTranslation, capScale, color)->setParentKeepTransformation(rootObject);
 
     return rootObject;
+}
+
+Object3D * VoxelWorld::addDiamond(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+{
+    auto &rootObject = parent.addChild<Object3D>();
+    auto &bottomHalf = rootObject.addChild<Object3D>();
+    bottomHalf.rotateXLocal(180.0_degf).translate({0.0f, -1.0f, 0.0f});
+    rootObject.scale(scale);
+    rootObject.translate(translation);
+
+    drawables[DrawableType::Cone].emplace_back(&rootObject, rgb(color));
+    drawables[DrawableType::Cone].emplace_back(&bottomHalf, rgb(color));
+
+    return &rootObject;
 }

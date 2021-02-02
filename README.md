@@ -25,19 +25,29 @@ sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.154-bionic.list https://
 sudo apt update
 sudo apt install vulkan-sdk
 
-(or install manually from https://vulkan.lunarg.com/sdk/home#linux
+(or install manually from https://vulkan.lunarg.com/sdk/home#linux, then source ./setup-env.sh to set envvars) 
 
-6) Install PyBullet
-sudo apt install libbullet-dev 
-
-7) Setup Python environment (TODO: add environment.yml to this repo, currently using one from Sample Factory)
+6) Setup Python environment (TODO: add environment.yml to this repo, currently using one from Sample Factory)
 
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
 conda env create -f environment.yml
 conda activate sample-factory
 
+7) Install PyBullet
+conda install -c conda-forge bullet
+(preferred)
+
+OR
+
+sudo apt install libbullet-dev 
+
 8) Update CMake if necessary (version 3.13 or newer is required)
+
+conda install -c anaconda cmake
+(preferred)
+
+OR
 
 sudo apt remove --purge cmake
 hash -r
@@ -49,12 +59,13 @@ mkdir build
 cd build
 
 # Run CMake, specify the OpenCV build dir and Python3 executable (e.g. from a conda environment)
-cmake -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=/home/<user>/lib/opencv/build \
+cmake -DCMAKE_BUILD_TYPE=Release  \
 -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
 -DPYTHON_EXECUTABLE:FILEPATH=/home/<user>/miniconda3/envs/<envname>/bin/python3.7 \
 ../src
 
 (optionally, add -DBULLET_ROOT=/home/<user>/lib/bullet3-2.89/install if you built it from sources)
+(optionally, add -DOpenCV_DIR=/home/<user>/lib/opencv/build if you built it from sources)
 
 # Build all targets
 make -j10
@@ -90,3 +101,12 @@ python -m unittest
 
 ```
 
+Dealing with Docker:
+
+```
+Install docker-compose:
+
+pip install docker-compose
+
+
+```

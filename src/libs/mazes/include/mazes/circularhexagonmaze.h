@@ -4,13 +4,12 @@
 #include "hexagonalmaze.h"
 
 class CircularHexagonMaze : public HexagonalMaze {
- public:
-  CircularHexagonMaze(int);
+public:
+    explicit CircularHexagonMaze(int);
 
- protected:
-  virtual std::shared_ptr<CellBorder> GetEdge(int, int, int, int) const;
-  virtual std::tuple<double, double, double, double> GetCoordinateBounds()
-      const;
+protected:
+    std::shared_ptr<CellBorder> GetEdge(int, int, int, int) const override;
+    std::tuple<double, double, double, double> GetCoordinateBounds() const override;
 };
 
 #endif /* end of include guard: CIRCULARHEXAGONMAZE_H */

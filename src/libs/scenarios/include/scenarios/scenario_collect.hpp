@@ -31,13 +31,33 @@ public:
 
     void step() override;
 
+    void agentFell(int agentIdx) override;
+
     std::vector<Magnum::Vector3> agentStartingPositions() override;
 
     void addEpisodeDrawables(DrawablesMap &drawables) override;
 
-    float trueObjective() const override { return cumulativeReward; }
+    float trueObjective(int /*agentIdx*/) const override { return solved; }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        return {
+            {Str::collectSingleGood, 1.0f},
+            {Str::collectSingleBad, -1.0f},
+            {Str::collectAll, 5.0f},
+            {Str::collectAbyss, -0.5f},
+        };
+    }
+
+    float episodeLengthSec() const override
+    {
+        // add a little bit of time for every extra reward object
+        return Scenario::episodeLengthSec() + 2.0f * rewardPositions.size();
+    }
 
 private:
+    bool solved = false;
+
     VoxelGridComponent<VoxelCollect> vg;
     ObjectStackingComponent<VoxelCollect> objectStackingComponent;
     FallDetectionComponent<VoxelCollect> fallDetection;
@@ -46,7 +66,6 @@ private:
     std::vector<Magnum::Vector3> agentPositions;
 
     int numPositiveRewards = 0, positiveRewardsCollected = 0;
-    float cumulativeReward = 0;
 };
 
 }
