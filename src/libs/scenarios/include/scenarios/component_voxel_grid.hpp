@@ -50,6 +50,10 @@ public:
 };
 
 
+// comment this to disable voxel layout optimization, i.e. for ablation study
+#define OPTIMIZE_VOXEL_LAYOUT
+
+
 /**
  * Environments that use voxel grids for layouts or runtime checks should include this component.
  * @tparam VoxelT data stored in each non-empty voxel cell.
@@ -127,6 +131,7 @@ public:
             BoundingBox bbox{coord, coord};
             std::vector<VoxelCoords> expansion;
 
+#ifdef OPTIMIZE_VOXEL_LAYOUT
             // try to expand the parallelepiped in every direction as far as we can
             for (auto direction : directions) {
                 for (int sign = -1; sign <= 1; sign += 2) {
@@ -168,6 +173,9 @@ public:
                     }
                 }
             }
+#else
+            UNUSED(directions);
+#endif
 
             // finished expanding in all possible directions
             // the bounding box defines the parallepiped completely filled by solid voxels

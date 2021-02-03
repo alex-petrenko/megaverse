@@ -148,7 +148,7 @@ public:
     std::vector<std::vector<Containers::Array<uint8_t>>> agentFrames;
     std::vector<std::vector<std::unique_ptr<MutableImageView2D>>> agentImageViews;
 
-    bool withDebugDraw;
+    bool withDebugDraw = false;
     BulletIntegration::DebugDraw debugDraw{NoCreate};
 
     bool withOverviewCamera = false;
@@ -231,9 +231,6 @@ MagnumEnvRenderer::Impl::Impl(Envs &envs, int w, int h, bool withDebugDraw, bool
     if (withDebugDraw) {
         debugDraw = BulletIntegration::DebugDraw{};
         debugDraw.setMode(BulletIntegration::DebugDraw::Mode::DrawWireframe);
-
-        for (auto &e : envs)
-            e->getPhysics().bWorld.setDebugDrawer(&debugDraw);
     }
 }
 
@@ -339,6 +336,9 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
 
     // Bullet debug draw
     if (withDebugDraw) {
+        if (!env.getPhysics().bWorld.getDebugDrawer())
+            env.getPhysics().bWorld.setDebugDrawer(&debugDraw);
+
         GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
         debugDraw.setTransformationProjectionMatrix(activeCameraPtr->projectionMatrix()*activeCameraPtr->cameraMatrix());
         env.getPhysics().bWorld.debugDrawWorld();

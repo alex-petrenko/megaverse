@@ -13,3 +13,5 @@
 
 
 #define ARR_LENGTH(arr) sizeof(arr) / sizeof(arr[0])
+
+#define UNUSED(x) (void)(x)
