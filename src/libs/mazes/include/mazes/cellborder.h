@@ -6,10 +6,10 @@
 
 
 class CellBorder {
-public:
-    virtual ~CellBorder() = default;
-    virtual std::string GnuplotPrintString() const = 0;
-    virtual std::string SVGPrintString() const = 0;
+ public:
+  virtual ~CellBorder() = default;
+  virtual std::string GnuplotPrintString() const = 0;
+  virtual std::string SVGPrintString() const = 0;
 };
 
 class LineBorder : public CellBorder {

@@ -1,3 +1,4 @@
+find_package(Corrade REQUIRED Main)
 set(MAGNUM_DEPENDENCIES
         Corrade::Main
         Magnum::GL
@@ -10,11 +11,19 @@ set(MAGNUM_DEPENDENCIES
 
 if (BUILD_GUI_APPS)
     add_app_default(viewer viewer.cpp)
-    target_link_libraries(viewer PRIVATE scenarios magnum_rendering v4r_rendering ${MAGNUM_DEPENDENCIES} Magnum::Application Magnum::Trade ${OpenCV_LIBS})
+    target_link_libraries(viewer PRIVATE scenarios magnum_rendering ${MAGNUM_DEPENDENCIES} Magnum::Application Magnum::Trade ${OpenCV_LIBS})
+
+    if (NOT CORRADE_TARGET_APPLE)
+        target_link_libraries(viewer PRIVATE v4r_rendering)
+     endif ()
 endif()
 
 add_app_default(voxel_env_app voxel_env_app.cpp)
-target_link_libraries(voxel_env_app PRIVATE scenarios magnum_rendering v4r_rendering ${MAGNUM_DEPENDENCIES} Magnum::WindowlessEglApplication ${OpenCV_LIBS})
+target_link_libraries(voxel_env_app PRIVATE scenarios magnum_rendering ${MAGNUM_DEPENDENCIES} ${OpenCV_LIBS})
+
+if (NOT CORRADE_TARGET_APPLE)
+    target_link_libraries(voxel_env_app PRIVATE v4r_rendering)
+endif ()
 
 # Make the executable a default target to build & run in Visual Studio
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT viewer)

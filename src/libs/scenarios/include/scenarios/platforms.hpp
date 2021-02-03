@@ -144,7 +144,6 @@ public:
     , params{params}
     {
     }
-
     virtual ~Platform() = default;
 
     virtual void init() = 0;
