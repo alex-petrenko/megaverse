@@ -15,8 +15,8 @@
 #if defined(CORRADE_TARGET_APPLE)
 #include <Magnum/Platform/WindowlessCglApplication.h>
 #else
-#include <Magnum/Platform/WindowlessEglApplication.h>
 #include <glad/glad_egl.h>
+#include <Magnum/Platform/WindowlessEglApplication.h>
 #endif
 
 using namespace VoxelWorld;
@@ -43,7 +43,7 @@ bool isNvidiaGpuReadable(int device) {
 
 struct ContextEGL {
     explicit ContextEGL(int device)
-        : magnumGlContext_{Mn::NoCreate}, gpuDevice_{device} {
+        : magnumGlContext_{Mn::NoCreate} {
         const auto loadStatus = gladLoadEGL();
         TCHECK(loadStatus) << "Failed to load EGL " << loadStatus;
 
