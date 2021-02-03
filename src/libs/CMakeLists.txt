@@ -1,7 +1,11 @@
+find_package(Corrade REQUIRED Main)
+
 add_subdirectory(util)
 add_subdirectory(rendering)
 add_subdirectory(magnum_rendering)
-add_subdirectory(v4r_rendering)
+if (NOT CORRADE_TARGET_APPLE)
+    add_subdirectory(v4r_rendering)
+endif ()
 add_subdirectory(env)
 add_subdirectory(mazes)
 add_subdirectory(scenarios)
