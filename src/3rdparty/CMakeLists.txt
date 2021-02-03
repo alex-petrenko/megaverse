@@ -1,10 +1,9 @@
-add_subdirectory(corrade EXCLUDE_FROM_ALL)
-find_package(Corrade REQUIRED Main)
-
-if (NOT CORRADE_TARGET_APPLE)
+if (NOT APPLE)
     add_subdirectory(v4r EXCLUDE_FROM_ALL)
 endif ()
 
+add_subdirectory(corrade EXCLUDE_FROM_ALL)
+find_package(Corrade REQUIRED Main)
 
 if (BUILD_GUI_APPS)
     set(WITH_SDL2APPLICATION ON CACHE BOOL "" FORCE)
