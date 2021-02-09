@@ -16,7 +16,8 @@ namespace VoxelWorld::Str
              obstaclesAgentAtExit = "obstaclesAgentAtExit",
              obstaclesAllAgentsAtExit = "obstaclesAllAgentsAtExit",
              obstaclesExtraReward = "obstaclesExtraReward",
-             obstaclesNumAllowedMaxDifficulty = "obstaclesNumAllowedMaxDifficulty";
+             obstaclesNumAllowedMaxDifficulty = "obstaclesNumAllowedMaxDifficulty",
+             obstaclesAgentCarriedObjectToExit = "obstaclesAgentCarriedObjectToExit";
 
     ConstStr towerPickedUpObject = "towerPickedUpObject",
              towerVisitedBuildingZoneWithObject = "towerVisitedBuildingZoneWithObject",

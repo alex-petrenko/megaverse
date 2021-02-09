@@ -212,6 +212,11 @@ void ObstaclesScenario::step()
                 if (!agentReachedExit[i]) {
                     agentReachedExit[i] = true;
                     rewardTeam(Str::obstaclesAgentAtExit, i, 1);
+
+                    if (objectStackingComponent.agentCarryingObject(i)) {
+                        rewardTeam(Str::obstaclesAgentCarriedObjectToExit, i, 1);
+                        // TLOG(INFO) << "Carried object to exit";
+                    }
                 }
             } else if (terrainType & TERRAIN_LAVA)
                 agentTouchedLava(i);

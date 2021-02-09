@@ -41,6 +41,7 @@ public:
             {Str::obstaclesAgentAtExit, 1.0f},
             {Str::obstaclesAllAgentsAtExit, 5.0f},
             {Str::obstaclesExtraReward, 0.5f},
+            {Str::obstaclesAgentCarriedObjectToExit, 1.0f},
         };
     }
 
@@ -63,7 +64,7 @@ public:
         fp[Str::obstaclesMinHeight] = 1;
         fp[Str::obstaclesMaxHeight] = 3;
 
-        fp[Str::obstaclesNumAllowedMaxDifficulty] = 10;
+        fp[Str::obstaclesNumAllowedMaxDifficulty] = 1;
     }
 
     float episodeLengthSec() const override;
