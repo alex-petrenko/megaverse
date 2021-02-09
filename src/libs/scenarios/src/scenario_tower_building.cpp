@@ -249,7 +249,7 @@ void TowerBuildingScenario::addCollectiveReward(int agentIdx)
 {
     auto newReward = calculateTowerReward();
     auto rewardDelta = newReward - currBuildingZoneReward;
-    TLOG(INFO) << "Curr reward: " << rewardDelta << " new reward: " << newReward;
+    // TLOG(INFO) << "Curr reward: " << rewardDelta << " new reward: " << newReward;
 
     currBuildingZoneReward = newReward;
     rewardTeam(Str::towerBuildingReward, agentIdx, rewardDelta);
