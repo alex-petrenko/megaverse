@@ -5,6 +5,7 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 
 #include <env/agent.hpp>
+#include <env/env_renderer.hpp>
 
 
 using namespace Magnum;
@@ -31,9 +32,10 @@ DefaultKinematicAgent::DefaultKinematicAgent(Object3D *parent, btDynamicsWorld &
     // cameraObject.rotateY(0.0_degf);
     cameraObject->translate(Magnum::Vector3{0, 0.41f, 0});
 
+    auto [fov, near, far, aspectRatio] = agentCameraParameters();
     camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-        .setProjectionMatrix(Matrix4::perspectiveProjection(100.0_degf, 128.0f / 72.0f, 0.1f, 50.0f))
-        .setViewport(GL::defaultFramebuffer.viewport().size());
+           .setProjectionMatrix(Matrix4::perspectiveProjection(Deg(fov), aspectRatio, near, far))
+           .setViewport(GL::defaultFramebuffer.viewport().size());
 
     pickupSpot->translate({0.0f, -0.44f, -1.0f});
 

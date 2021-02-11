@@ -6,6 +6,9 @@
 namespace VoxelWorld
 {
 
+// defined later in render_utils.cpp
+class Overview;
+
 class EnvRenderer
 {
 public:
@@ -24,6 +27,22 @@ public:
      * @return pointer to the memory holding the observation.
      */
     virtual const uint8_t *getObservation(int envIdx, int agentIdx) const = 0;
+
+    virtual Overview * getOverview() = 0;
 };
+
+inline std::tuple<float, float, float, float> agentCameraParameters()
+{
+    float fov = 100, near = 0.01, far = 120.0, aspectRatio = 128.0f / 72.0f;
+    return std::make_tuple(fov, near, far, aspectRatio);
+}
+
+inline std::tuple<float, float, float, float> overviewCameraParameters()
+{
+    auto [fov, near, far, aspectRatio] = agentCameraParameters();
+    fov = 100, near = 0.1, far = 600.0;
+
+    return std::make_tuple(fov, near, far, aspectRatio);
+}
 
 }

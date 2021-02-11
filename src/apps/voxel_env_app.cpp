@@ -30,13 +30,13 @@ using namespace VoxelWorld;
 constexpr int delayMs = 1;  // 1000 / 15;
 
 //ConstStr scenario = "Empty";
-//ConstStr scenario = "Collect";
+ConstStr scenario = "Collect";
 //ConstStr scenario = "ObstaclesEasy";
 //ConstStr scenario = "ObstaclesHard";
 //ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
 //ConstStr scenario = "Rearrange";
-ConstStr scenario = "HexMemory";
+//ConstStr scenario = "HexMemory";
 
 
 #if defined(CORRADE_TARGET_APPLE)
@@ -224,7 +224,7 @@ int main(int argc, char** argv)
 #if defined (CORRADE_TARGET_APPLE)
         TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-        renderer = std::make_unique<V4REnvRenderer>(envs, W, H, nullptr);
+        renderer = std::make_unique<V4REnvRenderer>(envs, W, H, nullptr, false);
 #endif
     else {
         const auto debugDraw = false;

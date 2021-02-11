@@ -121,7 +121,7 @@ public:
 
     void toggleDebugMode() { withDebugDraw = !withDebugDraw; }
 
-    Overview & getOverview() { return overview; }
+    Overview * getOverview() { return &overview; }
 
 public:
     std::unique_ptr<WindowlessContext> windowlessContextPtr{nullptr};
@@ -277,27 +277,8 @@ void MagnumEnvRenderer::Impl::reset(Env &env, int envIndex)
         }
     }
 
-    if (withOverviewCamera && envIndex == 0) {
-        overview.root = &env.getScene().addChild<Object3D>();
-        overview.root->rotateYLocal(225.0_degf);
-        overview.root->translateLocal(Magnum::Vector3{0.1f, 20.0f, 0.1f});
-
-        overview.verticalTilt = &overview.root->addChild<Object3D>();
-        overview.verticalTilt->rotateXLocal(-40.0_degf);
-        overview.verticalRotation = -40.0f;
-
-        overview.camera = &(overview.verticalTilt->addFeature<SceneGraph::Camera3D>());
-
-        auto [fov, near, far] = cameraParameters();
-        overview.camera->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend)
-                       .setProjectionMatrix(Matrix4::perspectiveProjection(Deg(fov), 128.0f / 72.0f, near, far))
-                       .setViewport(GL::defaultFramebuffer.viewport().size());
-
-        if (overview.rootTransformation != Matrix4{} || overview.verticalTiltTransformation != Matrix4{})
-            overview.restoreTransformation();
-        else
-            overview.saveTransformation();
-    }
+    if (withOverviewCamera && envIndex == 0)
+        overview.reset(&env.getScene());
 }
 
 void MagnumEnvRenderer::Impl::preDraw(Env &, int)
@@ -315,7 +296,7 @@ void MagnumEnvRenderer::Impl::drawAgent(Env &env, int envIndex, int agentIdx, bo
         arrayResize(instanceData[it.first], 0);
 
     auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
-    if (withOverviewCamera && overview.enabled)
+    if (withOverviewCamera && overview.enabled && envIndex == 0)
         activeCameraPtr = overview.camera;
 
     // Would be nice to implement frustrum culling here: https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#SceneGraph-Drawable-draw-order
@@ -406,7 +387,7 @@ void MagnumEnvRenderer::toggleDebugMode()
     pimpl->toggleDebugMode();
 }
 
-Overview & VoxelWorld::MagnumEnvRenderer::getOverview()
+Overview * VoxelWorld::MagnumEnvRenderer::getOverview()
 {
     return pimpl->getOverview();
 }

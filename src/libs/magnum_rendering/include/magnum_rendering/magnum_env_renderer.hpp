@@ -9,37 +9,13 @@
 #include <env/vector_env.hpp>
 #include <env/env_renderer.hpp>
 
+#include <rendering/render_utils.hpp>
+
 #include <magnum_rendering/windowless_context.hpp>
 
 
 namespace VoxelWorld
 {
-
-struct Overview
-{
-public:
-    void saveTransformation()
-    {
-        rootTransformation = root->transformation();
-        verticalTiltTransformation = verticalTilt->transformation();
-    }
-
-    void restoreTransformation() const
-    {
-        root->setTransformation(rootTransformation);
-        verticalTilt->setTransformation(verticalTiltTransformation);
-    }
-
-public:
-    Object3D *root{}, *verticalTilt{};
-
-    Magnum::SceneGraph::Camera3D *camera{};
-    bool enabled = false;
-
-    float verticalRotation = 0.0f;
-
-    Magnum::Matrix4 rootTransformation{}, verticalTiltTransformation{};
-};
 
 class MagnumEnvRenderer : public EnvRenderer
 {
@@ -64,8 +40,7 @@ public:
 
     void toggleDebugMode();
 
-    Overview & getOverview();
-
+    Overview * getOverview() override;
 
 private:
     struct Impl;

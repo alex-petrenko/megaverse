@@ -75,7 +75,7 @@ public:
 #if defined (CORRADE_TARGET_APPLE)
                 TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-                renderer = std::make_unique<V4REnvRenderer>(envs, w, h, nullptr);
+                renderer = std::make_unique<V4REnvRenderer>(envs, w, h, nullptr, false);
 #endif
             else
                 renderer = std::make_unique<MagnumEnvRenderer>(envs, w, h);
@@ -157,7 +157,7 @@ public:
 #if defined (CORRADE_TARGET_APPLE)
                 TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
-                hiresRenderer = std::make_unique<V4REnvRenderer>(envs, renderW, renderH, dynamic_cast<V4REnvRenderer *>(renderer.get()));
+                hiresRenderer = std::make_unique<V4REnvRenderer>(envs, renderW, renderH, dynamic_cast<V4REnvRenderer *>(renderer.get()), true);
 #endif
             else
                 hiresRenderer = std::make_unique<MagnumEnvRenderer>(envs, renderW, renderH);

@@ -18,7 +18,7 @@ public:
      * pointer to the previous renderer in the chain to provide the list of "dirty" drawables whose absolute
      * transformations we need to query from the scene graph and update.
      */
-    explicit V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer);
+    explicit V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview);
 
     ~V4REnvRenderer() override;
 
@@ -31,6 +31,8 @@ public:
     const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 
     std::vector<int> getDirtyDrawables(int envIdx) const;
+
+    Overview * getOverview() override;
 
 private:
     struct Impl;

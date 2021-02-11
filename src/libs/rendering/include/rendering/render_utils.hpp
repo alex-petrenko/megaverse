@@ -13,10 +13,32 @@ namespace VoxelWorld
 
 void initPrimitives(std::map<DrawableType, Magnum::Trade::MeshData> &meshData);
 
-inline std::tuple<float, float, float> cameraParameters()
+class Overview
 {
-    float fov = 100, near = 0.01, far = 120.0;
-    return std::make_tuple(fov, near, far);
-}
+public:
+    void saveTransformation()
+    {
+        rootTransformation = root->transformation();
+        verticalTiltTransformation = verticalTilt->transformation();
+    }
+
+    void restoreTransformation() const
+    {
+        root->setTransformation(rootTransformation);
+        verticalTilt->setTransformation(verticalTiltTransformation);
+    }
+
+    void reset(Object3D *parent);
+
+public:
+    Object3D *root{}, *verticalTilt{};
+
+    Magnum::SceneGraph::Camera3D *camera{};
+    bool enabled = false;
+
+    float verticalRotation = 0.0f;
+
+    Magnum::Matrix4 rootTransformation{}, verticalTiltTransformation{};
+};
 
 }

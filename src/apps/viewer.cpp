@@ -159,7 +159,7 @@ Viewer::Viewer(const Arguments& arguments)
         framebuffer.mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}}});
         framebuffer.clearColor(0, Color3{0.125f}).clearDepth(1.0).bind();
 
-        renderer = std::make_unique<V4REnvRenderer>(envs, fbSize[0], fbSize[1], nullptr);
+        renderer = std::make_unique<V4REnvRenderer>(envs, fbSize[0], fbSize[1], nullptr, true);
 #endif
     } else {
         renderer = std::make_unique<MagnumEnvRenderer>(envs, fbSize[0], fbSize[1], withDebugDraw, true, ctx.get());
@@ -314,37 +314,30 @@ void Viewer::controlOverview(const KeyEvent::Key &key, bool addAction)
 
 void Viewer::moveOverviewCamera()
 {
-    if (useVulkan)
+    auto *overview = renderer->getOverview();
+    if (!overview->enabled)
         return;
 
-    auto &overview = dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview();
-    if (!overview.enabled)
-        return;
-
-    const auto backwardDirection = overview.verticalTilt->absoluteTransformation().backward();
+    const auto backwardDirection = overview->verticalTilt->absoluteTransformation().backward();
 
     if (!!(currOverviewAction & Action::Forward))
-        overview.root->translate(-backwardDirection);
+        overview->root->translate(-backwardDirection);
     else if (!!(currOverviewAction & Action::Backward))
-        overview.root->translate(backwardDirection);
+        overview->root->translate(backwardDirection);
 
-    const auto rightDirection = overview.verticalTilt->absoluteTransformation().right();
+    const auto rightDirection = overview->verticalTilt->absoluteTransformation().right();
 
     if (!!(currOverviewAction & Action::Left))
-        overview.root->translate(-rightDirection);
+        overview->root->translate(-rightDirection);
     else if (!!(currOverviewAction & Action::Right))
-        overview.root->translate(rightDirection);
+        overview->root->translate(rightDirection);
 
-    overview.saveTransformation();
+    overview->saveTransformation();
 }
 
 void Viewer::keyPressEvent(KeyEvent& event)
 {
-//    TLOG(INFO) << "Key event " << event.keyName();
-
-    Overview *overview;
-    if (!useVulkan)
-        overview = &(dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview());  // TODO
+    auto *overview = renderer->getOverview();
 
     handleActions(event.key(), true);
 
@@ -364,10 +357,8 @@ void Viewer::keyPressEvent(KeyEvent& event)
             forceReset = true;
             break;
         case KeyEvent::Key::O:
-            if (!useVulkan) {
-                overview->enabled = !overview->enabled;
-                setCursor(overview->enabled ? Cursor::HiddenLocked : Cursor::Arrow);
-            }
+            overview->enabled = !overview->enabled;
+            setCursor(overview->enabled ? Cursor::HiddenLocked : Cursor::Arrow);
             break;
         case KeyEvent::Key::Enter:
             if (!useVulkan)
@@ -390,11 +381,8 @@ void Viewer::keyReleaseEvent(Magnum::Platform::Sdl2Application::KeyEvent &event)
 
 void Viewer::mouseMoveEvent(Magnum::Platform::Sdl2Application::MouseMoveEvent &event)
 {
-    if (useVulkan)
-        return;
-
-    auto &overview = dynamic_cast<MagnumEnvRenderer &>(*renderer).getOverview();
-    if (!overview.enabled)
+    auto *overview = renderer->getOverview();
+    if (!overview->enabled)
         return;
 
     constexpr float sensitivity = 0.075;
@@ -402,19 +390,19 @@ void Viewer::mouseMoveEvent(Magnum::Platform::Sdl2Application::MouseMoveEvent &e
     const auto verticalMove = -float(event.relativePosition().y());
 
     const auto yRotation = Deg(horizontalMove);
-    overview.root->rotateYLocal(-sensitivity * yRotation);
+    overview->root->rotateYLocal(-sensitivity * yRotation);
 
     const auto verticalRotation = sensitivity * verticalMove;
-    auto newRotation = overview.verticalRotation + verticalRotation;
+    auto newRotation = overview->verticalRotation + verticalRotation;
     newRotation = std::min(newRotation, 89.0f);
     newRotation = std::max(newRotation, -89.0f);
 
-    const auto rotationDelta = newRotation - overview.verticalRotation;
+    const auto rotationDelta = newRotation - overview->verticalRotation;
     const auto xRotation = Deg(rotationDelta);
-    overview.verticalTilt->rotateXLocal(xRotation);
-    overview.verticalRotation = newRotation;
+    overview->verticalTilt->rotateXLocal(xRotation);
+    overview->verticalRotation = newRotation;
 
-    overview.saveTransformation();
+    overview->saveTransformation();
 
     event.setAccepted();
     redraw();

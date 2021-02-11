@@ -72,7 +72,7 @@ struct ColorCompare
 struct V4REnvRenderer::Impl
 {
 public:
-    explicit Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer);
+    explicit Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview);
 
     ~Impl();
 
@@ -92,6 +92,8 @@ public:
      * requests dirty drawables.
      */
     std::vector<int> getDirtyDrawables(int envIdx) const { return dirtyDrawables[envIdx]; }
+
+    Overview * getOverview() { return &overview; }
 
 private:
     int batchSize(const Envs &envs) const
@@ -130,6 +132,9 @@ public:
     std::map<DrawableType, int> meshIndices;
 
     V4REnvRenderer *previousRenderer = nullptr;
+
+    bool withOverviewCamera = false;
+    Overview overview;
 };
 
 using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
@@ -137,7 +142,7 @@ using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
                                  v4r::DataSource::Uniform,
                                  v4r::DataSource::Uniform>;
 
-V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer)
+V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview)
     : renderer({ 0, 1, 1, uint32_t(batchSize(envs)), uint32_t(w), uint32_t(h), glm::mat4(1.f) },
                v4r::RenderFeatures<Pipeline> {v4r::RenderOptions::CpuSynchronization})
     , loader(renderer.makeLoader())
@@ -145,6 +150,7 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRen
     , renderEnvs()
     , framebufferSize(w, h)
     , previousRenderer{previousRenderer}
+    , withOverviewCamera{withOverview}
     // cpuFrames(),
     // rdoc()
 {
@@ -221,9 +227,12 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRen
 
     // vector of render envs
     {
+        auto [fov, near, far, aspectRatio] = agentCameraParameters();
+        UNUSED(aspectRatio);
+
         for (auto &env : envs)
             for (int agentIdx = 0; agentIdx < env->getNumAgents(); ++agentIdx)
-                renderEnvs.emplace_back(cmdStream.makeEnvironment(scene, 115.f, 0.01f, 100.0f));
+                renderEnvs.emplace_back(cmdStream.makeEnvironment(scene, fov, near, far));
     }
 
     pixelsPerFrame = framebufferSize.x * framebufferSize.y * 4;
@@ -237,7 +246,13 @@ V4REnvRenderer::Impl::~Impl()
 
 void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 {
-    auto [fov, near, far] = cameraParameters();
+    auto [fov, near, far, aspectRatio] = agentCameraParameters();
+    if (withOverviewCamera && envIdx == 0) {
+        auto [oFov, oNear, oFar, oAspectRatio] = overviewCameraParameters();
+        fov = oFov, near = oNear, far = oFar, aspectRatio = oAspectRatio;
+    }
+    UNUSED(aspectRatio);
+
     for (int i = 0; i < env.getNumAgents(); ++i) {
         const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
         renderEnvs[idx] = cmdStream.makeEnvironment(scene, fov, near, far);
@@ -278,6 +293,10 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 
         dirtyDrawables[envIdx].clear();
     }
+
+    // controllable overview camera
+    if (withOverviewCamera && envIdx == 0)
+        overview.reset(&env.getScene());
 }
 
 void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
@@ -290,6 +309,9 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
         v4r::Environment &renderEnv = renderEnvs[renderEnvIdx];
 
         auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
+        if (withOverviewCamera && overview.enabled && envIdx == 0)
+            activeCameraPtr = overview.camera;
+
         auto view = glm::make_mat4(activeCameraPtr->cameraMatrix().data());
 
         renderEnv.setCameraView(view);
@@ -342,9 +364,9 @@ const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) c
 //    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
-V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer)
+V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview)
 {
-    pimpl = std::make_unique<Impl>(envs, w, h, previousRenderer);
+    pimpl = std::make_unique<Impl>(envs, w, h, previousRenderer, withOverview);
 }
 
 V4REnvRenderer::~V4REnvRenderer() = default;
@@ -373,4 +395,9 @@ const uint8_t * V4REnvRenderer::getObservation(int envIdx, int agentIdx) const
 std::vector<int> V4REnvRenderer::getDirtyDrawables(int envIdx) const
 {
     return pimpl->getDirtyDrawables(envIdx);
+}
+
+Overview * V4REnvRenderer::getOverview()
+{
+    return pimpl->getOverview();
 }
