@@ -262,7 +262,7 @@ void ObstaclesScenario::addEpisodeDrawables(DrawablesMap &drawables)
 float ObstaclesScenario::episodeLengthSec() const
 {
     const auto minDuration = Scenario::episodeLengthSec();
-    return std::max(minDuration, float(numPlatforms) * 30 + float(objectSpawnPositions.size()) * 1);
+    return std::max(minDuration, float(numPlatforms) * 35 + float(objectSpawnPositions.size()) * 1);
 }
 
 void ObstaclesScenario::agentFell(int)

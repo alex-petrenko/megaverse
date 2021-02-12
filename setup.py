@@ -49,7 +49,12 @@ class CMakeBuild(build_ext):
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
-        cmake_args += [f'-DCMAKE_BUILD_TYPE={cfg}', '-DBUILD_GUI_APPS=OFF']
+        if os.environ.get('VOXEL_WITH_GUI') == '1':
+            build_gui = 'ON'
+        else:
+            build_gui = 'OFF'
+
+        cmake_args += [f'-DCMAKE_BUILD_TYPE={cfg}', f'-DBUILD_GUI_APPS={build_gui}']
         build_args += ['--', f'-j{multiprocessing.cpu_count()}']
 
         env = os.environ.copy()

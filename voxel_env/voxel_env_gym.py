@@ -168,6 +168,8 @@ class VoxelEnv(gym.Env):
         return obs
 
     def render(self, mode='human'):
+        self.env.draw_overview()
+
         self.env.draw_hires()
 
         rows = []

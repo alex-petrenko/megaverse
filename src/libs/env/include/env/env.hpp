@@ -227,6 +227,8 @@ public:
         return std::max(0.0f, (len - state.currEpisodeSec) / len);
     }
 
+    void terminateEpisodeOnNextFrame();
+
     /**
      * We need this because of the requirements of the Vulkan renderer (materials have to be known in advance)
      */

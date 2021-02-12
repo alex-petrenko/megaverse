@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <magnum_rendering/windowless_context.hpp>
+#include <magnum_rendering/rendering_context.hpp>
 
 using namespace VoxelWorld;
 

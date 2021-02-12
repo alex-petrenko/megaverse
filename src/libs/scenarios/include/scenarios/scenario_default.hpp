@@ -99,10 +99,14 @@ public:
     void addEpisodeAgentsDrawables(DrawablesMap &drawables) override
     {
         const auto numAgents = env.getNumAgents();
+
+        // drawing agent's body in single-agent envs is still useful because of the overview camera
+#ifdef DONT_DRAW_SELF
         if (numAgents <= 1) {
             // agent can't see itself, so we can avoid wasting resources on rendering it
             return;
         }
+#endif
 
         for (int i = 0; i < numAgents; ++i) {
             auto agent = envState.agents[i];

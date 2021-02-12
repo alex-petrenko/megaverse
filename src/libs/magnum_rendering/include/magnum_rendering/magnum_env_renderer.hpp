@@ -11,7 +11,7 @@
 
 #include <rendering/render_utils.hpp>
 
-#include <magnum_rendering/windowless_context.hpp>
+#include <magnum_rendering/rendering_context.hpp>
 
 
 namespace VoxelWorld

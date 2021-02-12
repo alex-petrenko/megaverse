@@ -11,8 +11,13 @@
 #include <scenarios/init.hpp>
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
-#if !defined(CORRADE_TARGET_APPLE)
-#include <v4r_rendering/v4r_env_renderer.hpp>
+
+#ifndef CORRADE_TARGET_APPLE
+    #include <v4r_rendering/v4r_env_renderer.hpp>
+#endif
+
+#ifdef WITH_GUI
+    #include <viewer/viewer.hpp>
 #endif
 
 
@@ -31,18 +36,18 @@ class VoxelEnvGym
 {
 public:
     VoxelEnvGym(
-        const std::string& scenario,
+        const std::string &scenario,
         int w, int h,
         int numEnvs, int numAgentsPerEnv, int numSimulationThreads,
         bool useVulkan,
-        const std::map<std::string, float>& floatParams
+        const std::map<std::string, float> &floatParams
     )
-    : numEnvs{numEnvs}
-    , numAgentsPerEnv{numAgentsPerEnv}
-    , useVulkan{useVulkan}
-    , w{w}
-    , h{h}
-    , numSimulationThreads{numSimulationThreads}
+        : numEnvs{numEnvs}
+          , numAgentsPerEnv{numAgentsPerEnv}
+          , useVulkan{useVulkan}
+          , w{w}
+          , h{h}
+          , numSimulationThreads{numSimulationThreads}
     {
         scenariosGlobalInit();
 
@@ -56,7 +61,7 @@ public:
     {
         TLOG(INFO) << "Seeding vector env with seed value " << seedValue;
 
-        rng.seed((unsigned long)seedValue);
+        rng.seed((unsigned long) seedValue);
         for (auto &e : envs) {
             const auto noise = randRange(0, 1 << 30, rng);
             e->seed(noise);
@@ -72,7 +77,7 @@ public:
     {
         if (!vectorEnv) {
             if (useVulkan)
-#if defined (CORRADE_TARGET_APPLE)
+#ifdef CORRADE_TARGET_APPLE
                 TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
                 renderer = std::make_unique<V4REnvRenderer>(envs, w, h, nullptr, false);
@@ -85,10 +90,6 @@ public:
 
         // this also resets the main renderer
         vectorEnv->reset();
-
-        if (hiresRenderer)
-            for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
-                hiresRenderer->reset(*envs[envIdx], envIdx);
     }
 
     std::vector<int> actionSpaceSizes() const
@@ -154,7 +155,7 @@ public:
     {
         if (!hiresRenderer) {
             if (useVulkan)
-#if defined (CORRADE_TARGET_APPLE)
+#ifdef CORRADE_TARGET_APPLE
                 TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
                 hiresRenderer = std::make_unique<V4REnvRenderer>(envs, renderW, renderH, dynamic_cast<V4REnvRenderer *>(renderer.get()), true);
@@ -174,6 +175,29 @@ public:
         }
 
         hiresRenderer->draw(envs);
+    }
+
+    void drawOverview()
+    {
+#ifdef WITH_GUI
+        if (!viewer && Viewer::viewerExists) {
+            TLOG(INFO) << "Only one viewer per process is supported";
+            return;
+        }
+
+        if (!viewer) {
+            static int argc = 1;
+            static const char *argv[] = {"Overview"};
+            Magnum::Platform::Application::Arguments fakeArgs{argc, (char **) argv};
+            TLOG(INFO) << __FUNCTION__ << " Creating a viewer object";
+            viewer = std::make_unique<Viewer>(envs, useVulkan, renderer.get(), fakeArgs);
+        }
+
+        viewer->step(vectorEnv->done);
+        viewer->mainLoopIteration();  // handle events, update the window, that kind of thing
+#else
+        TLOG(ERROR) << "VoxelWorld was built without GUI support";
+#endif
     }
 
     py::array_t<uint8_t> getHiresObservation(int envIdx, int agentIdx)
@@ -205,6 +229,10 @@ public:
         if (vectorEnv)
             vectorEnv->close();
 
+        if (viewer)
+            viewer->exit(0);
+        viewer.reset();
+
         hiresRenderer.reset();
         renderer.reset();
         vectorEnv.reset();
@@ -221,6 +249,10 @@ private:
     std::unique_ptr<EnvRenderer> renderer, hiresRenderer;
 
     Rng rng{std::random_device{}()};
+
+#ifdef WITH_GUI
+    std::unique_ptr<Viewer> viewer;
+#endif
 
     bool useVulkan;
     int w, h;
@@ -250,6 +282,7 @@ PYBIND11_MODULE(voxel_env, m)
         .def("true_objective", &VoxelEnvGym::trueObjective)
         .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
         .def("draw_hires", &VoxelEnvGym::drawHires)
+        .def("draw_overview", &VoxelEnvGym::drawOverview)
         .def("get_hires_observation", &VoxelEnvGym::getHiresObservation)
         .def("get_reward_shaping", &VoxelEnvGym::getRewardShaping)
         .def("set_reward_shaping", &VoxelEnvGym::setRewardShaping)

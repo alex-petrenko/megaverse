@@ -9,7 +9,7 @@
 #include <Corrade/configure.h>
 
 #include <Magnum/Platform/GLContext.h>
-#include <magnum_rendering/windowless_context.hpp>
+#include <magnum_rendering/rendering_context.hpp>
 #include <util/tiny_logger.hpp>
 
 #if defined(CORRADE_TARGET_APPLE)

@@ -6,7 +6,7 @@ import numpy as np
 
 from unittest import TestCase
 
-from voxel_env.voxel_env_gym import MULTI_TASK_ENVS, VoxelEnv, make_env_multitask
+from voxel_env.voxel_env_gym import VoxelEnv, make_env_multitask
 
 
 def sample_actions(e):
@@ -49,6 +49,8 @@ class TestEnv(TestCase):
         obs2 = e2.reset()
 
         self.assertTrue(np.array_equal(obs1, obs2))
+        e2.close()
+        e1.close()
 
         # after this we have randomness due to physics?
 
@@ -70,8 +72,8 @@ class TestEnv(TestCase):
             e2.step(sample_actions(e2))
             e2.render()
 
-        e1.close()
         e2.close()
+        e1.close()
 
     def test_render(self):
         self.rendering(use_vulkan=False)
@@ -160,10 +162,10 @@ class TestEnv(TestCase):
 
     def test_multitask(self):
         import multiprocessing as mp
-        num_processes = 2 #len(MULTI_TASK_ENVS)
+        num_processes = 2
 
         def run_single_task(i):
-            e = make_env_multitask(i, 1, 1, 1, use_vulkan=True, params={})
+            e = make_env_multitask('voxelworld8', i, 1, 1, 1, use_vulkan=True, params={})
             e.reset()
             e.render()  # TODO: if this call is omitted we have rendering bugs. Fixme!
 
@@ -181,3 +183,16 @@ class TestEnv(TestCase):
 
         for p in processes:
             p.join()
+
+    def test_viewer(self):
+        params = {'episodeLengthSec': 1.0}
+        e1 = VoxelEnv('ObstaclesHard', 2, 2, 2, True, params)
+        e1.reset()
+        e1.render()
+
+        for i in range(10000):
+            e1.step(sample_actions(e1))
+            e1.render()
+            time.sleep(0.01)
+
+        e1.close()

@@ -98,6 +98,15 @@ public:
     virtual void reset() {}
 
     /**
+     * Easy way to terminate the episode a bit more smoothly, rather than abruptly (i.e. on the same frame the last
+     * reward was collected).
+     */
+    void doneWithTimer(float remainingTimeSeconds=0.3f)
+    {
+        envState.currEpisodeSec = std::max(envState.currEpisodeSec, episodeLengthSec() - remainingTimeSeconds);
+    }
+
+    /**
      * This is called by the environment before the physics simulation step.
      */
     virtual void preStep() {}
@@ -285,15 +294,6 @@ protected:
     {
         for (int i = 0; i < env.getNumAgents(); ++i)
             rewardAgent(rewardName, i, multiplier);
-    }
-
-    /**
-     * Easy way to terminate the episode a bit more smoothly, rather than abruptly (i.e. on the same frame the last
-     * reward was collected).
-     */
-    void doneWithTimer(float remainingTimeSeconds=0.3f)
-    {
-        envState.currEpisodeSec = std::max(envState.currEpisodeSec, episodeLengthSec() - remainingTimeSeconds);
     }
 
 private:

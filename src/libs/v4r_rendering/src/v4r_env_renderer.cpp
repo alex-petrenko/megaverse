@@ -143,20 +143,17 @@ using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
                                  v4r::DataSource::Uniform>;
 
 V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview)
-    : renderer({ 0, 1, 1, uint32_t(batchSize(envs)), uint32_t(w), uint32_t(h), glm::mat4(1.f) },
-               v4r::RenderFeatures<Pipeline> {v4r::RenderOptions::CpuSynchronization})
-    , loader(renderer.makeLoader())
-    , cmdStream(renderer.makeCommandStream())
-    , renderEnvs()
-    , framebufferSize(w, h)
+    : renderer{{ 0, 1, 1, uint32_t(batchSize(envs)), uint32_t(w), uint32_t(h), glm::mat4(1.f) },
+               v4r::RenderFeatures<Pipeline> {v4r::RenderOptions::CpuSynchronization}}
+    , loader{renderer.makeLoader()}
+    , cmdStream{renderer.makeCommandStream()}
+    , renderEnvs{}
+    , framebufferSize{w, h}
     , previousRenderer{previousRenderer}
     , withOverviewCamera{withOverview}
     // cpuFrames(),
     // rdoc()
 {
-    // Need to reserve numAgents here so references remain stable
-    envs.reserve(size_t(batchSize(envs)));
-
     auto numEnvs = envs.size();
     envDrawables.resize(numEnvs), drawablesObjects.resize(numEnvs), v4rDrawables.resize(numEnvs), dirtyDrawables.resize(numEnvs);
 

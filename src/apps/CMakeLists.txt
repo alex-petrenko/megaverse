@@ -10,12 +10,8 @@ set(MAGNUM_DEPENDENCIES
 )
 
 if (BUILD_GUI_APPS)
-    add_app_default(viewer viewer.cpp)
-    target_link_libraries(viewer PRIVATE scenarios magnum_rendering ${MAGNUM_DEPENDENCIES} Magnum::Application Magnum::Trade ${OpenCV_LIBS})
-
-    if (NOT CORRADE_TARGET_APPLE)
-        target_link_libraries(viewer PRIVATE v4r_rendering)
-     endif ()
+    add_app_default(viewer_app viewer_app.cpp)
+    target_link_libraries(viewer_app PRIVATE scenarios viewer Magnum::Application)
 endif()
 
 add_app_default(voxel_env_app voxel_env_app.cpp)

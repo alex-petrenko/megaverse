@@ -165,3 +165,8 @@ float Env::trueObjective(int agentIdx) const
 {
     return scenario->trueObjective(agentIdx);
 }
+
+void Env::terminateEpisodeOnNextFrame()
+{
+    scenario->doneWithTimer(0.001f);
+}

@@ -24,7 +24,7 @@
 
 #include <rendering/render_utils.hpp>
 
-#include <magnum_rendering/windowless_context.hpp>
+#include <magnum_rendering/rendering_context.hpp>
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
