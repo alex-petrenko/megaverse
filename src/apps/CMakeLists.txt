@@ -14,8 +14,14 @@ if (BUILD_GUI_APPS)
     target_link_libraries(viewer_app PRIVATE scenarios viewer Magnum::Application)
 endif()
 
+find_package(ZLIB)
+
 add_app_default(voxel_env_app voxel_env_app.cpp)
 target_link_libraries(voxel_env_app PRIVATE scenarios magnum_rendering ${MAGNUM_DEPENDENCIES} ${OpenCV_LIBS}) 
+
+if (ZLIB_FOUND)
+    target_link_libraries(voxel_env_app PRIVATE ${ZLIB_LIBRARIES})
+endif ()
 
 if (NOT CORRADE_TARGET_APPLE)
     target_link_libraries(voxel_env_app PRIVATE v4r_rendering)
