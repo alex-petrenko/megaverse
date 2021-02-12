@@ -79,7 +79,7 @@ TODO: make configurable)
 
 11) Run viewer
 cd Release/bin
-./viewer
+./viewer_app
 
 use WASD and arrows to control agent
 digits (1,2) to switch between agents in multi-agent envs
@@ -87,7 +87,7 @@ E to interact with objects
 O to switch to overview camera
 UHJK to control overview camera
 
-(see global vars at the top of viewer.cpp file to control which environment is chosen
+(see global vars at the top of viewer_app.cpp file to control which environment is chosen
 TODO: make configurable)
 
 12) To build the Python package and install it in the active Python env:
@@ -101,7 +101,7 @@ python -m unittest
 
 ```
 
-Dealing with Docker:
+Docker setup:
 
 ```
 Install docker-compose:

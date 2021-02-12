@@ -41,7 +41,7 @@ public:
             {Str::obstaclesAgentAtExit, 1.0f},
             {Str::obstaclesAllAgentsAtExit, 5.0f},
             {Str::obstaclesExtraReward, 0.5f},
-            {Str::obstaclesAgentCarriedObjectToExit, 1.0f},
+            {Str::obstaclesAgentCarriedObjectToExit, 0.0f},
         };
     }
 
@@ -194,6 +194,13 @@ public:
     explicit ObstaclesOnePlatformTypeScenario(const std::string &name, Env &env, Env::EnvState &envState)
         : ObstaclesScenario(name, env, envState)
     {
+    }
+
+    RewardShaping defaultRewardShaping() const override
+    {
+        auto shaping = ObstaclesScenario::defaultRewardShaping();
+        shaping[Str::obstaclesAgentCarriedObjectToExit] = 1.0f;
+        return shaping;
     }
 
     void initializeDefaultParameters() override
