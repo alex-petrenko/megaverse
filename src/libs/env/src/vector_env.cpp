@@ -10,35 +10,37 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
     const int numEnvs = int(envs.size());
     envsPerThread = (numEnvs / numThreads) + (numEnvs % numThreads != 0);
 
-    currTasks = std::vector<Task>(numEnvs, Task::IDLE);
-    threadControl = std::vector<Task>(numThreads, Task::IDLE);
+    currTasks = std::vector<Task>(numThreads, Task::IDLE);
 
     for (int i = 1; i < numThreads; ++i) {
-        std::thread t{
-            [this, numEnvs](int threadIdx) {
-                while (true) {
-                    {
-                        std::unique_lock<std::mutex> lock{mutex};
+        std::thread t{[this, numEnvs](int threadIdx) {
+                          while (true) {
+                              Task task;
+                              {
+                                  std::unique_lock<std::mutex> lock{mutex};
 
-                        while (threadControl[threadIdx] == Task::IDLE)
-                            cvTask.wait(lock);
+                                  cvTask.wait(lock, [this, &threadIdx] {
+                                      return currTasks[threadIdx] != Task::IDLE;
+                                  });
+                                  task = currTasks[threadIdx];
 
-                        if (threadControl[threadIdx] == Task::TERMINATE)
-                            break;
+                                  currTasks[threadIdx] = Task::IDLE;
+                              }
 
-                        threadControl[threadIdx] = Task::IDLE;
-                    }
+                              if (task == Task::TERMINATE)
+                                  break;
 
-                    int envIdx = 0;
-                    while ((envIdx = nextTaskQueue.fetch_add(1)) < numEnvs) {
-                        taskFunc(currTasks[envIdx], envIdx);
-                        currTasks[envIdx] = Task::IDLE;
-                    }
+                              int envIdx = 0;
+                              while ((envIdx = nextTaskQueue.fetch_add(
+                                          1, std::memory_order_acq_rel)) <
+                                     numEnvs) {
+                                  taskFunc(task, envIdx);
+                              }
 
-                    ++numReady;
-                }
-            },
-            i};
+                              numReady.fetch_add(1, std::memory_order_acq_rel);
+                          }
+                      },
+                      i};
 
         backgroundThreads.emplace_back(std::move(t));
     }
@@ -52,12 +54,15 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
 
 void VectorEnv::stepEnv(int envIdx) {
     envs[envIdx]->step();
-    renderer.preDraw(*envs[envIdx], envIdx);
+
+    if (!envs[envIdx]->isDone())
+        renderer.preDraw(*envs[envIdx], envIdx);
 }
 
 void VectorEnv::resetEnv(int envIdx) {
     envs[envIdx]->reset();
 
+    // The vulkan renderer is fine with being reset in parallel
     if (renderer.isVulkan()) {
         renderer.reset(*envs[envIdx], envIdx);
         renderer.preDraw(*envs[envIdx], envIdx);
@@ -73,64 +78,57 @@ void VectorEnv::taskFunc(Task task, int envIdx) {
         func = &VectorEnv::resetEnv;
 
     (this->*func)(envIdx);
-}
 
-void VectorEnv::executeTask(Task task) {
-    numReady = 0;
-    nextTaskQueue = 0;
-
-    {
-        std::unique_lock<std::mutex> lock{mutex};
-        for (int threadIdx = 1; threadIdx < numThreads; ++threadIdx)
-            threadControl[threadIdx] = task;
-
-        cvTask.notify_all();
-    }
-
-    int envIdx = 0;
-    while ((envIdx = nextTaskQueue.fetch_add(1)) < int(envs.size())) {
-        taskFunc(currTasks[envIdx], envIdx);
-        currTasks[envIdx] = Task::IDLE;
-    }
-
-    // just waiting on an atomic, this is a bit faster than conditional variable
-    // tradeoff - using more CPU cycles?
-    while (numReady < numThreads - 1)
-        asm volatile("pause" ::: "memory");
-}
-
-void VectorEnv::step() {
-    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx)
-        currTasks[envIdx] = Task::STEP;
-
-    executeTask(Task::STEP);
-
-    bool anyDone = false;
-    // do this in background thread??
-    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
+    if (task == Task::STEP) {
         if (envs[envIdx]->isDone()) {
-            anyDone = true;
             done[envIdx] = true;
             for (int agentIdx = 0; agentIdx < envs[envIdx]->getNumAgents();
                  ++agentIdx)
                 trueObjectives[envIdx][agentIdx] =
                     envs[envIdx]->trueObjective(agentIdx);
 
-            currTasks[envIdx] = Task::RESET;
+            resetEnv(envIdx);
         } else {
             done[envIdx] = false;
         }
     }
+}
 
-    if (anyDone) {
-        executeTask(Task::RESET);
+void VectorEnv::executeTask(Task task) {
+    numReady.store(0, std::memory_order_relaxed);
+    nextTaskQueue.store(0, std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_release);
 
-        if (!renderer.isVulkan()) {
-            for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
-                if (done[envIdx]) {
-                    renderer.reset(*envs[envIdx], envIdx);
-                    renderer.preDraw(*envs[envIdx], envIdx);
-                }
+    {
+        std::unique_lock<std::mutex> lock{mutex};
+        for (int threadIdx = 1; threadIdx < numThreads; ++threadIdx)
+            currTasks[threadIdx] = task;
+    }
+    cvTask.notify_all();
+
+    int envIdx = 0;
+    while ((envIdx = nextTaskQueue.fetch_add(1, std::memory_order_acq_rel)) <
+           int(envs.size())) {
+        taskFunc(task, envIdx);
+    }
+
+    // just waiting on an atomic, this is a bit faster than conditional variable
+    // tradeoff - using more CPU cycles?
+    while (numReady.load(std::memory_order_acquire) < numThreads - 1)
+        asm volatile("pause" ::: "memory");
+
+    std::atomic_thread_fence(std::memory_order_acquire);
+}
+
+void VectorEnv::step() {
+    executeTask(Task::STEP);
+
+    // The OpenGL renderer isn't okay with being reset in parallel
+    if (!renderer.isVulkan()) {
+        for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
+            if (done[envIdx]) {
+                renderer.reset(*envs[envIdx], envIdx);
+                renderer.preDraw(*envs[envIdx], envIdx);
             }
         }
     }
@@ -139,10 +137,6 @@ void VectorEnv::step() {
 }
 
 void VectorEnv::reset() {
-    for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
-        currTasks[envIdx] = Task::RESET;
-    }
-
     executeTask(Task::RESET);
 
     if (!renderer.isVulkan()) {

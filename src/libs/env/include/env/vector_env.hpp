@@ -50,7 +50,6 @@ public:
 private:
     int numThreads{}, envsPerThread{};
     std::vector<std::thread> backgroundThreads;
-    std::vector<Task> threadControl;
     std::vector<Task> currTasks;
     std::condition_variable cvTask;
     std::mutex mutex;
