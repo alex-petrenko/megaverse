@@ -27,9 +27,6 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
                                   currTasks[threadIdx] = Task::IDLE;
                               }
 
-                              if (task == Task::TERMINATE)
-                                  break;
-
                               int envIdx = 0;
                               while ((envIdx = nextTaskQueue.fetch_add(
                                           1, std::memory_order_acq_rel)) <
@@ -38,6 +35,9 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
                               }
 
                               numReady.fetch_add(1, std::memory_order_acq_rel);
+
+                              if (task == Task::TERMINATE)
+                                  break;
                           }
                       },
                       i};
