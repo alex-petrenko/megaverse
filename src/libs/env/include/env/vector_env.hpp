@@ -34,6 +34,8 @@ public:
 private:
     void taskFunc(Task task, int threadIdx);
 
+    bool taskLoop(Task task);
+
     void executeTask(Task task);
 
     void stepEnv(int envIdx);

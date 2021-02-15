@@ -13,7 +13,7 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
     currTasks = std::vector<Task>(numThreads, Task::IDLE);
 
     for (int i = 1; i < numThreads; ++i) {
-        std::thread t{[this, numEnvs](int threadIdx) {
+        std::thread t{[this](int threadIdx) {
                           while (true) {
                               Task task;
                               {
@@ -27,14 +27,7 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
                                   currTasks[threadIdx] = Task::IDLE;
                               }
 
-                              int envIdx = 0;
-                              while ((envIdx = nextTaskQueue.fetch_add(
-                                          1, std::memory_order_acq_rel)) <
-                                     numEnvs) {
-                                  taskFunc(task, envIdx);
-                              }
-
-                              numReady.fetch_add(1, std::memory_order_acq_rel);
+                              taskLoop(task);
 
                               if (task == Task::TERMINATE)
                                   break;
@@ -55,15 +48,25 @@ VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs,
 void VectorEnv::stepEnv(int envIdx) {
     envs[envIdx]->step();
 
-    if (!envs[envIdx]->isDone())
+    if (envs[envIdx]->isDone()) {
+        done[envIdx] = true;
+        for (int agentIdx = 0; agentIdx < envs[envIdx]->getNumAgents();
+             ++agentIdx)
+            trueObjectives[envIdx][agentIdx] =
+                envs[envIdx]->trueObjective(agentIdx);
+
+        resetEnv(envIdx);
+    } else {
+        done[envIdx] = false;
         renderer.preDraw(*envs[envIdx], envIdx);
+    }
 }
 
 void VectorEnv::resetEnv(int envIdx) {
     envs[envIdx]->reset();
 
     // The vulkan renderer is fine with being reset in parallel
-    if (renderer.isVulkan()) {
+    if (renderer.supportsParallelReset()) {
         renderer.reset(*envs[envIdx], envIdx);
         renderer.preDraw(*envs[envIdx], envIdx);
     }
@@ -78,20 +81,16 @@ void VectorEnv::taskFunc(Task task, int envIdx) {
         func = &VectorEnv::resetEnv;
 
     (this->*func)(envIdx);
+}
 
-    if (task == Task::STEP) {
-        if (envs[envIdx]->isDone()) {
-            done[envIdx] = true;
-            for (int agentIdx = 0; agentIdx < envs[envIdx]->getNumAgents();
-                 ++agentIdx)
-                trueObjectives[envIdx][agentIdx] =
-                    envs[envIdx]->trueObjective(agentIdx);
-
-            resetEnv(envIdx);
-        } else {
-            done[envIdx] = false;
-        }
+bool VectorEnv::taskLoop(Task task) {
+    int envIdx = 0;
+    while ((envIdx = nextTaskQueue.fetch_add(1, std::memory_order_acq_rel)) <
+           int(envs.size())) {
+        taskFunc(task, envIdx);
     }
+    // (numThreads - 1) because fetch_add returns before the inc
+    return numReady.fetch_add(1, std::memory_order_acq_rel) == (numThreads - 1);
 }
 
 void VectorEnv::executeTask(Task task) {
@@ -106,16 +105,14 @@ void VectorEnv::executeTask(Task task) {
     }
     cvTask.notify_all();
 
-    int envIdx = 0;
-    while ((envIdx = nextTaskQueue.fetch_add(1, std::memory_order_acq_rel)) <
-           int(envs.size())) {
-        taskFunc(task, envIdx);
-    }
+    const bool finished = taskLoop(task);
 
-    // just waiting on an atomic, this is a bit faster than conditional variable
-    // tradeoff - using more CPU cycles?
-    while (numReady.load(std::memory_order_acquire) < numThreads - 1)
-        asm volatile("pause" ::: "memory");
+    if (!finished) {
+        // just waiting on an atomic, this is a bit faster than conditional
+        // variable tradeoff - using more CPU cycles?
+        while (numReady.load(std::memory_order_acquire) != numThreads)
+            asm volatile("pause" ::: "memory");
+    }
 
     std::atomic_thread_fence(std::memory_order_acquire);
 }
@@ -124,7 +121,7 @@ void VectorEnv::step() {
     executeTask(Task::STEP);
 
     // The OpenGL renderer isn't okay with being reset in parallel
-    if (!renderer.isVulkan()) {
+    if (!renderer.supportsParallelReset()) {
         for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
             if (done[envIdx]) {
                 renderer.reset(*envs[envIdx], envIdx);
@@ -139,7 +136,7 @@ void VectorEnv::step() {
 void VectorEnv::reset() {
     executeTask(Task::RESET);
 
-    if (!renderer.isVulkan()) {
+    if (!renderer.supportsParallelReset()) {
         // reset renderer on the main thread for magnum
         for (int envIdx = 0; envIdx < int(envs.size()); ++envIdx) {
             renderer.reset(*envs[envIdx], envIdx);

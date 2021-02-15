@@ -28,7 +28,7 @@ public:
 
     void draw(Envs &envs) override;
 
-    bool isVulkan() const override { return true; }
+    bool supportsParallelReset() const override { return true; }
 
     const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 
