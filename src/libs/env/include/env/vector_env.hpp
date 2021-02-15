@@ -53,6 +53,7 @@ private:
     std::vector<Task> currTasks;
     std::condition_variable cvTask;
     std::mutex mutex;
+    std::atomic<int> nextTaskQueue = 0;
     std::atomic<int> numReady = 0;
 };
 
