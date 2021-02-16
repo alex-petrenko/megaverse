@@ -20,7 +20,7 @@ public:
 
     virtual void draw(Envs &envs) = 0;
 
-    virtual bool isVulkan() const { return false; }
+    virtual bool supportsParallelReset() const { return false; }
 
     /**
      * Query the pointer to memory holding the latest observation for an agent in an env.
