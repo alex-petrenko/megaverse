@@ -28,6 +28,8 @@ public:
 
     void draw(Envs &envs) override;
 
+    bool supportsParallelReset() const override { return true; }
+
     const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 
     std::vector<int> getDirtyDrawables(int envIdx) const;
