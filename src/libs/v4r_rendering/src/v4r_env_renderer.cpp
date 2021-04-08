@@ -28,6 +28,7 @@
 
 #include <v4r_rendering/v4r_env_renderer.hpp>
 
+
 using namespace std;
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
@@ -47,13 +48,6 @@ class VoxelWorld::V4RDrawable : public SceneGraph::Drawable3D {
         CORRADE_INTERNAL_ASSERT(_renderEnvs.size() == _instanceIDs.size());
     }
 
-  private:
-    void draw(const Matrix4 &transformation, SceneGraph::Camera3D &) override {
-        glm::mat4x3 trans{glm::mat4{transformation}};
-        for (size_t i = 0; i < _renderEnvs.size(); ++i)
-            _renderEnvs[i].updateInstanceTransform(_instanceIDs[i], trans);
-    }
-
   public:
     void updateAbsoluteTransformation() {
         glm::mat4x3 trans{glm::mat4{object().absoluteTransformationMatrix()}};
@@ -62,22 +56,29 @@ class VoxelWorld::V4RDrawable : public SceneGraph::Drawable3D {
     }
 
   private:
+    void draw(const Matrix4 &transformation, SceneGraph::Camera3D &) override {
+        glm::mat4x3 trans{glm::mat4{transformation}};
+        for (size_t i = 0; i < _renderEnvs.size(); ++i)
+            _renderEnvs[i].updateInstanceTransform(_instanceIDs[i], trans);
+    }
+
     Cr::Containers::ArrayView<v4r::Environment> _renderEnvs;
     Cr::Containers::Array<uint32_t> _instanceIDs;
 };
 
-struct ColorCompare {
-    bool operator()(const Magnum::Color3 &c1, const Magnum::Color3 &c2) const {
-        return c1.r() == c2.r()
-                   ? c1.g() == c2.g() ? c1.b() < c2.b() : c1.g() < c2.g()
-                   : c1.r() < c2.r();
+struct ColorCompare
+{
+    bool operator()(const Magnum::Color3 &c1, const Magnum::Color3 &c2) const
+    {
+        return c1.r() == c2.r() ? c1.g() == c2.g() ? c1.b() < c2.b() : c1.g() < c2.g() : c1.r() < c2.r();
     }
 };
 
-struct V4REnvRenderer::Impl {
-  public:
-    explicit Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer,
-                  bool withOverview);
+
+struct V4REnvRenderer::Impl
+{
+public:
+    explicit Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview);
 
     ~Impl();
 
@@ -90,20 +91,19 @@ struct V4REnvRenderer::Impl {
     void preDraw(Env &env, int envIdx);
     void draw(Envs &envs);
 
-    const uint8_t *getObservation(int envIdx, int agentIdx) const;
+    const uint8_t * getObservation(int envIdx, int agentIdx) const;
 
     /**
-     * Assuming preDraw() and draw() were already called for this renderer
-     * before the next renderer in the chain requests dirty drawables.
+     * Assuming preDraw() and draw() were already called for this renderer before the next renderer in the chain
+     * requests dirty drawables.
      */
-    std::vector<int> getDirtyDrawables(int envIdx) const {
-        return dirtyDrawables[envIdx];
-    }
+    std::vector<int> getDirtyDrawables(int envIdx) const { return dirtyDrawables[envIdx]; }
 
-    Overview *getOverview() { return &overview; }
+    Overview * getOverview() { return &overview; }
 
-  private:
-    int batchSize(const Envs &envs) const {
+private:
+    int batchSize(const Envs &envs) const
+    {
         int res = 0;
         for (const auto &e : envs)
             res += e->getNumAgents();
@@ -111,7 +111,7 @@ struct V4REnvRenderer::Impl {
         return res;
     }
 
-  public:
+public:
     v4r::BatchRenderer renderer;
     v4r::AssetLoader loader;
     v4r::CommandStream cmdStream;
@@ -122,20 +122,17 @@ struct V4REnvRenderer::Impl {
 
     int pixelsPerFrame{}, pixelsPerEnv{};
 
-    //    vector<uint8_t> cpuFrames;
+//    vector<uint8_t> cpuFrames;
 
     std::vector<SceneGraph::DrawableGroup3D> envDrawables;
-    std::vector<std::vector<V4RDrawable *>>
-        v4rDrawables; // to avoid dynamic cast on every step()
-    std::vector<
-        std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>>>
-        drawablesObjects;
+    std::vector<std::vector<V4RDrawable *>> v4rDrawables;  // to avoid dynamic cast on every step()
+    std::vector<std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>>> drawablesObjects;
 
     std::vector<std::vector<int>> dirtyDrawables;
 
     std::map<Color3, int, ColorCompare> materialIndices;
 
-    //    v4r::RenderDoc rdoc;
+//    v4r::RenderDoc rdoc;
 
     std::map<DrawableType, Trade::MeshData> meshData;
     std::map<DrawableType, int> meshIndices;
@@ -146,27 +143,27 @@ struct V4REnvRenderer::Impl {
     Overview overview;
 };
 
-using Pipeline =
-    v4r::BlinnPhong<v4r::RenderOutputs::Color, v4r::DataSource::Uniform,
-                    v4r::DataSource::Uniform, v4r::DataSource::Uniform>;
+using Pipeline = v4r::BlinnPhong<v4r::RenderOutputs::Color,
+                                 v4r::DataSource::Uniform,
+                                 v4r::DataSource::Uniform,
+                                 v4r::DataSource::Uniform>;
 
-V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h,
-                           V4REnvRenderer *previousRenderer, bool withOverview)
-    : renderer{{0, 1, 1, uint32_t(batchSize(envs)), uint32_t(w), uint32_t(h),
-                glm::mat4(1.f)},
-               v4r::RenderFeatures<Pipeline>{
-                   v4r::RenderOptions::CpuSynchronization}},
-      loader{renderer.makeLoader()}, cmdStream{renderer.makeCommandStream()},
-      renderEnvs{}, framebufferSize{w, h}, previousRenderer{previousRenderer},
-      withOverviewCamera{withOverview} // cpuFrames(),
-                                       // rdoc()
+V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview)
+    : renderer{{ 0, 1, 1, uint32_t(batchSize(envs)), uint32_t(w), uint32_t(h), glm::mat4(1.f) },
+               v4r::RenderFeatures<Pipeline> {v4r::RenderOptions::CpuSynchronization}}
+    , loader{renderer.makeLoader()}
+    , cmdStream{renderer.makeCommandStream()}
+    , renderEnvs{}
+    , framebufferSize{w, h}
+    , previousRenderer{previousRenderer}
+    , withOverviewCamera{withOverview}
+    // cpuFrames(),
+    // rdoc()
 {
     auto numEnvs = envs.size();
-    envDrawables.resize(numEnvs), drawablesObjects.resize(numEnvs),
-        v4rDrawables.resize(numEnvs), dirtyDrawables.resize(numEnvs);
+    envDrawables.resize(numEnvs), drawablesObjects.resize(numEnvs), v4rDrawables.resize(numEnvs), dirtyDrawables.resize(numEnvs);
 
-    //    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x *
-    //    framebufferSize.y * 4 * env.getNumAgents()));
+//    cpuFrames = vector<uint8_t>(size_t(framebufferSize.x * framebufferSize.y * 4 * env.getNumAgents()));
 
     vector<shared_ptr<v4r::Mesh>> meshes;
     vector<shared_ptr<v4r::Material>> materials;
@@ -186,8 +183,10 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h,
             const auto &position = magnum_positions[i];
             const auto &normal = magnum_normals[i];
 
-            vertices.emplace_back(Vertex{glm::make_vec3(position.data()),
-                                         glm::make_vec3(normal.data())});
+            vertices.emplace_back(Vertex {
+                glm::make_vec3(position.data()),
+                glm::make_vec3(normal.data())
+            });
         }
 
         for (uint32_t idx : magnum_indices)
@@ -213,13 +212,16 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h,
         for (auto c : palette) {
             materialIndices[c] = int(materials.size());
 
-            materials.emplace_back(loader.makeMaterial(MaterialParams{
-                glm::vec3(c.r(), c.g(), c.b()), glm::vec3(1.f), shininess}));
+            materials.emplace_back(loader.makeMaterial(MaterialParams {
+                glm::vec3(c.r(), c.g(), c.b()),
+                glm::vec3(1.f),
+                shininess
+            }));
         }
     }
 
     // Scene
-    {
+    { 
         v4r::SceneDescription scene_desc(move(meshes), move(materials));
         scene_desc.addLight(glm::vec3(0, 4, 2), glm::vec3(0.66f));
 
@@ -233,17 +235,20 @@ V4REnvRenderer::Impl::Impl(Envs &envs, int w, int h,
 
         for (auto &env : envs)
             for (int agentIdx = 0; agentIdx < env->getNumAgents(); ++agentIdx)
-                renderEnvs.emplace_back(
-                    cmdStream.makeEnvironment(scene, fov, near, far));
+                renderEnvs.emplace_back(cmdStream.makeEnvironment(scene, fov, near, far));
     }
 
     pixelsPerFrame = framebufferSize.x * framebufferSize.y * 4;
     pixelsPerEnv = envs.front()->getNumAgents() * pixelsPerFrame;
 }
 
-V4REnvRenderer::Impl::~Impl() { TLOG(INFO) << __PRETTY_FUNCTION__; }
+V4REnvRenderer::Impl::~Impl()
+{
+    TLOG(INFO) << __PRETTY_FUNCTION__;
+}
 
-void V4REnvRenderer::Impl::reset(Env &env, int envIdx) {
+void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
+{
     auto [fov, near, far, aspectRatio] = agentCameraParameters();
     if (withOverviewCamera && envIdx == 0) {
         auto [oFov, oNear, oFar, oAspectRatio] = overviewCameraParameters();
@@ -252,13 +257,14 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx) {
     UNUSED(aspectRatio);
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
-        const auto idx = envIdx * env.getNumAgents() +
-                         i; // assuming all envs have the same numAgents
+        const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
         renderEnvs[idx] = cmdStream.makeEnvironment(scene, fov, near, far);
     }
 
     // reset renderer data structures
-    { envDrawables[envIdx] = SceneGraph::DrawableGroup3D{}; }
+    {
+        envDrawables[envIdx] = SceneGraph::DrawableGroup3D{};
+    }
 
     // drawables
     {
@@ -311,7 +317,8 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx) {
         overview.reset(&env.getScene());
 }
 
-void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx) {
+void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
+{
     dirtyDrawables[envIdx].clear();
 
     const auto numAgents = env.getNumAgents();
@@ -331,8 +338,7 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx) {
     if (previousRenderer) {
         dirtyDrawables[envIdx] = previousRenderer->getDirtyDrawables(envIdx);
     } else {
-        std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>>
-            dirtyObjects;
+        std::vector<std::reference_wrapper<SceneGraph::AbstractObject3D>> dirtyObjects;
 
         for (size_t i = 0; i < drawablesObjects[envIdx].size(); ++i) {
             auto &obj = drawablesObjects[envIdx][i].get();
@@ -342,8 +348,7 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx) {
             }
         }
 
-        // Collapsing the scene graph transformations "manually", somehow this
-        // is barely faster, if at all
+        // Collapsing the scene graph transformations "manually", somehow this is barely faster, if at all
         SceneGraph::AbstractObject3D::setClean(dirtyObjects);
     }
 
@@ -351,54 +356,66 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx) {
         v4rDrawables[envIdx][drawableIdx]->updateAbsoluteTransformation();
 }
 
-void V4REnvRenderer::Impl::draw(Envs &) {
-    //    rdoc.startFrame();
+void V4REnvRenderer::Impl::draw(Envs &)
+{
+//    rdoc.startFrame();
     cmdStream.render(renderEnvs);
     cmdStream.waitForFrame();
 
-    //    memcpy(
-    //        cpuFrames.data(),
-    //        cmdStream.getRGB(),
-    //        env.getNumAgents() * framebufferSize.x * framebufferSize.y * 4
-    //    );
+//    memcpy(
+//        cpuFrames.data(),
+//        cmdStream.getRGB(),
+//        env.getNumAgents() * framebufferSize.x * framebufferSize.y * 4
+//    );
 
-    //    rdoc.endFrame();
+//    rdoc.endFrame();
 
-    //    cudaError_t cuda_res = cudaStreamSynchronize(cudaStream);
-    //    if (cuda_res != cudaSuccess)
-    //        abort();
+//    cudaError_t cuda_res = cudaStreamSynchronize(cudaStream);
+//    if (cuda_res != cudaSuccess)
+//        abort();
 }
 
-const uint8_t *V4REnvRenderer::Impl::getObservation(int envIdx,
-                                                    int agentIdx) const {
+const uint8_t * V4REnvRenderer::Impl::getObservation(int envIdx, int agentIdx) const
+{
     const auto startIdx = envIdx * pixelsPerEnv;
     return cmdStream.getRGB() + startIdx + agentIdx * pixelsPerFrame;
-    //    return cpuFrames.data() + agentIdx * framebufferSize.x *
-    //    framebufferSize.y * 4;
+//    return cpuFrames.data() + agentIdx * framebufferSize.x * framebufferSize.y * 4;
 }
 
-V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h,
-                               V4REnvRenderer *previousRenderer,
-                               bool withOverview) {
+V4REnvRenderer::V4REnvRenderer(Envs &envs, int w, int h, V4REnvRenderer *previousRenderer, bool withOverview)
+{
     pimpl = std::make_unique<Impl>(envs, w, h, previousRenderer, withOverview);
 }
 
 V4REnvRenderer::~V4REnvRenderer() = default;
 
-void V4REnvRenderer::reset(Env &env, int envIdx) { pimpl->reset(env, envIdx); }
 
-void V4REnvRenderer::preDraw(Env &env, int envIndex) {
+void V4REnvRenderer::reset(Env &env, int envIdx)
+{
+    pimpl->reset(env, envIdx);
+}
+
+void V4REnvRenderer::preDraw(Env &env, int envIndex)
+{
     pimpl->preDraw(env, envIndex);
 }
 
-void V4REnvRenderer::draw(Envs &envs) { pimpl->draw(envs); }
+void V4REnvRenderer::draw(Envs &envs)
+{
+    pimpl->draw(envs);
+}
 
-const uint8_t *V4REnvRenderer::getObservation(int envIdx, int agentIdx) const {
+const uint8_t * V4REnvRenderer::getObservation(int envIdx, int agentIdx) const
+{
     return pimpl->getObservation(envIdx, agentIdx);
 }
 
-std::vector<int> V4REnvRenderer::getDirtyDrawables(int envIdx) const {
+std::vector<int> V4REnvRenderer::getDirtyDrawables(int envIdx) const
+{
     return pimpl->getDirtyDrawables(envIdx);
 }
 
-Overview *V4REnvRenderer::getOverview() { return pimpl->getOverview(); }
+Overview * V4REnvRenderer::getOverview()
+{
+    return pimpl->getOverview();
+}
