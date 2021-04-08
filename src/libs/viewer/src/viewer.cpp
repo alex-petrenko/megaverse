@@ -52,6 +52,7 @@ Viewer::Viewer(Envs &envs, bool useVulkan, EnvRenderer *parentRenderer, const Ar
     if (useVulkan) {
 #if defined (CORRADE_TARGET_APPLE)
         TLOG(ERROR) << "Vulkan not supported on MacOS";
+        UNUSED(parentRenderer);
 #else
         framebuffer = GL::Framebuffer{Range2Di{{}, fbSize}};
         framebuffer.attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer);
