@@ -39,5 +39,11 @@ src/.idea/**
 cmake-build*
 build*
 
+# Byte-compiled Python
+__pycache__/
+
 # Python build stuff
 *.egg-info/**
+
+# RL-training related
+train_dir/
