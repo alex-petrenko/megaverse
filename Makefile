@@ -27,3 +27,14 @@ shell:
 docker-bash:
 	docker-compose run --it --rm dev bash
 
+.PHONY: upload upload-test clean
+
+upload:
+	python3 -m twine upload --repository pypi dist/*
+
+upload-test:
+	python3 -m twine upload --repository testpypi dist/*
+
+clean:
+	rm -rf build dist
+
