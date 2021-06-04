@@ -28,6 +28,12 @@ sudo apt install vulkan-sdk
 (or install manually from https://vulkan.lunarg.com/sdk/home#linux, then source ./setup-env.sh to set envvars) 
 
 6) Setup Python environment (TODO: add environment.yml to this repo, currently using one from Sample Factory)
+(REQUIRES: opencv, cudatoolkit
+conda install -c conda-forge opencv
+conda install -c anaconda cudatoolkit
+conda install -c conda-forge cudatoolkit-dev
+)
+
 
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
