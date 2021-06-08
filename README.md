@@ -28,6 +28,12 @@ sudo apt install vulkan-sdk
 (or install manually from https://vulkan.lunarg.com/sdk/home#linux, then source ./setup-env.sh to set envvars) 
 
 6) Setup Python environment (TODO: add environment.yml to this repo, currently using one from Sample Factory)
+(REQUIRES: opencv, cudatoolkit
+conda install -c conda-forge opencv
+conda install -c anaconda cudatoolkit
+conda install -c conda-forge cudatoolkit-dev
+)
+
 
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
@@ -100,6 +106,22 @@ python -m unittest
 14) You are ready to use the VoxelWorld Python API!
 
 ```
+
+Training:
+
+```
+
+Single experiment example:
+
+python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps=2000000000 --algo=APPO --gamma=0.997 --use_rnn=True --rnn_num_layers=2 --num_workers=12 --num_envs_per_worker=2 --ppo_epochs=1 --rollout=32 --recurrence=32 --batch_size=2048 --actor_worker_gpus 0 --num_policies=1 --with_pbt=False --max_grad_norm=0.0 --exploration_loss=symmetric_kl --exploration_loss_coeff=0.001 --voxel_num_simulation_threads=1 --voxel_use_vulkan=True --policy_workers_per_policy=2 --learner_main_loop_num_cores=1 --reward_clip=30 --env=voxel_env_TowerBuilding --experiment=test_cli
+
+Example runner script:
+
+python -m sample_factory.runner.run --run=megaverse_rl.runs.voxel_single_agent --runner=processes --max_parallel=8 --pause_between=10 --experiments_per_gpu=2 --num_gpus=4
+
+
+```
+
 
 Docker setup:
 

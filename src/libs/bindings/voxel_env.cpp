@@ -229,9 +229,11 @@ public:
         if (vectorEnv)
             vectorEnv->close();
 
+#ifdef WITH_GUI
         if (viewer)
             viewer->exit(0);
         viewer.reset();
+#endif
 
         hiresRenderer.reset();
         renderer.reset();

@@ -1,0 +1,6 @@
+global-include *
+global-exclude *git*
+recursive-exclude **/benchmark* *
+recursive-exclude **/json/test *
+recursive-exclude **/.git *
+prune dist

@@ -52,6 +52,7 @@ Viewer::Viewer(Envs &envs, bool useVulkan, EnvRenderer *parentRenderer, const Ar
     if (useVulkan) {
 #if defined (CORRADE_TARGET_APPLE)
         TLOG(ERROR) << "Vulkan not supported on MacOS";
+        UNUSED(parentRenderer);
 #else
         framebuffer = GL::Framebuffer{Range2Di{{}, fbSize}};
         framebuffer.attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer);
@@ -227,6 +228,9 @@ void Viewer::controlOverview(const KeyEvent::Key &key, bool addAction)
         case KeyEvent::Key::J: a = Action::Backward; break;
         case KeyEvent::Key::H: a = Action::Left; break;
         case KeyEvent::Key::K: a = Action::Right; break;
+        case KeyEvent::Key::LeftShift: a = Action::LookUp; break;
+        case KeyEvent::Key::RightShift: a = Action::LookDown; break;
+
         default: break;
     }
 
@@ -247,7 +251,7 @@ void Viewer::moveOverviewCamera()
     if (!overview->enabled)
         return;
 
-    const float speed = 1.0;
+    const float speed = 0.6;
 
     Vector3 moveDirection{};
 
@@ -264,6 +268,13 @@ void Viewer::moveOverviewCamera()
         moveDirection -= rightDirection;
     else if (!!(currOverviewAction & Action::Right))
         moveDirection += rightDirection;
+
+    const auto upDirection = Vector3{0, 1, 0};
+
+    if (!!(currOverviewAction & Action::LookUp))
+        moveDirection += upDirection;
+    else if (!!(currOverviewAction & Action::LookDown))
+        moveDirection -= upDirection;
 
     if (moveDirection.length() > FLT_EPSILON)
         overview->root->translate(speed * moveDirection.normalized());

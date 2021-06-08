@@ -9,6 +9,7 @@ from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
+supported_platforms = ["Linux", "Mac OS-X"]
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -80,7 +81,9 @@ def main():
         author_email='apetrenko1991@gmail.com',
         description='Fast immersive environment',
         long_description='',
-        packages=find_packages(),
+        platforms=supported_platforms,
+        packages=find_packages(exclude=['test', 'benchmarks']),
+        include_package_data=True,
         ext_modules=[CMakeExtension('voxel_env.extension.voxel_env', 'src')],
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
