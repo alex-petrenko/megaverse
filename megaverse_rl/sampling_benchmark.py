@@ -33,9 +33,9 @@ def main():
     parser.set_defaults(
         sampler_worker_gpus=gpus,
         num_workers=len(gpus) * 10,
-        voxel_num_envs_per_instance=1,
-        voxel_num_agents_per_env=2,
-        voxel_num_simulation_threads=1,
+        voxel_num_envs_per_instance=32,
+        voxel_num_agents_per_env=4,
+        voxel_num_simulation_threads=2,
     )
 
     # parse all the arguments (algo, env, and optionally evaluation)
