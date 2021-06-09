@@ -1,4 +1,4 @@
-# voxel-rl
+# Megaverse
 
 ```
 1) Clone the repo
