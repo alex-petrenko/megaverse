@@ -2,7 +2,7 @@
 #include <scenarios/scenario_empty.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 EmptyScenario::EmptyScenario(const std::string &name, Env &env, Env::EnvState &envState)

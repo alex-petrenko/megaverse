@@ -15,7 +15,7 @@
 
 
 using namespace Magnum;
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 bool Viewer::viewerExists = false;
@@ -33,7 +33,7 @@ Viewer::Viewer(Envs &envs, bool useVulkan, EnvRenderer *parentRenderer, const Ar
     {
         const Vector2 dpiScaling = this->dpiScaling({});
         Configuration conf;
-        conf.setTitle("VoxelEnvViewer").setSize({width, height}, dpiScaling);
+        conf.setTitle("MegaverseViewer").setSize({width, height}, dpiScaling);
         GLConfiguration glConf;
         glConf.setSampleCount(dpiScaling.max() < 2.0f ? 8 : 2);
 

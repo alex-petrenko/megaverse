@@ -3,7 +3,7 @@
 #include <scenarios/scenario_collect.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 using namespace Magnum::Math::Literals;
 
@@ -74,7 +74,7 @@ void CollectScenario::createLandscape()
     const double fz = maxWidth / frequency;
 
     const int intensity = randRange(5, 18, rng);
-    const float groundLevel = VoxelWorld::frand(rng) * 0.5f + 0.2f;
+    const float groundLevel = Megaverse::frand(rng) * 0.5f + 0.2f;
 
     for (int x = 1; x < length - 1; ++x)
         for (int z = 1; z < width - 1; ++z) {

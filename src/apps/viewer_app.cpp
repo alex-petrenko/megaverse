@@ -10,7 +10,7 @@
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 // TODO: CLI parameters
 #if defined(CORRADE_TARGET_APPLE)
@@ -22,11 +22,11 @@ constexpr bool useVulkanRenderer = true;
 #endif
 
 // "main" envs
-const auto scenarioName = "ObstaclesHard";  // *
+//const auto scenarioName = "ObstaclesHard";  // *
 //const auto scenarioName = "ObstaclesEasy";  // *
 //const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
-//const auto scenarioName = "TowerBuilding";
+const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
 //const auto scenarioName = "HexExplore";  // *
 //const auto scenarioName = "Rearrange";  // *

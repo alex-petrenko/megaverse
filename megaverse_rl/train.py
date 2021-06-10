@@ -8,7 +8,7 @@ import sys
 from sample_factory.algorithms.utils.arguments import parse_args
 from sample_factory.run_algorithm import run_algorithm
 
-from megaverse_rl.voxel_env_utils import register_env
+from megaverse_rl.megaverse_utils import register_env
 
 
 def main():

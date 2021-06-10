@@ -6,7 +6,7 @@
 
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class PlatformsComponent : public ScenarioComponent

@@ -7,7 +7,7 @@
 #include <scenarios/scenario_sokoban.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 using namespace Magnum::Math::Literals;
 
 

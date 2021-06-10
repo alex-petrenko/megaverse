@@ -1,6 +1,6 @@
 #include <env/vector_env.hpp>
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 VectorEnv::VectorEnv(std::vector<std::unique_ptr<Env>> &envs, EnvRenderer &renderer, int numThreads)

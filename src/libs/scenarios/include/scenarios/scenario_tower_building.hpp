@@ -2,17 +2,18 @@
 
 #include <env/scenario.hpp>
 
+#include <scenarios/layout_utils.hpp>
 #include <scenarios/scenario_default.hpp>
 #include <scenarios/component_platforms.hpp>
 #include <scenarios/component_voxel_grid.hpp>
-#include <scenarios/layout_utils.hpp>
+#include <scenarios/component_fall_detection.hpp>
 #include <scenarios/component_object_stacking.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
-class TowerBuildingScenario : public DefaultScenario, public ObjectStackingCallbacks
+class TowerBuildingScenario : public DefaultScenario, public ObjectStackingCallbacks, public FallDetectionCallbacks
 {
 private:
     class TowerBuildingPlatform;
@@ -67,6 +68,7 @@ private:
 private:
     VoxelGridComponent<VoxelWithPhysicsObjects> vg;
     ObjectStackingComponent<VoxelWithPhysicsObjects> objectStackingComponent;
+    FallDetectionComponent<VoxelWithPhysicsObjects> fallDetection;
     PlatformsComponent platformsComponent;
 
     int highestTower = 0;

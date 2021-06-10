@@ -8,7 +8,7 @@
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 namespace

@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 enum class Status

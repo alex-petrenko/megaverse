@@ -7,7 +7,7 @@
 #include <iostream>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 enum LogLevel

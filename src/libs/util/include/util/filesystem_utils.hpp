@@ -6,7 +6,7 @@
 #include <sstream>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 inline char pathDelim()

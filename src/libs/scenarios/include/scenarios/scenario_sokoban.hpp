@@ -7,7 +7,7 @@
 #include <scenarios/component_object_stacking.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 struct SokobanLevel

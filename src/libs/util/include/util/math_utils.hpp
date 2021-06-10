@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 template<typename T> T triangularNumber(T n)

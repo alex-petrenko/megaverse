@@ -9,7 +9,7 @@
 #include <scenarios/platforms.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 struct CoordRange

@@ -13,7 +13,7 @@ class btCollisionDispatcher;
 class btPairCachingGhostObject;
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 ///btKinematicCharacterController is an object that supports a sliding motion in a world.

@@ -31,7 +31,7 @@
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 struct InstanceData {
@@ -387,7 +387,7 @@ void MagnumEnvRenderer::toggleDebugMode()
     pimpl->toggleDebugMode();
 }
 
-Overview * VoxelWorld::MagnumEnvRenderer::getOverview()
+Overview * Megaverse::MagnumEnvRenderer::getOverview()
 {
     return pimpl->getOverview();
 }

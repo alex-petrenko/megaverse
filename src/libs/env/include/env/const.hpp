@@ -4,7 +4,7 @@
 #include <util/magnum.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 using ConstStr = const char *const;

@@ -6,10 +6,10 @@
 
 
 using namespace Magnum;
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
-HexagonalMazeComponent::HexagonalMazeComponent(VoxelWorld::Scenario &scenario)
+HexagonalMazeComponent::HexagonalMazeComponent(Megaverse::Scenario &scenario)
 : ScenarioComponent{scenario}
 {
 }

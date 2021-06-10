@@ -3,7 +3,7 @@
 #include <memory>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class RenderingContext

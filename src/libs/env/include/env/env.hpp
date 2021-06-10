@@ -14,7 +14,7 @@
 #include <env/physics.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class Scenario;

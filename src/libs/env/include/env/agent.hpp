@@ -14,7 +14,7 @@
 #include <env/kinematic_character_controller.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class AbstractAgent : public Object3D

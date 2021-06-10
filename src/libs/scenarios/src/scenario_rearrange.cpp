@@ -5,7 +5,7 @@
 
 
 using namespace Magnum;
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 class RearrangeScenario::RearrangePlatform : public EmptyPlatform

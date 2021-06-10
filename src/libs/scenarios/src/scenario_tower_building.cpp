@@ -2,7 +2,7 @@
 #include <scenarios/scenario_tower_building.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 class TowerBuildingScenario::TowerBuildingPlatform : public EmptyPlatform
@@ -118,6 +118,7 @@ TowerBuildingScenario::TowerBuildingScenario(const std::string &name, Env &env, 
 : DefaultScenario{name, env, envState}
 , vg{*this}
 , objectStackingComponent{*this, env.getNumAgents(), vg.grid, *this}
+, fallDetection{*this, vg.grid, *this}
 , platformsComponent{*this}
 , agentState(size_t(env.getNumAgents()))
 {
@@ -129,6 +130,7 @@ void TowerBuildingScenario::reset()
 {
     objectStackingComponent.reset(env, envState);
     vg.reset(env, envState);
+    fallDetection.reset(env, envState);
     platformsComponent.reset(env, envState);
 
     std::fill(agentState.begin(), agentState.end(), AgentState{});
@@ -147,6 +149,8 @@ void TowerBuildingScenario::reset()
     currBuildingZoneReward = 0.0f;
     objectsInBuildingZone.clear();
     highestTower = 0;
+
+    fallDetection.agentInitialPositions = agentStartingPositions();
 }
 
 std::vector<Magnum::Vector3> TowerBuildingScenario::agentStartingPositions()
@@ -175,6 +179,7 @@ void TowerBuildingScenario::addEpisodeDrawables(DrawablesMap &drawables)
 void TowerBuildingScenario::step()
 {
     objectStackingComponent.step(env, envState);
+    fallDetection.step(env, envState);
 
     for (int i = 0; i < env.getNumAgents(); ++i) {
         // reward shaping: give agents reward for visiting bulding zone while carrying the object
@@ -255,7 +260,7 @@ void TowerBuildingScenario::addCollectiveReward(int agentIdx)
     rewardTeam(Str::towerBuildingReward, agentIdx, rewardDelta);
 }
 
-float VoxelWorld::TowerBuildingScenario::episodeLengthSec() const
+float Megaverse::TowerBuildingScenario::episodeLengthSec() const
 {
     return Scenario::episodeLengthSec() + 4.0f * float(platform->numMovableBoxes());
 }

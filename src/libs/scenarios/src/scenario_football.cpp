@@ -1,7 +1,7 @@
 #include <scenarios/scenario_football.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 class FootballScenario::FootballLayout : public EmptyPlatform

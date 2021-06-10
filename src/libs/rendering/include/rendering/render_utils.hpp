@@ -8,7 +8,7 @@
 #include <Magnum/Trade/MeshData.h>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 void initPrimitives(std::map<DrawableType, Magnum::Trade::MeshData> &meshData);

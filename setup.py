@@ -1,13 +1,10 @@
-import os
-import re
-import sys
-import platform
-import subprocess
 import multiprocessing
+import os
+import subprocess
+import sys
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
-from distutils.version import LooseVersion
 
 supported_platforms = ["Linux", "Mac OS-X"]
 
@@ -50,7 +47,7 @@ class CMakeBuild(build_ext):
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
-        if os.environ.get('VOXEL_WITH_GUI') == '1':
+        if os.environ.get('MEGAVERSE_WITH_GUI') == '1':
             build_gui = 'ON'
         else:
             build_gui = 'OFF'
@@ -67,7 +64,7 @@ class CMakeBuild(build_ext):
 
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(
-            ['cmake', '--build', '.', '--target', 'voxel_env'] + build_args, cwd=self.build_temp,
+            ['cmake', '--build', '.', '--target', 'megaverse'] + build_args, cwd=self.build_temp,
         )
 
         print('Completed the build!')
@@ -75,7 +72,7 @@ class CMakeBuild(build_ext):
 
 def main():
     setup(
-        name='voxel_env',
+        name='megaverse',
         version='0.0.1',
         author='Aleksei Petrenko',
         author_email='apetrenko1991@gmail.com',
@@ -84,7 +81,7 @@ def main():
         platforms=supported_platforms,
         packages=find_packages(exclude=['test', 'benchmarks']),
         include_package_data=True,
-        ext_modules=[CMakeExtension('voxel_env.extension.voxel_env', 'src')],
+        ext_modules=[CMakeExtension('megaverse.extension.megaverse', 'src')],
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
     )

@@ -3,7 +3,7 @@
 #include <env/env.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 // defined later in render_utils.cpp

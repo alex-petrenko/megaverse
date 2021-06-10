@@ -9,7 +9,7 @@
 #include <util/perlin_noise.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 # pragma pack (push, 1)
@@ -187,7 +187,7 @@ TEST(util, perlinNoise)
     std::cout << "* seed      [0 .. 2^32-1]        \n";
     std::cout << "---------------------------------\n";
 
-    VoxelWorld::Rng rng{std::random_device{}()};
+    Megaverse::Rng rng{std::random_device{}()};
 
     for (int i = 0; i < 10; ++i) {
         double frequency = double (randRange(1, 60, rng)) / 10.0;

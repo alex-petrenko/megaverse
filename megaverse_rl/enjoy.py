@@ -3,7 +3,7 @@ import sys
 from sample_factory.algorithms.appo.enjoy_appo import enjoy
 from sample_factory.algorithms.utils.arguments import parse_args
 
-from megaverse_rl.voxel_env_utils import register_env
+from megaverse_rl.megaverse_utils import register_env
 
 
 def main():

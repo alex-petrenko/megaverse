@@ -10,7 +10,7 @@ from sample_factory.run_algorithm import run_algorithm
 from sample_factory.utils.get_available_gpus import get_gpus_without_triggering_pytorch_cuda_initialization
 from sample_factory.utils.utils import log
 
-from megaverse_rl.voxel_env_utils import register_env
+from megaverse_rl.megaverse_utils import register_env
 
 
 def main():
@@ -33,9 +33,9 @@ def main():
     parser.set_defaults(
         sampler_worker_gpus=gpus,
         num_workers=len(gpus) * 10,
-        voxel_num_envs_per_instance=32,
-        voxel_num_agents_per_env=4,
-        voxel_num_simulation_threads=2,
+        megaverse_num_envs_per_instance=32,
+        megaverse_num_agents_per_env=4,
+        megaverse_num_simulation_threads=2,
     )
 
     # parse all the arguments (algo, env, and optionally evaluation)

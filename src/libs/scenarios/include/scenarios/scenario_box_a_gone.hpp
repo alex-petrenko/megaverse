@@ -9,7 +9,7 @@
 #include <scenarios/component_fall_detection.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 struct VoxelBoxAGone : public VoxelState

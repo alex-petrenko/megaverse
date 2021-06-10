@@ -7,7 +7,7 @@
 #include <util/macro.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 template<typename T>

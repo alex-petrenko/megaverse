@@ -23,19 +23,19 @@
 
 namespace py = pybind11;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
-void setVoxelEnvLogLevel(int level)
+void setMegaverseLogLevel(int level)
 {
     setLogLevel(LogLevel(level));
 }
 
 
-class VoxelEnvGym
+class MegaverseGym
 {
 public:
-    VoxelEnvGym(
+    MegaverseGym(
         const std::string &scenario,
         int w, int h,
         int numEnvs, int numAgentsPerEnv, int numSimulationThreads,
@@ -196,7 +196,7 @@ public:
         viewer->step(vectorEnv->done);
         viewer->mainLoopIteration();  // handle events, update the window, that kind of thing
 #else
-        TLOG(ERROR) << "VoxelWorld was built without GUI support";
+        TLOG(ERROR) << "Megaverse was built without GUI support";
 #endif
     }
 
@@ -264,29 +264,29 @@ private:
 };
 
 
-PYBIND11_MODULE(voxel_env, m)
+PYBIND11_MODULE(megaverse, m)
 {
-    m.doc() = "voxel env"; // optional module docstring
+    m.doc() = "Megaverse Python bindings"; // optional module docstring
 
-    m.def("set_voxel_env_log_level", &setVoxelEnvLogLevel, "Voxel Env Log Level (0 to disable all logs, 2 for warnings");
+    m.def("set_megaverse_log_level", &setMegaverseLogLevel, "Megaverse Log Level (0 to disable all logs, 2 for warnings");
 
-    py::class_<VoxelEnvGym>(m, "VoxelEnvGym")
+    py::class_<MegaverseGym>(m, "MegaverseGym")
         .def(py::init<const std::string &, int, int, int, int, int, bool, const FloatParams &>())
-        .def("num_agents", &VoxelEnvGym::numAgents)
-        .def("action_space_sizes", &VoxelEnvGym::actionSpaceSizes)
-        .def("seed", &VoxelEnvGym::seed)
-        .def("reset", &VoxelEnvGym::reset)
-        .def("set_actions", &VoxelEnvGym::setActions)
-        .def("step", &VoxelEnvGym::step)
-        .def("is_done", &VoxelEnvGym::isDone)
-        .def("get_observation", &VoxelEnvGym::getObservation)
-        .def("get_last_rewards", &VoxelEnvGym::getLastRewards)
-        .def("true_objective", &VoxelEnvGym::trueObjective)
-        .def("set_render_resolution", &VoxelEnvGym::setRenderResolution)
-        .def("draw_hires", &VoxelEnvGym::drawHires)
-        .def("draw_overview", &VoxelEnvGym::drawOverview)
-        .def("get_hires_observation", &VoxelEnvGym::getHiresObservation)
-        .def("get_reward_shaping", &VoxelEnvGym::getRewardShaping)
-        .def("set_reward_shaping", &VoxelEnvGym::setRewardShaping)
-        .def("close", &VoxelEnvGym::close);
+        .def("num_agents", &MegaverseGym::numAgents)
+        .def("action_space_sizes", &MegaverseGym::actionSpaceSizes)
+        .def("seed", &MegaverseGym::seed)
+        .def("reset", &MegaverseGym::reset)
+        .def("set_actions", &MegaverseGym::setActions)
+        .def("step", &MegaverseGym::step)
+        .def("is_done", &MegaverseGym::isDone)
+        .def("get_observation", &MegaverseGym::getObservation)
+        .def("get_last_rewards", &MegaverseGym::getLastRewards)
+        .def("true_objective", &MegaverseGym::trueObjective)
+        .def("set_render_resolution", &MegaverseGym::setRenderResolution)
+        .def("draw_hires", &MegaverseGym::drawHires)
+        .def("draw_overview", &MegaverseGym::drawOverview)
+        .def("get_hires_observation", &MegaverseGym::getHiresObservation)
+        .def("get_reward_shaping", &MegaverseGym::getRewardShaping)
+        .def("set_reward_shaping", &MegaverseGym::setRewardShaping)
+        .def("close", &MegaverseGym::close);
 }

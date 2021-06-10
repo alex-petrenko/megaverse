@@ -26,10 +26,10 @@ using namespace std;
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
-class VoxelWorld::V4RDrawable : public SceneGraph::Drawable3D
+class Megaverse::V4RDrawable : public SceneGraph::Drawable3D
 {
 public:
     explicit V4RDrawable(

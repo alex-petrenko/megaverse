@@ -5,10 +5,10 @@ import numpy as np
 from gym.spaces import Discrete
 
 # noinspection PyUnresolvedReferences
-from voxel_env.extension.voxel_env import VoxelEnvGym, set_voxel_env_log_level
+from megaverse.extension.megaverse import MegaverseGym, set_megaverse_log_level
 
 
-VOXELWORLD8 = [
+MEGAVERSE8 = [
     'TowerBuilding',
     'ObstaclesEasy',
     'ObstaclesHard',
@@ -26,8 +26,8 @@ OBSTACLES_MULTITASK = [
 
 def make_env_multitask(multitask_name, task_idx, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
     assert 'multitask' in multitask_name
-    if multitask_name.endswith('voxelworld8'):
-        tasks = VOXELWORLD8
+    if multitask_name.endswith('megaverse8'):
+        tasks = MEGAVERSE8
     elif multitask_name.endswith('obstacles'):
         tasks = OBSTACLES_MULTITASK
     else:
@@ -36,17 +36,17 @@ def make_env_multitask(multitask_name, task_idx, num_envs, num_agents_per_env, n
     scenario_idx = task_idx % len(tasks)
     scenario = tasks[scenario_idx]
     print('Multi-task, scenario', scenario_idx, scenario)
-    return VoxelEnv(scenario, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
+    return MegaverseEnv(scenario, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
 
 
-class VoxelEnv(gym.Env):
+class MegaverseEnv(gym.Env):
     def __init__(self, scenario_name, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
         scenario_name = scenario_name.casefold()
         self.scenario_name = scenario_name
 
         self.is_multiagent = True
 
-        set_voxel_env_log_level(2)
+        set_megaverse_log_level(2)
 
         self.img_w = 128
         self.img_h = 72
@@ -69,7 +69,7 @@ class VoxelEnv(gym.Env):
 
         # float_params['episodeLengthSec'] = 1.0
 
-        self.env = VoxelEnvGym(
+        self.env = MegaverseGym(
             self.scenario_name,
             self.img_w, self.img_h, num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, float_params,
         )

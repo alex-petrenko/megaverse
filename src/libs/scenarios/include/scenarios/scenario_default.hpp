@@ -5,7 +5,7 @@
 #include <env/scenario.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 /**

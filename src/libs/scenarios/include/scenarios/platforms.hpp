@@ -15,7 +15,7 @@
 #include <scenarios/const.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 enum PlatformOrientation

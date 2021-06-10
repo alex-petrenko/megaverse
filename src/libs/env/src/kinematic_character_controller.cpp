@@ -11,7 +11,7 @@
 #include <util/tiny_logger.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 #ifdef UNUSED_FUNCTION
@@ -513,6 +513,7 @@ void KinematicCharacterController::warp(const btVector3& origin)
     xform.setOrigin(origin);
     m_ghostObject->setWorldTransform(xform);
     horizontalVelocity.setValue(0, 0, 0);
+    m_verticalVelocity = 0;
 }
 
 void KinematicCharacterController::preStep(btCollisionWorld* /*collisionWorld*/)

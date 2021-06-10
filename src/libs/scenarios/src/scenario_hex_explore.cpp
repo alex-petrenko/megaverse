@@ -4,7 +4,7 @@
 #include <scenarios/layout_utils.hpp>
 #include <scenarios/scenario_hex_explore.hpp>
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;

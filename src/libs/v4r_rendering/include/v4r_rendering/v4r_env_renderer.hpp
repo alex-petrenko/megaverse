@@ -5,7 +5,7 @@
 #include <env/env_renderer.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class V4RDrawable;

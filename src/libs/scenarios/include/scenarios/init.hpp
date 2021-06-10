@@ -14,7 +14,7 @@
 #include <scenarios/scenario_tower_building.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 template <typename ScenarioType>

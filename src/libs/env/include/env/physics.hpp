@@ -13,7 +13,7 @@
 #include <util/tiny_logger.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class RigidBody : public Object3D

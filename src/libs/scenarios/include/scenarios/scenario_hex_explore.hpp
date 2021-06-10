@@ -3,7 +3,7 @@
 #include <scenarios/scenario_default.hpp>
 #include <scenarios/component_hexagonal_maze.hpp>
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class HexExploreScenario : public DefaultScenario
