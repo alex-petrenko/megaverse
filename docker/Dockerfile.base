@@ -1,21 +1,31 @@
 FROM nvidia/cudagl:10.2-devel-ubuntu18.04
+# FROM nvidia/cudagl:11.0-devel-ubuntu20.04
+# FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
 
 # Set up locale to prevent bugs with encoding
 ENV LC_ALL=C.UTF-8 LANG=C.UTF-8
 
 RUN apt-get update || true && apt-get install -y \
+    libcudnn8 \
+    libglvnd0 libgl1 libglx0 libegl1 \
+    libglvnd-dev libgl1-mesa-dev libegl1-mesa-dev \
     wget curl git zlib1g-dev \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
     python3 python3-pip cmake \
-    && wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add - \
-    && wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.154-bionic.list https://packages.lunarg.com/vulkan/1.2.154/lunarg-vulkan-1.2.154-bionic.list \
-    && apt update || true && apt install -y vulkan-sdk \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# RUN apt-get update || true && apt-get install -y libcudnn7
+WORKDIR /vulkan
+RUN wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz && tar -xzf vulkansdk-linux-x86_64-1.2.162.0.tar.gz
+
+ENV VULKAN_SDK=/vulkan/1.2.162.0/x86_64
+ENV PATH=${VULKAN_SDK}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}
+ENV VK_LAYER_PATH=${VULKAN_SDK}/etc/vulkan/explicit_layer.d
 
 RUN vulkaninfo
+
+WORKDIR /
 
 RUN cd /usr/bin \
     && ln -s python3 python \
@@ -31,28 +41,19 @@ RUN conda update -y conda && conda --version
 WORKDIR /workspace
 
 RUN git clone https://github.com/alex-petrenko/sample-factory.git
+RUN git clone https://github.com/alex-petrenko/megaverse.git
 WORKDIR sample-factory
 
 RUN conda env create -f environment.yml
 RUN conda init bash
 SHELL ["conda", "run", "-n", "sample-factory", "/bin/bash", "-c"]
-RUN conda install -n sample-factory -c conda-forge bullet
-RUN conda install -n sample-factory -c anaconda cmake
+RUN conda install -n sample-factory -c anaconda cudatoolkit cmake
+RUN conda install -n sample-factory -c conda-forge opencv bullet cudatoolkit-dev
 RUN pip install -e .
 
 WORKDIR /workspace/megaverse
 
-COPY megaverse_rl /workspace/megaverse/megaverse_rl
-COPY src /workspace/megaverse/src
-COPY megaverse /workspace/megaverse/megaverse
-COPY *.cfg /workspace/megaverse/
-COPY *.py /workspace/megaverse/
-COPY docker /workspace/megaverse/docker
-
-RUN apt-get update || true && apt-get install -y apt-utils && apt-get install -y libgl1-mesa-dev libegl1-mesa-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN git submodule update --init --recursive && git checkout envtest
 
 RUN pip install -e .
-# ENV CUDA_VISIBLE_DEVICES=0,1,2,3
 
