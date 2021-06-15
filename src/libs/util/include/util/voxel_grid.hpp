@@ -8,7 +8,7 @@
 #include <util/magnum.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 using VoxelCoords = Magnum::Vector3i;
@@ -36,12 +36,12 @@ inline int manhattanDistance(const VoxelCoords &a, const VoxelCoords &b)
 namespace std
 {
 
-template <> struct hash<VoxelWorld::VoxelCoords>
+template <> struct hash<Megaverse::VoxelCoords>
 {
-    std::size_t operator()(const VoxelWorld::VoxelCoords &voxel) const noexcept
+    std::size_t operator()(const Megaverse::VoxelCoords &voxel) const noexcept
     {
-        constexpr auto shift = VoxelWorld::logMaxGridResolution;
-        constexpr auto offset = VoxelWorld::maxAbsVoxelCoord;
+        constexpr auto shift = Megaverse::logMaxGridResolution;
+        constexpr auto offset = Megaverse::maxAbsVoxelCoord;
         const int x = voxel.x() + offset, y = voxel.y() + offset, z = voxel.z() + offset;
 
         return size_t((x << (2 * shift)) + (y << shift) + z);
@@ -51,7 +51,7 @@ template <> struct hash<VoxelWorld::VoxelCoords>
 }
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 template<typename VoxelState> class VoxelGrid

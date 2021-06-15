@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(voxel-rl)
+project(megaverse)
 
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 

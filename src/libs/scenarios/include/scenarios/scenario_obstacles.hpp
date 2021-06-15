@@ -9,7 +9,7 @@
 #include <scenarios/component_object_stacking.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 enum class PlatformType { EMPTY, WALL, LAVA, STEP, GAP };

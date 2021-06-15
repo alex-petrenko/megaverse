@@ -15,7 +15,7 @@ using std::chrono::duration_cast;
 using std::chrono::microseconds;
 using std::chrono::milliseconds;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 namespace
@@ -34,7 +34,7 @@ inline microseconds::rep passedSince(const tstamp &tstamp)
 
 }
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 struct TinyProfiler::TinyProfilerImpl

@@ -3,7 +3,7 @@
 #include <env/const.hpp>
 
 
-namespace VoxelWorld::Str
+namespace Megaverse::Str
 {
     ConstStr obstaclesMinNumPlatforms = "obstaclesMinNumPlatforms",
              obstaclesMaxNumPlatforms = "obstaclesMaxNumPlatforms",

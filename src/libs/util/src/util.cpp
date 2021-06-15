@@ -3,7 +3,7 @@
 #include <util/util.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 void memcpyStride(char *dst, const char *src, int elemSize, int numElements, int ofs, int stride)

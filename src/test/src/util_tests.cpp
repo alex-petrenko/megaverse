@@ -5,7 +5,7 @@
 #include <util/util.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 TEST(util, memcpyStride)

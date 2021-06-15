@@ -4,12 +4,9 @@
 #include <glm/ext.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <Magnum/GlmIntegration/Integration.h>
-
+#include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/SceneGraph/Drawable.h>
-#include <Magnum/Trade/MeshData.h>
-
 #include <Magnum/SceneGraph/AbstractObject.h>
 
 #include <cuda.h>
@@ -28,35 +25,40 @@
 using namespace std;
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
-namespace Cr = Corrade;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
-class VoxelWorld::V4RDrawable : public SceneGraph::Drawable3D {
-  public:
-    explicit V4RDrawable(SceneGraph::AbstractObject3D &parentObject,
-                         v4r::Environment &renderEnv,
-                         uint32_t instanceID,
-                         SceneGraph::DrawableGroup3D &drawables)
+
+class Megaverse::V4RDrawable : public SceneGraph::Drawable3D
+{
+public:
+    explicit V4RDrawable(
+            SceneGraph::AbstractObject3D &parentObject,
+            v4r::Environment &renderEnv,
+            uint32_t instanceID,
+            SceneGraph::DrawableGroup3D &drawables)
         : SceneGraph::Drawable3D{parentObject, &drawables},
           _renderEnv(renderEnv),
-          _instanceID(instanceID) {}
+          _instanceID(instanceID)
+    {}
 
-  public:
-    void updateAbsoluteTransformation() {
-        glm::mat4x3 trans{glm::mat4{object().absoluteTransformationMatrix()}};
-        _renderEnv.updateInstanceTransform(_instanceID, trans);
+private:
+    void draw(const Matrix4 &transformation, SceneGraph::Camera3D &) override
+    {
+        _renderEnv.updateInstanceTransform(_instanceID, glm::make_mat4(transformation.data()));
     }
 
-  private:
-    void draw(const Matrix4 &transformation, SceneGraph::Camera3D &) override {
-        glm::mat4x3 trans{glm::mat4{transformation}};
-        _renderEnv.updateInstanceTransform(_instanceID, trans);
+public:
+    void updateAbsoluteTransformation()
+    {
+        _renderEnv.updateInstanceTransform(_instanceID, glm::make_mat4(object().absoluteTransformationMatrix().data()));
     }
 
+private:
     v4r::Environment &_renderEnv;
     uint32_t _instanceID;
 };
+
 
 struct ColorCompare
 {
@@ -248,7 +250,10 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
     }
     UNUSED(aspectRatio);
 
-    renderEnvs[envIdx] = cmdStream.makeEnvironment(scene, fov, near, far, env.getNumAgents());
+    for (int i = 0; i < env.getNumAgents(); ++i) {
+        const auto idx = envIdx * env.getNumAgents() + i;  // assuming all envs have the same numAgents
+        renderEnvs[idx] = cmdStream.makeEnvironment(scene, fov, near, far);
+    }
 
     // reset renderer data structures
     {
@@ -257,22 +262,19 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
 
     // drawables
     {
-        auto &renderEnv = renderEnvs[envIdx];
         const auto &drawables = env.getDrawables();
-        for (const auto &[drawableType, meshIndex] : meshIndices) {
-            for (const auto &sceneObjectInfo : drawables.at(drawableType)) {
-                const auto &color = sceneObjectInfo.color;
-                const auto materialIdx =
-                    materialIndices[color]; // if we forgot to add the color
-                                            // to the palette, we should
-                                            // crash here
 
-                uint32_t instanceID = renderEnv.addInstance(
-                    uint32_t(meshIndex), uint32_t(materialIdx),
-                    glm::mat4(1.f));
+        for (int agentIdx = 0; agentIdx < env.getNumAgents(); ++agentIdx) {
+            const auto renderEnvIdx = envIdx * env.getNumAgents() + agentIdx;
+            auto &renderEnv = renderEnvs[renderEnvIdx];
 
-                sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(
-                    renderEnv, instanceID, envDrawables[envIdx]);
+            for (const auto &[drawableType, meshIndex] : meshIndices) {
+                for (const auto &sceneObjectInfo : drawables.at(drawableType)) {
+                    const auto &color = sceneObjectInfo.color;
+                    const auto materialIdx = materialIndices[color];  // if we forgot to add the color to the palette, we should crash here
+                    const auto renderID = renderEnv.addInstance(uint32_t(meshIndex), uint32_t(materialIdx), glm::mat4(1.f));
+                    sceneObjectInfo.objectPtr->addFeature<V4RDrawable>(renderEnv, renderID, envDrawables[envIdx]);
+                }
             }
         }
 
@@ -282,8 +284,7 @@ void V4REnvRenderer::Impl::reset(Env &env, int envIdx)
             auto &object = envDrawables[envIdx][i].object();
             drawablesObjects[envIdx].emplace_back(object);
 
-            auto v4rDrawable =
-                dynamic_cast<V4RDrawable *>(&envDrawables[envIdx][i]);
+            auto v4rDrawable = dynamic_cast<V4RDrawable *>(&envDrawables[envIdx][i]);
             v4rDrawables[envIdx].emplace_back(v4rDrawable);
         }
 
@@ -301,13 +302,16 @@ void V4REnvRenderer::Impl::preDraw(Env &env, int envIdx)
 
     const auto numAgents = env.getNumAgents();
     for (int agentIdx = 0; agentIdx < numAgents; ++agentIdx) {
+        const auto renderEnvIdx = envIdx * numAgents + agentIdx;
+        v4r::Environment &renderEnv = renderEnvs[renderEnvIdx];
+
         auto activeCameraPtr = env.getAgents()[agentIdx]->getCamera();
         if (withOverviewCamera && overview.enabled && envIdx == 0)
             activeCameraPtr = overview.camera;
 
-        auto view = glm::mat4(activeCameraPtr->cameraMatrix());
+        auto view = glm::make_mat4(activeCameraPtr->cameraMatrix().data());
 
-        renderEnvs[envIdx].setCameraView(agentIdx, view);
+        renderEnv.setCameraView(view);
     }
 
     if (previousRenderer) {

@@ -8,7 +8,7 @@
 #include <env/env_renderer.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class VectorEnv
@@ -34,8 +34,6 @@ public:
 private:
     void taskFunc(Task task, int threadIdx);
 
-    bool taskLoop(Task task);
-
     void executeTask(Task task);
 
     void stepEnv(int envIdx);
@@ -55,7 +53,6 @@ private:
     std::vector<Task> currTasks;
     std::condition_variable cvTask;
     std::mutex mutex;
-    std::atomic<int> nextTaskQueue = 0;
     std::atomic<int> numReady = 0;
 };
 

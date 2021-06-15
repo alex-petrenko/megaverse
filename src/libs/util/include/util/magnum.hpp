@@ -6,7 +6,7 @@
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 using Object3D = Magnum::SceneGraph::Object<Magnum::SceneGraph::MatrixTransformation3D>;

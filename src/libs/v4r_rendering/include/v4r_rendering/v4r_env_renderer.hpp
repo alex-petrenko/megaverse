@@ -5,7 +5,7 @@
 #include <env/env_renderer.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class V4RDrawable;
@@ -27,8 +27,6 @@ public:
     void preDraw(Env &env, int envIndex) override;
 
     void draw(Envs &envs) override;
-
-    bool supportsParallelReset() const override { return true; }
 
     const uint8_t * getObservation(int envIdx, int agentIdx) const override;
 

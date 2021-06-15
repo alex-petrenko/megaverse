@@ -10,7 +10,7 @@
 using namespace std::chrono;
 using namespace std::chrono_literals;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 namespace
@@ -63,7 +63,7 @@ void printTime(std::ostream &stream)
 }
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 void setLogLevel(LogLevel level)

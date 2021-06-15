@@ -6,7 +6,7 @@
 #include <mazes/honeycombmaze.h>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 TEST(maze, honeycomb)

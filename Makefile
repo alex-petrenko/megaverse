@@ -1,6 +1,5 @@
 PYTHON ?= python
 
-export REPO=voxel-rl
 export BASE_TAG=$(shell ${PYTHON} -c 'import hashlib; sha = hashlib.sha1((open("docker/Dockerfile.base").read() + open("requirements/requirements.txt").read()).encode()); print(sha.hexdigest())')
 BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 VERSION = $(shell git rev-parse --short HEAD)

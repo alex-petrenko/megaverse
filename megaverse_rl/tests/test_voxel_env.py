@@ -4,14 +4,14 @@ from sample_factory.algorithms.utils.arguments import default_cfg
 from sample_factory.envs.create_env import create_env
 from sample_factory.utils.utils import log
 
-from megaverse_rl.voxel_env_utils import register_env
+from megaverse_rl.megaverse_utils import register_env
 
 
-class TestVoxelEnv(TestCase):
-    def test_voxel_env(self):
+class TestMegaverse(TestCase):
+    def test_megaverse(self):
         register_env()
 
-        env_name = 'voxel_env_Sokoban'
+        env_name = 'megaverse_Sokoban'
         env = create_env(env_name, cfg=default_cfg(env=env_name))
         log.info('Env action space: %r', env.action_space)
         log.info('Env obs space: %r', env.observation_space)

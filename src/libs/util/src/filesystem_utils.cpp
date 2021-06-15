@@ -1,6 +1,6 @@
 #include <util/filesystem_utils.hpp>
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 size_t readAllBytes(const std::string &filename, std::vector<char> &buffer)

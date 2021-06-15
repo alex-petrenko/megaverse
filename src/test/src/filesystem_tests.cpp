@@ -4,7 +4,7 @@
 #include <util/filesystem_utils.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 TEST(filesystem, pathJoin)

@@ -27,7 +27,7 @@
 #include <magnum_rendering/rendering_context.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class Viewer : public Magnum::Platform::Application

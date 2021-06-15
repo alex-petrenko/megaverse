@@ -6,7 +6,7 @@ import numpy as np
 
 from unittest import TestCase
 
-from voxel_env.voxel_env_gym import VoxelEnv, make_env_multitask
+from megaverse.megaverse_env import MegaverseEnv, make_env_multitask
 
 
 def sample_actions(e):
@@ -15,7 +15,7 @@ def sample_actions(e):
 
 def make_test_env(num_envs, num_agents_per_env, num_simulation_threads, use_vulkan=False, params=None):
     """Making env with a default scenario name."""
-    return VoxelEnv('ObstaclesEasy', num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
+    return MegaverseEnv('ObstaclesEasy', num_envs, num_agents_per_env, num_simulation_threads, use_vulkan, params)
 
 
 class TestEnv(TestCase):
@@ -121,7 +121,7 @@ class TestEnv(TestCase):
         # print(fps1, fps2, fps4)
 
     def test_reward_shaping(self):
-        e = VoxelEnv('TowerBuilding', num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
+        e = MegaverseEnv('TowerBuilding', num_envs=3, num_agents_per_env=2, num_simulation_threads=2, use_vulkan=True)
         default_reward_shaping = e.get_default_reward_shaping()
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(0))
         self.assertEqual(default_reward_shaping, e.get_current_reward_shaping(1))
@@ -147,12 +147,12 @@ class TestEnv(TestCase):
 
         # params = {'episodeLengthSec': 0.1}
         params = {}
-        e = VoxelEnv('Rearrange', num_envs=32, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=True, params=params)
+        e = MegaverseEnv('Rearrange', num_envs=32, num_agents_per_env=1, num_simulation_threads=1, use_vulkan=True, params=params)
         e.reset()
 
         orig_mem_usage = mem_usage_kb()
 
-        for i in range(10000):
+        for i in range(1000):
             print('Mem difference: ', mem_usage_kb() - orig_mem_usage, 'kb')
             e.step(sample_actions(e))
 
@@ -165,7 +165,7 @@ class TestEnv(TestCase):
         num_processes = 2
 
         def run_single_task(i):
-            e = make_env_multitask('voxelworld8', i, 1, 1, 1, use_vulkan=True, params={})
+            e = make_env_multitask('megaverse8', i, 1, 1, 1, use_vulkan=True, params={})
             e.reset()
             e.render()  # TODO: if this call is omitted we have rendering bugs. Fixme!
 
@@ -186,11 +186,11 @@ class TestEnv(TestCase):
 
     def test_viewer(self):
         params = {'episodeLengthSec': 1.0}
-        e1 = VoxelEnv('ObstaclesHard', 2, 2, 2, True, params)
+        e1 = MegaverseEnv('ObstaclesHard', 2, 2, 2, True, params)
         e1.reset()
         e1.render()
 
-        for i in range(10000):
+        for i in range(500):
             e1.step(sample_actions(e1))
             e1.render()
             time.sleep(0.01)

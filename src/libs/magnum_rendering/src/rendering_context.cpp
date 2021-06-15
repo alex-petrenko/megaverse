@@ -19,7 +19,7 @@
 #include <Magnum/Platform/WindowlessEglApplication.h>
 #endif
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 namespace Mn = Magnum;
 
 #if !defined(CORRADE_TARGET_APPLE)

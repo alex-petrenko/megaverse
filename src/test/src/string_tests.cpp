@@ -3,7 +3,7 @@
 #include <util/string_utils.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 TEST(str, startsWith)

@@ -6,7 +6,7 @@
 
 class HoneyCombMaze;
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class HexagonalMazeComponent : public ScenarioComponent

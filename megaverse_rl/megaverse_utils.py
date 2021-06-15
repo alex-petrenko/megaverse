@@ -1,7 +1,7 @@
 import gym
 from sample_factory.envs.env_registry import global_env_registry
 
-from voxel_env.voxel_env_gym import VoxelEnv, make_env_multitask
+from megaverse.megaverse_env import MegaverseEnv, make_env_multitask
 
 from sample_factory.envs.env_utils import RewardShapingInterface, TrainingInfoInterface
 from sample_factory.utils.utils import str2bool, log
@@ -64,8 +64,8 @@ class Wrapper(gym.Wrapper, RewardShapingInterface, TrainingInfoInterface):
         return obs, rewards, dones, infos
 
 
-def make_voxel_env(env_name, cfg=None, env_config=None, **kwargs):
-    scenario_name = env_name.split('voxel_env_')[-1].casefold()
+def make_megaverse(env_name, cfg=None, env_config=None, **kwargs):
+    scenario_name = env_name.split('megaverse_')[-1].casefold()
     log.debug('Using scenario %s', scenario_name)
 
     if 'multitask' in scenario_name:
@@ -78,26 +78,26 @@ def make_voxel_env(env_name, cfg=None, env_config=None, **kwargs):
         env = make_env_multitask(
             scenario_name,
             task_idx,
-            num_envs=cfg.voxel_num_envs_per_instance,
-            num_agents_per_env=cfg.voxel_num_agents_per_env,
-            num_simulation_threads=cfg.voxel_num_simulation_threads,
-            use_vulkan=cfg.voxel_use_vulkan,
+            num_envs=cfg.megaverse_num_envs_per_instance,
+            num_agents_per_env=cfg.megaverse_num_agents_per_env,
+            num_simulation_threads=cfg.megaverse_num_simulation_threads,
+            use_vulkan=cfg.megaverse_use_vulkan,
         )
     else:
-        env = VoxelEnv(
+        env = MegaverseEnv(
             scenario_name=scenario_name,
-            num_envs=cfg.voxel_num_envs_per_instance,
-            num_agents_per_env=cfg.voxel_num_agents_per_env,
-            num_simulation_threads=cfg.voxel_num_simulation_threads,
-            use_vulkan=cfg.voxel_use_vulkan,
+            num_envs=cfg.megaverse_num_envs_per_instance,
+            num_agents_per_env=cfg.megaverse_num_agents_per_env,
+            num_simulation_threads=cfg.megaverse_num_simulation_threads,
+            use_vulkan=cfg.megaverse_use_vulkan,
         )
 
-    env = Wrapper(env, cfg.voxel_increase_team_spirit, cfg.voxel_max_team_spirit_steps)
+    env = Wrapper(env, cfg.megaverse_increase_team_spirit, cfg.megaverse_max_team_spirit_steps)
     return env
 
 
-def voxel_env_override_defaults(env, parser):
-    """RL params specific to VoxelEnv envs."""
+def megaverse_override_defaults(env, parser):
+    """RL params specific to Megaverse envs."""
     parser.set_defaults(
         encoder_type='conv',
         encoder_subtype='convnet_simple',
@@ -110,22 +110,22 @@ def voxel_env_override_defaults(env, parser):
     )
 
 
-def add_voxel_env_args(env, parser):
+def add_megaverse_args(env, parser):
     p = parser
-    p.add_argument('--voxel_num_envs_per_instance', default=1, type=int, help='Num simulated envs per instance of VoxelEnv')
-    p.add_argument('--voxel_num_agents_per_env', default=4, type=int, help='Number of agents in a single env withing a VoxelEnv instance. Total number of agents in one VoxelEnv = num_envs_per_instance * num_agents_per_env')
-    p.add_argument('--voxel_num_simulation_threads', default=1, type=int, help='Number of CPU threads to use per instance of VoxelEnv')
-    p.add_argument('--voxel_use_vulkan', default=True, type=str2bool, help='Whether to use Vulkan renderer')
+    p.add_argument('--megaverse_num_envs_per_instance', default=1, type=int, help='Num simulated envs per instance of Megaverse')
+    p.add_argument('--megaverse_num_agents_per_env', default=4, type=int, help='Number of agents in a single env withing a Megaverse instance. Total number of agents in one Megaverse = num_envs_per_instance * num_agents_per_env')
+    p.add_argument('--megaverse_num_simulation_threads', default=1, type=int, help='Number of CPU threads to use per instance of Megaverse')
+    p.add_argument('--megaverse_use_vulkan', default=True, type=str2bool, help='Whether to use Vulkan renderer')
 
     # Team Spirit options
-    p.add_argument('--voxel_increase_team_spirit', default=False, type=str2bool, help='Increase team spirit from 0 to 1 over max_team_spirit_steps during training. At 1, the reward will be completely selfless.')
-    p.add_argument('--voxel_max_team_spirit_steps', default=1e9, type=float, help='Number of training steps when team spirit will hit 1.')
+    p.add_argument('--megaverse_increase_team_spirit', default=False, type=str2bool, help='Increase team spirit from 0 to 1 over max_team_spirit_steps during training. At 1, the reward will be completely selfless.')
+    p.add_argument('--megaverse_max_team_spirit_steps', default=1e9, type=float, help='Number of training steps when team spirit will hit 1.')
 
 
 def register_env():
     global_env_registry().register_env(
-        env_name_prefix='voxel_env_',
-        make_env_func=make_voxel_env,
-        add_extra_params_func=add_voxel_env_args,
-        override_default_params_func=voxel_env_override_defaults,
+        env_name_prefix='megaverse_',
+        make_env_func=make_megaverse,
+        add_extra_params_func=add_megaverse_args,
+        override_default_params_func=megaverse_override_defaults,
     )

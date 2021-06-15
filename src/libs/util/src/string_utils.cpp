@@ -4,7 +4,7 @@
 #include <util/string_utils.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 std::vector<std::string> splitString(const std::string &s, const std::string &d)

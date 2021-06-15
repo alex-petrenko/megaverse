@@ -1,7 +1,7 @@
 #include <scenarios/scenario_box_a_gone.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 class BoxAGoneScenario::BoxAGonePlatform : public EmptyPlatform

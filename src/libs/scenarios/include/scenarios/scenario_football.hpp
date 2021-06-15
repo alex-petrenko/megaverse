@@ -6,7 +6,7 @@
 #include <scenarios/layout_utils.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class FootballScenario : public DefaultScenario

@@ -3,7 +3,7 @@
 #include <scenarios/scenario_default.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class EmptyScenario : public DefaultScenario

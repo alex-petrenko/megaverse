@@ -5,7 +5,7 @@
 #include <env/voxel_state.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 struct TestVoxelState

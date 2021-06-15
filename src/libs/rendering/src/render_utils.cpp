@@ -13,13 +13,13 @@
 
 #include <rendering/render_utils.hpp>
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 
-void VoxelWorld::initPrimitives(std::map<DrawableType, Magnum::Trade::MeshData> &meshes)
+void Megaverse::initPrimitives(std::map<DrawableType, Magnum::Trade::MeshData> &meshes)
 {
     auto &m = meshes;  // type less
 

@@ -1,8 +1,8 @@
-# voxel-rl
+# Megaverse
 
 ```
 1) Clone the repo
-git clone https://github.com/alex-petrenko/voxel-rl.git
+git clone https://github.com/alex-petrenko/megaverse.git
 
 2) Init submodules
 git submodule update --init --recursive
@@ -28,6 +28,12 @@ sudo apt install vulkan-sdk
 (or install manually from https://vulkan.lunarg.com/sdk/home#linux, then source ./setup-env.sh to set envvars) 
 
 6) Setup Python environment (TODO: add environment.yml to this repo, currently using one from Sample Factory)
+(REQUIRES: opencv, cudatoolkit
+conda install -c conda-forge opencv
+conda install -c anaconda cudatoolkit
+conda install -c conda-forge cudatoolkit-dev
+)
+
 
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
@@ -54,7 +60,7 @@ hash -r
 sudo snap install cmake --classic
 
 9) Build the repo
-cd voxel-rl
+cd megaverse
 mkdir build
 cd build
 
@@ -72,9 +78,9 @@ make -j10
 
 10) Run benchmark
 cd Release/bin
-./voxel_env_app
+./megaverse_test_app
 
-(see global boolean flags in voxel_env_app.cpp, they control the scenario and rendering settings
+(see global boolean flags in megaverse_test_app.cpp, they control the scenario and rendering settings
 TODO: make configurable)
 
 11) Run viewer
@@ -97,7 +103,7 @@ pip install -e .
 13) Run tests
 python -m unittest
 
-14) You are ready to use the VoxelWorld Python API!
+14) You are ready to use the Megaverse Python API!
 
 ```
 
@@ -111,7 +117,7 @@ python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps
 
 Example runner script:
 
-python -m sample_factory.runner.run --run=megaverse_rl.runs.voxel_single_agent --runner=processes --max_parallel=8 --pause_between=10 --experiments_per_gpu=2 --num_gpus=4
+python -m sample_factory.runner.run --run=megaverse_rl.runs.megaverse_single_agent --runner=processes --max_parallel=8 --pause_between=10 --experiments_per_gpu=2 --num_gpus=4
 
 
 ```

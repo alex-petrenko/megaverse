@@ -7,7 +7,7 @@
 #include <scenarios/component_voxel_grid.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
     template<typename VoxelT>
     void addDrawablesAndCollisionObjectsFromVoxelGrid(VoxelGridComponent<VoxelT> &vg, DrawablesMap &drawables, Env::EnvState &envState, float voxelSize)

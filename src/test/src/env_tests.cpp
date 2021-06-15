@@ -8,7 +8,7 @@
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 class EnvTest : public ::testing::Test {

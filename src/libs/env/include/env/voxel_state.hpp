@@ -4,7 +4,7 @@
 #include <env/physics.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 enum VoxelType

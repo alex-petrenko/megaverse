@@ -11,7 +11,7 @@
 #include <env/const.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class ScenarioComponent;

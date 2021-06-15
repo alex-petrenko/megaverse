@@ -5,7 +5,7 @@
 
 using namespace Magnum;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 HexMemoryScenario::HexMemoryScenario(const std::string &name, Env &env, Env::EnvState &envState)

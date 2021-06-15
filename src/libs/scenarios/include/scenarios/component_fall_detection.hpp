@@ -3,7 +3,7 @@
 #include <env/scenario_component.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 class FallDetectionCallbacks

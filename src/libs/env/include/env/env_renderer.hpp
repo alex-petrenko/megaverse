@@ -3,7 +3,7 @@
 #include <env/env.hpp>
 
 
-namespace VoxelWorld
+namespace Megaverse
 {
 
 // defined later in render_utils.cpp
@@ -19,8 +19,6 @@ public:
     virtual void preDraw(Env &env, int envIndex) = 0;
 
     virtual void draw(Envs &envs) = 0;
-
-    virtual bool supportsParallelReset() const { return false; }
 
     /**
      * Query the pointer to memory holding the latest observation for an agent in an env.

@@ -10,11 +10,11 @@
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 // TODO: add different types of layouts
-void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, ColorRgb color, float voxelSize)
+void Megaverse::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envState, const Boxes &boxes, int voxelType, ColorRgb color, float voxelSize)
 {
     if (voxelType == VOXEL_EMPTY)
         return;
@@ -50,7 +50,7 @@ void VoxelWorld::addBoundingBoxes(DrawablesMap &drawables, Env::EnvState &envSta
     }
 }
 
-void VoxelWorld::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb, float voxelSize)
+void Megaverse::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, TerrainType type, const BoundingBox &bb, float voxelSize)
 {
     const auto scale = Vector3(bb.max.x() - bb.min.x(), 1.0, bb.max.z() - bb.min.z()) * voxelSize;
 
@@ -67,7 +67,7 @@ void VoxelWorld::addTerrain(DrawablesMap &drawables, Env::EnvState &envState, Te
     }
 }
 
-void VoxelWorld::addStaticCollidingBox(
+void Megaverse::addStaticCollidingBox(
     DrawablesMap &drawables, Env::EnvState &envState,
     Vector3 scale, Vector3 translation, ColorRgb color
 )
@@ -82,7 +82,7 @@ void VoxelWorld::addStaticCollidingBox(
     envState.physics->collisionShapes.emplace_back(std::move(bBoxShape));
 }
 
-Object3D * VoxelWorld::addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+Object3D * Megaverse::addCylinder(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto &rootObject = parent.addChild<Object3D>();
     rootObject.scale(scale).translate(translation);
@@ -90,7 +90,7 @@ Object3D * VoxelWorld::addCylinder(DrawablesMap &drawables, Object3D &parent, Ma
     return &rootObject;
 }
 
-Object3D * VoxelWorld::addSphere(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+Object3D * Megaverse::addSphere(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto &rootObject = parent.addChild<Object3D>();
     rootObject.scale(scale).translate(translation);
@@ -98,7 +98,7 @@ Object3D * VoxelWorld::addSphere(DrawablesMap &drawables, Object3D &parent, Magn
     return &rootObject;
 }
 
-Object3D * VoxelWorld::addPillar(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+Object3D * Megaverse::addPillar(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto rootObject = addCylinder(drawables, parent, translation, scale, color);
 
@@ -111,7 +111,7 @@ Object3D * VoxelWorld::addPillar(DrawablesMap &drawables, Object3D &parent, Magn
     return rootObject;
 }
 
-Object3D * VoxelWorld::addDiamond(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
+Object3D * Megaverse::addDiamond(DrawablesMap &drawables, Object3D &parent, Magnum::Vector3 translation, Magnum::Vector3 scale, ColorRgb color)
 {
     auto &rootObject = parent.addChild<Object3D>();
     auto &bottomHalf = rootObject.addChild<Object3D>();

@@ -2,7 +2,7 @@
 
 #include <magnum_rendering/rendering_context.hpp>
 
-using namespace VoxelWorld;
+using namespace Megaverse;
 
 
 TEST(gfx, context)
