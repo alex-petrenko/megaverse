@@ -23,10 +23,10 @@ constexpr bool useVulkanRenderer = true;
 
 // "main" envs
 //const auto scenarioName = "ObstaclesHard";  // *
-//const auto scenarioName = "ObstaclesEasy";  // *
+const auto scenarioName = "ObstaclesEasy";  // *
 //const auto scenarioName = "Collect";    // *
 //const auto scenarioName = "Sokoban";  // *
-const auto scenarioName = "TowerBuilding";
+//const auto scenarioName = "TowerBuilding";
 //const auto scenarioName = "HexMemory";  // *
 //const auto scenarioName = "HexExplore";  // *
 //const auto scenarioName = "Rearrange";  // *
@@ -156,7 +156,7 @@ int main(int argc, char** argv)
 {
     scenariosGlobalInit();
 
-    const int numAgents = 1;
+    const int numAgents = 2;
 
     FloatParams params{{Str::useUIRewardIndicators, 1.0f}};
     auto env = std::make_unique<Env>(scenarioName, numAgents, params);

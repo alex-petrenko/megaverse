@@ -74,7 +74,7 @@ protected:
 private:
     bool useVulkan;
 
-    int width = 1280, height = 720;
+    int width = 1920, height = 1080;
 
     std::unique_ptr<RenderingContext> ctx;
 
