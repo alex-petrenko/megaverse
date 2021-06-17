@@ -1,12 +1,43 @@
-import multiprocessing
 import os
-import subprocess
 import sys
+import multiprocessing
+import subprocess
+from os.path import join as pjoin
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
 supported_platforms = ["Linux", "Mac OS-X"]
+
+def find_in_path(name, path):
+    """Find a file in a search path"""
+
+    # Adapted fom http://code.activestate.com/recipes/52224
+    for dir in path.split(os.pathsep):
+        binpath = pjoin(dir, name)
+        if os.path.exists(binpath):
+            return os.path.abspath(binpath)
+    return None
+
+def locate_cuda():
+    """Locate the CUDA environment on the system
+    Starts by looking for the CUDAHOME env variable. If not found,
+    everything is based on finding 'nvcc' in the PATH.
+    """
+
+    # First check if the CUDAHOME env variable is in use
+    if 'CUDAHOME' in os.environ:
+        home = os.environ['CUDAHOME']
+        nvcc = pjoin(home, 'bin', 'nvcc')
+    else:
+        # Otherwise, search the PATH for NVCC
+        nvcc = find_in_path('nvcc', os.environ['PATH'])
+        if nvcc is None:
+            raise EnvironmentError('The nvcc binary could not be '
+                'located in your $PATH. Either add it to your path, '
+                'or set $CUDAHOME')
+
+    return nvcc
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -36,6 +67,7 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
             f'-DPYTHON_EXECUTABLE={sys.executable}',
+            f'-DCMAKE_CUDA_COMPILER={locate_cuda()}',
             # f'-DOpenCV_DIR =/home/alex/all/lib/opencv/build',  # TODO!!!
         ]
 
