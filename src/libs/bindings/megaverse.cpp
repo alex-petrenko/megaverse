@@ -196,7 +196,7 @@ public:
         viewer->step(vectorEnv->done);
         viewer->mainLoopIteration();  // handle events, update the window, that kind of thing
 #else
-        TLOG(ERROR) << "Megaverse was built without GUI support";
+        // TLOG(ERROR) << "Megaverse was built without GUI support";
 #endif
     }
 
