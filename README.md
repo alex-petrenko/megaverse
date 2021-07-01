@@ -27,22 +27,27 @@ https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.
 
 ### Building from source
 ```
-1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux, then source ./setup-env.sh to set envvars
+1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
+$ wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz && mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.162.0.tar.gz --directory vulkansdk
 
-2) Clone the repo
-git clone https://github.com/alex-petrenko/megaverse.git
+2) Add Vulkan SDK binaries to PATH:
+$ cd vulkansdk/1.2.162.0
+$ source ./setup-env.sh to set envvars
 
-3) Init submodules
-git submodule update --init --recursive
+3) Clone the repo
+$ git clone https://github.com/alex-petrenko/megaverse.git
 
-4) Setup environment
-cd megaverse
-conda env create -f environment.yml
-conda activate megaverse
+4) Init submodules
+$ git submodule update --init --recursive
 
-5) Install megaverse
-python setup.py develop
-pip install -e .
+5) Setup environment
+$ cd megaverse
+$ conda env create -f environment.yml
+$ conda activate megaverse
+
+6) Install megaverse
+$ python setup.py develop
+$ pip install -e .
 ```
 
 ### RL Training
