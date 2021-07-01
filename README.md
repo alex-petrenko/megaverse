@@ -33,7 +33,7 @@ $ mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.162.0.tar.gz --director
 
 2) Add Vulkan SDK binaries to PATH:
 $ cd vulkansdk/1.2.162.0
-$ source ./setup-env.sh to set envvars
+$ source ./setup-env.sh
 
 3) Clone the repo
 $ git clone https://github.com/alex-petrenko/megaverse.git
