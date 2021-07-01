@@ -28,7 +28,8 @@ https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.
 ### Building from source
 ```
 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
-$ wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz && mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.162.0.tar.gz --directory vulkansdk
+$ wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz
+$ mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.162.0.tar.gz --directory vulkansdk
 
 2) Add Vulkan SDK binaries to PATH:
 $ cd vulkansdk/1.2.162.0
