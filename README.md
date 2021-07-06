@@ -61,6 +61,12 @@ python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps
 
 (more thorough documentation is coming)
 
+### Troubleshooting
+
+* A crash (segfault) on initialization can be caused by the incorrect initialization of Vulkan device interface. Possible fixes:
+    * `sudo apt remove mesa-vulkan-drivers` (unless other packages you require depend on this package)
+    * Set envvar `export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json`, point to the location of `nvidia_icd.json` in your system.
+
 ### Citation
 
 If you use this repository in your work or otherwise wish to cite it, please make reference to our ICML2021 paper.
