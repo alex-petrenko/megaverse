@@ -53,7 +53,7 @@ RUN pip install -e .
 
 WORKDIR /workspace/megaverse
 
-RUN git submodule update --init --recursive && git checkout envtest
+RUN git submodule update --init --recursive
 
 RUN pip install -e .
 
