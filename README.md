@@ -1,20 +1,18 @@
 # Megaverse
 
+Megaverse is a dedicated high-throughput rendering and simulation engine for Artificial Intelligence research.
+It features an optimized batched renderer that enables generation of up to 1M observations per second on a single machine.
+
+**Website:** [www.megaverse.info](https://www.megaverse.info) 
+
+**arXiv:** [arxiv.org/abs/2107.08170](https://arxiv.org/abs/2107.08170)
+
+Left: RL agent completing a TowerBuilding task. Right: human player solving a randomly generated obstacle course level.
+
 <p align="middle">
 <img src="https://github.com/alex-petrenko/megaverse/blob/master/data/tower_rl.gif?raw=true" width="400">
 <img src="https://github.com/alex-petrenko/megaverse/blob/master/data/obstacles_hard_play_x2.gif?raw=true" width="400">
 </p> 
-
-Megaverse is a new 3D simulation platform for reinforcement learning and embodied AI research.
-The efficient design of the engine enables physics-based simulation with high-dimensional egocentric
-observations at more than 1,000,000 actions per second on a single 8-GPU node.
-Megaverse is up to 70x faster than DeepMind Lab in fully-shaded 3D scenes with interactive objects.
-This high simulation performance is achieved by leveraging batched simulation,
-thereby taking full advantage of the massive parallelism of modern GPUs.
-Megaverse includes a new benchmark that consists of several single-agent and multi-agent tasks covering a variety of cognitive challenges.
-We evaluate model-free RL on this benchmark to provide baselines and facilitate future research.
-
-**Website:** [www.megaverse.info](https://www.megaverse.info)
 
 
 ### Install from prebuilt binaries
