@@ -30,10 +30,10 @@ using namespace Megaverse;
 constexpr int delayMs = 1;  // 1000 / 15;
 
 //ConstStr scenario = "Empty";
-ConstStr scenario = "Collect";
+//ConstStr scenario = "Collect";
 //ConstStr scenario = "ObstaclesEasy";
 //ConstStr scenario = "ObstaclesHard";
-//ConstStr scenario = "Sokoban";
+ConstStr scenario = "Sokoban";
 //ConstStr scenario = "BoxAGone";
 //ConstStr scenario = "Rearrange";
 //ConstStr scenario = "HexMemory";
