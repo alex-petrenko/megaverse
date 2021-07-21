@@ -3,11 +3,10 @@
 Megaverse is a dedicated high-throughput rendering and simulation engine for Artificial Intelligence research.
 It features an optimized batched renderer that enables generation of up to 1M observations per second on a single machine.
 
-**Website:** [www.megaverse.info](https://www.megaverse.info) 
+* **Website:** [www.megaverse.info](https://www.megaverse.info) 
+* **arXiv:** [arxiv.org/abs/2107.08170](https://arxiv.org/abs/2107.08170)
 
-**arXiv:** [arxiv.org/abs/2107.08170](https://arxiv.org/abs/2107.08170)
-
-Left: RL agent completing a TowerBuilding task. Right: human player solving a randomly generated obstacle course level.
+Left: RL agent completing a TowerBuilding task. Right: human player solving a randomly generated obstacle course
 
 <p align="middle">
 <img src="https://github.com/alex-petrenko/megaverse/blob/master/data/tower_rl.gif?raw=true" width="400">
