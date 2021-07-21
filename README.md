@@ -1,8 +1,8 @@
 # Megaverse
 
 <p align="middle">
-<img src="https://github.com/alex-petrenko/megaverse/blob/master/gifs/tower_rl.gif?raw=true" width="400">
-<img src="https://github.com/alex-petrenko/megaverse/blob/master/gifs/obstacles_hard_play_x2.gif?raw=true" width="400">
+<img src="https://github.com/alex-petrenko/megaverse/blob/master/data/tower_rl.gif?raw=true" width="400">
+<img src="https://github.com/alex-petrenko/megaverse/blob/master/data/obstacles_hard_play_x2.gif?raw=true" width="400">
 </p> 
 
 Megaverse is a new 3D simulation platform for reinforcement learning and embodied AI research.
