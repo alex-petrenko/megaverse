@@ -1,9 +1,0 @@
-ARG REPO
-ARG BASE_TAG
-
-FROM $REPO-base:$BASE_TAG
-
-COPY requirements ./requirements
-
-# RUN pip install --user --upgrade pip && pip install -r requirements/requirements.txt --no-cache-dir
-

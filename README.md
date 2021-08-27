@@ -1,12 +1,12 @@
 # Megaverse
 
 Megaverse is a dedicated high-throughput rendering and simulation engine for Artificial Intelligence research.
-It features an optimized batched renderer that enables generation of up to 1M observations per second on a single machine.
+It features an optimized batched renderer that enables generation of up to 1,000,000 observations per second on a single machine.
 
 * **Website:** [www.megaverse.info](https://www.megaverse.info) 
 * **arXiv:** [arxiv.org/abs/2107.08170](https://arxiv.org/abs/2107.08170)
 
-Left: RL agent completing a TowerBuilding task. Right: human player solving a randomly generated obstacle course
+Left: RL agent completing a TowerBuilding task. Right: human player solving a randomly generated obstacle course.
 
 <p align="middle">
 <img src="https://github.com/alex-petrenko/megaverse/blob/master/data/tower_rl.gif?raw=true" width="400">
@@ -48,16 +48,24 @@ $ git submodule update --init --recursive
 $ conda env create -f environment.yml
 $ conda activate megaverse
 
+(Optional) 5.1) Alternatively, if you want the newest versions of packages. Don't do this if you installed .yml environment
+$ conda create --name megaverse python=3.8
+$ conda activate megaverse
+$ conda install -c anaconda cudatoolkit cmake
+$ conda install -c conda-forge opencv bullet cudatoolkit-dev
+
 6) Install megaverse
 $ python setup.py develop
 $ pip install -e .
+
+(Optional) 6.1) Build a .whl file to be installed elsewhere
+$ python setup.py bdist_wheel
 ```
 
 ### Using Docker 
 ```shell
 1) Clone the repo 
 $ git clone https://github.com/alex-petrenko/megaverse.git
-
 
 2) Build the image
 cd megaverse
@@ -76,6 +84,8 @@ docker run -it --shm-size 8G --runtime=nvidia --entrypoint /bin/bash megaverse
 Example training script:
 
 ```shell
+pip install sample-factory
+
 python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps=2000000000 --algo=APPO --gamma=0.997 --use_rnn=True --rnn_num_layers=2 --num_workers=12 --num_envs_per_worker=2 --ppo_epochs=1 --rollout=32 --recurrence=32 --batch_size=2048 --actor_worker_gpus 0 --num_policies=1 --with_pbt=False --max_grad_norm=0.0 --exploration_loss=symmetric_kl --exploration_loss_coeff=0.001 --megaverse_num_simulation_threads=1 --megaverse_use_vulkan=True --policy_workers_per_policy=2 --learner_main_loop_num_cores=1 --reward_clip=30 --env=megaverse_TowerBuilding --experiment=test_cli
 ```
 
