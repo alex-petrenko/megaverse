@@ -27,7 +27,7 @@ pip install git+https://github.com/alex-petrenko/megaverse/releases/download/v0.
 pip install https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.0.1-cp{37,38,39}-cp{37m,38,39}-macosx_10_15_x86_64.whl
 ```
 
-### Building from source
+### Installation
 ```
 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
 $ wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz
@@ -53,6 +53,7 @@ $ conda create --name megaverse python=3.8
 $ conda activate megaverse
 $ conda install -c anaconda cudatoolkit cmake
 $ conda install -c conda-forge opencv bullet cudatoolkit-dev
+$ pip install gym
 
 6) Install megaverse
 $ python setup.py develop
@@ -63,7 +64,7 @@ $ python setup.py bdist_wheel
 ```
 
 ### Using Docker 
-```shell
+```
 1) Clone the repo 
 $ git clone https://github.com/alex-petrenko/megaverse.git
 
@@ -83,7 +84,7 @@ docker run -it --shm-size 8G --runtime=nvidia --entrypoint /bin/bash megaverse
 
 Example training script:
 
-```shell
+```
 pip install sample-factory
 
 python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps=2000000000 --algo=APPO --gamma=0.997 --use_rnn=True --rnn_num_layers=2 --num_workers=12 --num_envs_per_worker=2 --ppo_epochs=1 --rollout=32 --recurrence=32 --batch_size=2048 --actor_worker_gpus 0 --num_policies=1 --with_pbt=False --max_grad_norm=0.0 --exploration_loss=symmetric_kl --exploration_loss_coeff=0.001 --megaverse_num_simulation_threads=1 --megaverse_use_vulkan=True --policy_workers_per_policy=2 --learner_main_loop_num_cores=1 --reward_clip=30 --env=megaverse_TowerBuilding --experiment=test_cli
