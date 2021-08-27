@@ -13,21 +13,11 @@ Left: RL agent completing a TowerBuilding task. Right: human player solving a ra
 <img src="https://github.com/alex-petrenko/megaverse/blob/master/data/obstacles_hard_play_x2.gif?raw=true" width="400">
 </p> 
 
-
-### Install from prebuilt binaries
-
-##### Linux
-```
-pip install git+https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.0.1-cp{37m,38,39}-cp{37m,38,39}-linux_x86_64.whl
-```
-
-##### macOS
-
-```
-pip install https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.0.1-cp{37,38,39}-cp{37m,38,39}-macosx_10_15_x86_64.whl
-```
-
 ### Installation
+
+Currently the easiest way to install Megaverse is to build directly from sources.
+Note that none of the installation instructions require elevated privileges! We try to bring most dependencies through conda.
+
 ```
 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
 $ wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz
