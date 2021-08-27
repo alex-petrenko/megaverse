@@ -14,19 +14,6 @@ Left: RL agent completing a TowerBuilding task. Right: human player solving a ra
 </p> 
 
 
-### Install from prebuilt binaries
-
-##### Linux
-```
-pip install git+https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.0.1-cp{37m,38,39}-cp{37m,38,39}-linux_x86_64.whl
-```
-
-##### macOS
-
-```
-pip install https://github.com/alex-petrenko/megaverse/releases/download/v0.0.1/megaverse-0.0.1-cp{37,38,39}-cp{37m,38,39}-macosx_10_15_x86_64.whl
-```
-
 ### Building from source
 ```
 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
