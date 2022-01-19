@@ -116,6 +116,9 @@ def main():
         ext_modules=[CMakeExtension('megaverse.extension.megaverse', 'src')],
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
+        install_requires=[
+            'gym>=0.17.1',
+        ],
     )
 
     return 0
