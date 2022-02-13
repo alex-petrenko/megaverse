@@ -94,7 +94,10 @@ class CMakeBuild(build_ext):
 
         print('Build temp directory is ', self.build_temp)
 
-        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
+        cmake_cmd = ['cmake', ext.sourcedir] + cmake_args
+        print(f'CMake command is: {" ".join(cmake_cmd)}')
+
+        subprocess.check_call(cmake_cmd, cwd=self.build_temp, env=env)
         subprocess.check_call(
             ['cmake', '--build', '.', '--target', 'megaverse'] + build_args, cwd=self.build_temp,
         )
@@ -105,7 +108,7 @@ class CMakeBuild(build_ext):
 def main():
     setup(
         name='megaverse',
-        version='0.0.1',
+        version='0.0.2',
         author='Aleksei Petrenko',
         author_email='apetrenko1991@gmail.com',
         description='Fast immersive environment',

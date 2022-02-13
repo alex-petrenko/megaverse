@@ -47,3 +47,6 @@ __pycache__/
 
 # RL-training related
 train_dir/
+
+# Python intermediate folders
+megaverse/extension/**
