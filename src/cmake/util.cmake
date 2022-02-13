@@ -60,6 +60,7 @@ macro(add_library_default name)
 endmacro()
 
 macro(add_app_default name src)
+  message(STATUS "APP ${name} sources ${src}")
   add_executable(${name} ${src})
   set_default_properties(${name} "apps")
 endmacro()

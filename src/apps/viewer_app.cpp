@@ -1,12 +1,13 @@
 #include <Magnum/Timeline.h>
 
-#include <util/argparse.hpp>
 #include <util/tiny_logger.hpp>
 
 #include <env/env.hpp>
 #include <scenarios/init.hpp>
 
 #include <viewer/viewer.hpp>
+
+#include "viewer_args.hpp"
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
@@ -129,51 +130,21 @@ int main(int argc, char** argv)
 {
     scenariosGlobalInit();
 
-    argparse::ArgumentParser parser("viewer_app");
-
-    parser.add_argument("-l", "--list_scenarios")
-          .help("list registered scenario names")
-          .action([&](const auto &) { auto s = Scenario::registeredScenarios(); TLOG(INFO) << "Scenarios: " << s; })
-          .default_value(false)
-          .implicit_value(true);
-    parser.add_argument("--scenario")
-          .help("name of the scenario to run")
-          .default_value(std::string{"ObstaclesEasy"});
-    parser.add_argument("--num_agents")
-          .help("size of the team")
-          .default_value(2)
-          .scan<'i', int>();
+    auto parser = viewerStandardArgParse("viewer_app");
+    parser.add_description("viewer_app can run any scenario in an interactive mode");
     parser.add_argument("--desired_fps")
         .help("rendering framerate for human perception; RL agents percieve the world at 15 FPS to avoid frameskip, hence the default value.")
         .default_value(15)
         .scan<'i', int>();
 
-    constexpr bool isApple =
-#if defined(CORRADE_TARGET_APPLE)
-    true;
-#else
-    false;
-#endif
-
-    parser.add_argument("--use_opengl")
-        .help("Whether to use OpenGL renderer instead of fast Vulkan renderer (currently Vulkan is only supported in Linux)")
-        .default_value(isApple)
-        .implicit_value(true);
-
-    try {
-        parser.parse_args(argc, argv);
-    } catch (const std::runtime_error &err) {
-        std::cerr << err.what() << std::endl;
-        std::cerr << parser;
-        std::exit(EXIT_FAILURE);
-    }
+    parseArgs(parser, argc, argv);
 
     const auto scenarioName = parser.get<std::string>("--scenario");
     const auto numAgents = parser.get<int>("--num_agents");
     const auto desiredFps = parser.get<int>("--desired_fps");
     const bool useVulkanRenderer = !parser.get<bool>("--use_opengl");
 
-    FloatParams params{{Str::useUIRewardIndicators, 1.0f}};`
+    FloatParams params{{Str::useUIRewardIndicators, 1.0f}};
     auto env = std::make_unique<Env>(scenarioName, numAgents, params);
 #ifdef FIXED_SEED
     env->seed(42);

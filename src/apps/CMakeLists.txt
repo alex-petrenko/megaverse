@@ -10,13 +10,15 @@ set(MAGNUM_DEPENDENCIES
 )
 
 if (BUILD_GUI_APPS)
-    add_app_default(viewer_app viewer_app.cpp)
+    set(VIEWER_APP_SOURCES viewer_app.cpp viewer_args.cpp)
+    add_app_default(viewer_app "${VIEWER_APP_SOURCES}")  # list of sources gotta be in quites
     target_link_libraries(viewer_app PRIVATE scenarios viewer Magnum::Application)
 endif()
 
 find_package(ZLIB)
 
-add_app_default(megaverse_test_app megaverse_test_app.cpp)
+set(MEGAVERSE_TEST_APP_SOURCES megaverse_test_app.cpp viewer_args.cpp)
+add_app_default(megaverse_test_app "${MEGAVERSE_TEST_APP_SOURCES}")
 target_link_libraries(megaverse_test_app PRIVATE scenarios magnum_rendering ${MAGNUM_DEPENDENCIES} ${OpenCV_LIBS})
 
 if (ZLIB_FOUND)

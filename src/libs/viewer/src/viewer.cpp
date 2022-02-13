@@ -78,7 +78,8 @@ Viewer::Viewer(Envs &envs, bool useVulkan, EnvRenderer *parentRenderer, const Ar
                   << "Press O to toggle the overview camera, use mouse to control view angle\n"
                   << "Use UHJK keys to control the position of the camera\n"
                   << "Press R to reset the episode\n"
-                  << "Press ENTER to toggle Bullet collision debug view (only OpenGL version)\n";
+                  << "Press ENTER to toggle Bullet collision debug view (only OpenGL version)\n"
+                  << "ESC to exit the app\n";
 }
 
 void Viewer::step(const std::vector<bool> &dones)

@@ -1,18 +1,16 @@
 #include <cstdlib>
 
-#include <Corrade/configure.h>
-
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
 #include <util/util.hpp>
+#include <util/argparse.hpp>
 #include <util/os_utils.hpp>
 #include <util/tiny_logger.hpp>
 #include <util/tiny_profiler.hpp>
 
 #include <env/env.hpp>
-#include <env/const.hpp>
 #include <env/vector_env.hpp>
 
 #include <scenarios/init.hpp>
@@ -23,37 +21,10 @@
 
 #include <magnum_rendering/magnum_env_renderer.hpp>
 
+#include "viewer_args.hpp"
 
 using namespace Megaverse;
 
-
-constexpr int delayMs = 1;  // 1000 / 15;
-
-//ConstStr scenario = "Empty";
-//ConstStr scenario = "Collect";
-//ConstStr scenario = "ObstaclesEasy";
-//ConstStr scenario = "ObstaclesHard";
-ConstStr scenario = "Sokoban";
-//ConstStr scenario = "BoxAGone";
-//ConstStr scenario = "Rearrange";
-//ConstStr scenario = "HexMemory";
-
-
-#if defined(CORRADE_TARGET_APPLE)
-constexpr bool useVulkan = false;
-
-static_assert(!useVulkan, "Vulkan not supported on MacOS");
-#else
-constexpr bool useVulkan = true;
-#endif
-
-constexpr bool viz = false;
-constexpr bool hires = false;
-bool randomActions = true;
-
-constexpr bool performanceTest = !viz;
-constexpr int W = hires ? 800 : 128, H = hires ? 450 : 72;
-constexpr int maxNumFrames = performanceTest ? 200'000 : 2'000'000'000;
 
 // don't ask me, this is what waitKeyEx returns
 constexpr auto keyUp = 65362, keyLeft = 65361, keyRight = 65363, keyDown = 65364;
@@ -66,9 +37,10 @@ std::string windowName(int envIdx, int agentIdx)
 }
 
 
-int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
+int mainLoop(VectorEnv &venv, EnvRenderer &renderer, bool viz, bool performanceTest, bool randomActions,
+             int W, int H, bool useVulkan, int delayMs, int maxNumFrames)
 {
-    if constexpr (performanceTest)
+    if (performanceTest)
         randomActions = true;
 
     auto activeAgent = 0;
@@ -76,7 +48,7 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
 
     const auto numEnvs = int(venv.envs.size()), numAgents = venv.envs.front()->getNumAgents();
 
-    if constexpr (viz) {
+    if (viz) {
         for (int envIdx = 0; envIdx < numEnvs; ++envIdx) {
             for (int i = 0; i < numAgents; ++i) {
                 const auto wname = windowName(envIdx, i);
@@ -88,13 +60,15 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
 
     venv.reset();
 
-    bool shouldExit = false;
-
+#if defined(ARTIFICIAL_MEMLEAK)
     std::vector<std::vector<int>> vvi;
+#endif
 
+    auto rng = venv.envs.front()->getRng();
     tprof().startTimer("fps_period");
 
-    while (!shouldExit) {
+    bool shouldExit = false;
+    do {
         tprof().startTimer("step");
         venv.step();
         tprof().pauseTimer("step");
@@ -103,11 +77,11 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
             for (int i = 0; i < venv.envs[envIdx]->getNumAgents(); ++i) {
                 const uint8_t *obsData = renderer.getObservation(envIdx, i);
 
-                if constexpr (viz) {
+                if (viz) {
                     cv::Mat mat(H, W, CV_8UC4, (char *) obsData);
                     cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
 
-                    if constexpr (!useVulkan)
+                    if (!useVulkan)
                         cv::flip(mat, mat, 0);
 
                     cv::imshow(windowName(envIdx, i), mat);
@@ -115,7 +89,7 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
             }
         }
 
-        if constexpr (viz) {
+        if (viz) {
             auto latestAction = Action::Idle;
             auto key = cv::waitKeyEx(delayMs);
 
@@ -150,10 +124,10 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
                     break;
 
                 case '1':
-                    activeAgent = 0;
-                    break;
                 case '2':
-                    activeAgent = 1;
+                case '3':
+                case '4':
+                    activeAgent = key - 1;
                     break;
 
                 default:
@@ -164,8 +138,12 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
         }
 
         if (randomActions) {
-            auto randomAction = randRange(0, int(Action::NumActions), venv.envs.front()->getRng());
-            venv.envs.front()->setAction(activeAgent, Action(1 << randomAction));
+            for (auto & env : venv.envs) {
+                for (int i = 0; i < env->getNumAgents(); ++i) {
+                    auto randomAction = randRange(0, int(Action::NumActions), rng);
+                    env->setAction(i, Action(1 << randomAction));
+                }
+            }
         }
 
         numFrames += numAgents * numEnvs;
@@ -184,12 +162,14 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
             double vmUsage, residentSet;
             unixProcessMemUsage(vmUsage, residentSet);
 
+#if defined(ARTIFICIAL_MEMLEAK)
             // test artificial memleak
-            // vvi.emplace_back(1024 * 1024, 3);
-            // TLOG(INFO) << std::accumulate(vvi.back().begin(), vvi.back().end(), 0);
+            vvi.emplace_back(1024 * 1024, 3);
+            TLOG(INFO) << std::accumulate(vvi.back().begin(), vvi.back().end(), 0);
+#endif
             TLOG(INFO) << "Progress " << numFrames << "/" << maxNumFrames << ". Approx FPS: " << approxFps << ". VM usage: " << (long long)vmUsage << ". RSS: " << (long long)residentSet;
         }
-    }
+    } while (!shouldExit);
 
     return numFrames;
 }
@@ -197,37 +177,91 @@ int mainLoop(VectorEnv &venv, EnvRenderer &renderer)
 
 int main(int argc, char** argv)
 {
-    (void)argc, void(argv);  // annoying warnings
-
     scenariosGlobalInit();
 
-    /**
-     * FPS single-core benchmark config: 64, 1, 1, default env params (i.e. episode length)
-     * On Core i9 expecting 28000 FPS on "Collect" and 66000 FPS on "Empty"
-     */
+    auto parser = viewerStandardArgParse("megaverse_test_app");
+    parser.add_description("This app is designed to test the parallel execution engine and batched renderer\n"
+                           "by simulating multiple environments at once. This app uses pretty much the same interface\n"
+                           "as the Python Gym environment, sans the Python bindings. Whenever there is a problem\n"
+                           "with the environment, it is much easier to debug this app directly, rather\n"
+                           "than debugging the same code through Python.\n\n"
+                           "Example, render 12 agents at the same time:\n"
+                           "megaverse_test_app --scenario Collect --visualize --num_envs 4 --num_simulation_threads 1 --num_agents 3 --hires\n\n"
+                           "Some performance figures for future reference (on 10-core Intel i9):\n"
+                           "megaverse_test_app --scenario Empty --performance_test --num_envs 64 --num_simulation_threads 1 --num_agents 1\n"
+                           "yields approximately 75000 FPS\n"
+                           "megaverse_test_app --scenario Collect --performance_test --num_envs 64 --num_simulation_threads 1 --num_agents 1\n"
+                           "yields approximately 27000 FPS\n");
 
-    const int numEnvs = 64;  // to test vectorized env interface
-    const int numAgentsPerEnv = 1;
-    const int numSimulationThreads = 1;
+    parser.add_argument("--num_envs")
+        .help("number of parallel environments to simulate")
+        .default_value(64)
+        .scan<'i', int>();
+    parser.add_argument("--num_simulation_threads")
+        .help("number of parallel CPU threads to use for Bullet")
+        .default_value(1)
+        .scan<'i', int>();
+    parser.add_argument("--visualize")
+        .help("Whether to render multiple environments on screen")
+        .default_value(false)
+        .implicit_value(true);
+    parser.add_argument("--visualize")
+        .help("Whether to render multiple environments on screen")
+        .default_value(false)
+        .implicit_value(true);
+    parser.add_argument("--delay_ms")
+        .help("Delay between rendered frames in milliseconds. Use only with --visualize")
+        .default_value(1)
+        .scan<'i', int>();
+    parser.add_argument("--performance_test")
+        .help("Run for a limited number of env frames (currently 200000) to test performance. Uses random actions.")
+        .default_value(false)
+        .implicit_value(true);
+    parser.add_argument("--hires")
+        .help("Render at high resolution. Only use this parameter with --visualize and if the total number of agents is small")
+        .default_value(false)
+        .implicit_value(true);
+    parser.add_argument("--user_actions")
+        .help("Allows the user to control agents (otherwise will use randomly generated actions). Use only with --visualize")
+        .default_value(false)
+        .implicit_value(true);
 
-//    FloatParams params{{Str::episodeLengthSec, 0.1f}};
+    parseArgs(parser, argc, argv);
+
+    const auto scenarioName = parser.get<std::string>("--scenario");
+    const auto numAgents = parser.get<int>("--num_agents");
+    const bool useVulkanRenderer = !parser.get<bool>("--use_opengl");
+    const int numEnvs = parser.get<int>("--num_envs");  // to test vectorized env interface
+    const int numSimulationThreads = parser.get<int>("--num_simulation_threads");
+    const auto viz = parser.get<bool>("--visualize");
+    const auto delayMs = parser.get<int>("--delay_ms");
+    const auto performanceTest = parser.get<bool>("--performance_test");
+    const auto hires = parser.get<bool>("--hires");
+    const bool randomActions = !parser.get<bool>("--user_actions");
+
+    const int W = hires ? 800 : 128, H = hires ? 450 : 72;
+    TLOG(INFO) << "Rendering resolution is [" << W << "x" << H << "] per agent";
+
+    const int maxNumFrames = performanceTest ? 400'000 : 2'000'000'000;
+
+    // FloatParams params{{Str::episodeLengthSec, 0.1f}};
     FloatParams params{{}};
 
     std::vector<std::unique_ptr<Env>> envs;
     for (int i = 0; i < numEnvs; ++i) {
-        envs.emplace_back(std::make_unique<Env>(scenario, numAgentsPerEnv, params));
+        envs.emplace_back(std::make_unique<Env>(scenarioName, numAgents, params));
         envs[i]->seed(42 + i);
     }
 
     std::unique_ptr<EnvRenderer> renderer;
-    if constexpr (useVulkan)
+    if (useVulkanRenderer)
 #if defined (CORRADE_TARGET_APPLE)
         TLOG(ERROR) << "Vulkan not supported on MacOS";
 #else
         renderer = std::make_unique<V4REnvRenderer>(envs, W, H, nullptr, false);
 #endif
     else {
-        const auto debugDraw = false;
+        constexpr auto debugDraw = false;
         renderer = std::make_unique<MagnumEnvRenderer>(envs, W, H, debugDraw);
     }
 
@@ -235,7 +269,7 @@ int main(int argc, char** argv)
     vectorEnv.reset();
 
     tprof().startTimer("loop");
-    auto nFrames = mainLoop(vectorEnv, *renderer);
+    auto nFrames = mainLoop(vectorEnv, *renderer, viz, performanceTest, randomActions, W, H, useVulkanRenderer, delayMs, maxNumFrames);
     const auto usecPassed = tprof().stopTimer("loop");
     tprof().stopTimer("step");
 

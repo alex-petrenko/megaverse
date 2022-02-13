@@ -152,7 +152,9 @@ In most IDEs this can be set in the same CMake configuration dialogue.
 
 ### Notable build targets
 
-* target `megaverse` builds the overall project and the Python bindings (see setup.py)
+CMakeLists.txt defines many targets. The following targets are the most useful: 
+
+* `megaverse` builds the overall project and the Python bindings (see setup.py)
 * `run_unit_tests` runs Google Tests (see `megaverse/src/test`)
 * `viewer_app` builds an interactive application that allows you to control agents with keyboard and explore environments with an overview camera.
 This one is really designed to interact with a single environment at a time, and is very useful during development and debugging phase. See details below.
@@ -175,16 +177,53 @@ Optional arguments:
 ```
 
 Once the app started, use keyboard to control the agent and the camera:
-* WASD and arrow keys to control the agent
-* 1,2,3,4,etc. to switch between agents (if several are present in the environment)
-* Press O to toggle the overview camera, use mouse to control view angle
-* Use UHJK keys to control the position of the camera in the overview mode
-* Press R to reset the episode
-* Press ENTER to toggle Bullet collision debug view (only OpenGL version)
+* `WASD` and arrow keys to control the agent
+* `1,2,3,4,etc.` to switch between agents (if several are present in the environment)
+* Press `O` to toggle the overview camera, use mouse to control view angle
+* Use `UHJK` keys to control the position of the camera in the overview mode
+* Press `R` to reset the episode
+* Press `ENTER` to toggle Bullet collision debug view (only OpenGL version)
+* `ESC` to exit the app
 
 ### Using megaverse_test_app
 
-TODO..
+`megaverse_test_app` uses parallel interface and is a much easier target to debug compared to Python Gym API. 
+
+```
+usage: megaverse_test_app [options] 
+
+This app is designed to test the parallel execution engine and batched renderer
+by simulating multiple environments at once. This app uses pretty much the same interface
+as the Python Gym environment, sans the Python bindings. Whenever there is a problem
+with the environment, it is much easier to debug this app directly, rather
+than debugging the same code through Python.
+
+Example, render 12 agents at the same time:
+megaverse_test_app --scenario Collect --visualize --num_envs 4 --num_simulation_threads 1 --num_agents 3 --hires
+
+Some performance figures for future reference (on 10-core Intel i9):
+megaverse_test_app --scenario Empty --performance_test --num_envs 64 --num_simulation_threads 1 --num_agents 1
+yields approximately 75000 FPS
+megaverse_test_app --scenario Collect --performance_test --num_envs 64 --num_simulation_threads 1 --num_agents 1
+yields approximately 27000 FPS
+
+
+Optional arguments:
+-h --help                	shows help message and exits [default: false]
+-v --version             	prints version information and exits [default: false]
+-l --list_scenarios      	list registered scenario names [default: false]
+--scenario               	name of the scenario to run [default: "ObstaclesEasy"]
+--num_agents             	size of the team [default: 2]
+--use_opengl             	Whether to use OpenGL renderer instead of fast Vulkan renderer (currently Vulkan is only supported in Linux) [default: false]
+--num_envs               	number of parallel environments to simulate [default: 64]
+--num_simulation_threads 	number of parallel CPU threads to use for Bullet [default: 1]
+--visualize              	Whether to render multiple environments on screen [default: false]
+--visualize              	Whether to render multiple environments on screen [default: false]
+--delay_ms               	Delay between rendered frames in milliseconds. Use only with --visualize [default: 1]
+--performance_test       	Run for a limited number of env frames (currently 200000) to test performance. Uses random actions. [default: false]
+--hires                  	Render at high resolution. Only use this parameter with --visualize and if the total number of agents is small [default: false]
+--user_actions           	Allows the user to control agents (otherwise will use randomly generated actions). Use only with --visualize [default: false]
+```
 
 ## Troubleshooting
 

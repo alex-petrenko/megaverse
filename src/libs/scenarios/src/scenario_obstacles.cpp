@@ -100,7 +100,7 @@ void ObstaclesScenario::reset()
             }
 
             if (newPlatform->isMaxDifficulty()) {
-                TLOG(INFO) << "Max difficulty obstacle!";
+                // TLOG(INFO) << "Max difficulty obstacle!";
                 ++numMaxDifficultyObstacles;
             }
 
