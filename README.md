@@ -21,36 +21,36 @@ We bring most dependencies through conda which makes it easy to set up on a clus
 
 ### Linux
 
-```
-1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
-$ wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz
-$ mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.162.0.tar.gz --directory vulkansdk
+```shell
+# 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
+$ wget wget https://sdk.lunarg.com/sdk/download/1.2.198.1/linux/vulkansdk-linux-x86_64-1.2.198.1.tar.gz
+$ mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.198.1.tar.gz --directory vulkansdk
 
-2) Add Vulkan SDK binaries to PATH (might need to do it each time recompiling Megaverse is required):
-$ cd vulkansdk/1.2.162.0
+# 2) Add Vulkan SDK binaries to PATH (might need to do it each time recompiling Megaverse is required):
+$ cd vulkansdk/1.2.198.1
 $ source ./setup-env.sh
 
-3) Clone the repo
+# 3) Clone the repo
 $ git clone https://github.com/alex-petrenko/megaverse.git
 
-4) Init submodules
+# 4) Init submodules
 $ cd megaverse 
 $ git submodule update --init --recursive
 
-5) Create a conda environment and install dependencies
+# 5) Create a conda environment and install dependencies
 $ conda create --name megaverse python=3.9
 $ conda activate megaverse
-$ conda install -c conda-forge opencv bullet cudatoolkit cudatoolkit-dev
-$ conda install -c conda-forge 'cmake>=3.13'
+(megaverse) $ conda install -c conda-forge opencv bullet cudatoolkit cudatoolkit-dev
+(megaverse) $ conda install -c conda-forge 'cmake>=3.13'
 
-(alternatively you can boostrap from an environment file: conda env create -f environment.yml)
+# (alternatively you can boostrap from an environment file: conda env create -f environment.yml)
 
-6) Install megaverse into a conda env
-$ python setup.py develop
-$ pip install -e .
+# 6) Install megaverse into a conda env
+(megaverse) $ python setup.py develop
+(megaverse) $ pip install -e .
 
-(Optional) 6.1) Build a .whl file to be installed elsewhere
-$ python setup.py bdist_wheel
+# (Optional) 6.1) Build a .whl file to be installed elsewhere
+(megaverse) $ python setup.py bdist_wheel
 ```
 
 ### macOS
@@ -94,7 +94,7 @@ while True:
 
 ```
 
-### RL Training
+## RL Training
 
 Example training script using Sample Factory RL framework. First install the prerequisite:
 
@@ -113,13 +113,86 @@ Observe the behavior of agents by running:
 python -m megaverse_rl.enjoy --algo=APPO --env=megaverse_TowerBuilding --experiment=TowerBuilding --megaverse_num_envs_per_instance=1 --fps=20 --megaverse_use_vulkan=True
 ```
 
-### Troubleshooting
+## Development
+
+The core functionality of Megaverse is implemented in C++ and uses CMake build system.
+The easiest way to work on Megaverse C++ codebase is to use an IDE that can import a CMake project (defined by the root CMakeLists.txt in megaverse/src).
+Any such IDE would need to run `cmake` in order to build and debug the code.
+Thus `cmake` needs to be able to find all the libraries installed through conda (such as Bullet and OpenCV).
+
+The most straightforward way to make sure that libraries can be found is to start IDE directly from the conda environment we defined above (see section Installation/Linux).
+Specifically, for CLion IDE it would look like this:
+
+```shell
+$ conda activate megaverse
+# navigate to Vulkan SDK installation dir
+(megaverse) $ cd vulkansdk-linux-x86_64-1.2.198.1/1.2.198.1/
+# make sure that Vulkan env variables are initialized
+(megaverse) $ source ./setup-env.sh
+# start the IDE from the terminal (assuming clion is in PATH, usually you can do this with Tools->Create Command-Line Launcher)
+(megaverse) $ clion & 
+```
+
+Now in the IDE open megaverse/src/CMakeLists.txt as CMake project and you should be able to build and run targets.
+
+Alternatively, if IDE is not run from a conda environment we might need to explicitly specify paths to libraries in IDE's CMake command line
+(i.e. in CLion that would be Settings->Build,Execution,Deployment->CMake->CMake options).
+Your CMake options might looks like this:
+
+```
+-DPYTHON_EXECUTABLE=/home/<user>/miniconda3/envs/megaverse/bin/python
+-DCMAKE_CUDA_COMPILER=/home/<user>/miniconda3/envs/megaverse/bin/nvcc
+-DOpenCV_DIR=/home/<user>/miniconda3/envs/megaverse/lib/cmake/opencv4
+-DBULLET_ROOT=/home/<user>/miniconda3/envs/megaverse/lib/cmake/bullet
+-DBUILD_GUI_APPS=ON
+```
+
+Besides, a `VULKAN_SDK` environment variable `VULKAN_SDK=/home/<user>/all/libs/vulkansdk-linux-x86_64-1.2.198.1/1.2.198.1/x86_64`.
+In most IDEs this can be set in the same CMake configuration dialogue.
+
+### Notable build targets
+
+* target `megaverse` builds the overall project and the Python bindings (see setup.py)
+* `run_unit_tests` runs Google Tests (see `megaverse/src/test`)
+* `viewer_app` builds an interactive application that allows you to control agents with keyboard and explore environments with an overview camera.
+This one is really designed to interact with a single environment at a time, and is very useful during development and debugging phase. See details below.
+* `megaverse_test_app` can use the parallel simulation engine and batch renderer to execute many environment at once. See details below.
+
+### Using viewer_app
+
+`viewer_app` can run any scenario in an interactive mode and offers a bunch of command line parameters:
+```
+Usage: viewer_app [options] 
+
+Optional arguments:
+-h --help           	shows help message and exits [default: false]
+-v --version        	prints version information and exits [default: false]
+-l --list_scenarios 	list registered scenario names [default: false]
+--scenario          	name of the scenario to run [default: "ObstaclesEasy"]
+--num_agents        	size of the team, pass value 1 to have just a single agent [default: 2]
+--desired_fps       	rendering framerate for human perception; RL agents percieve the world at 15 FPS to avoid frameskip, hence the default value. [default: 15]
+--use_opengl        	Whether to use OpenGL renderer instead of fast Vulkan renderer (currently Vulkan is only supported in Linux) [default: false]
+```
+
+Once the app started, use keyboard to control the agent and the camera:
+* WASD and arrow keys to control the agent
+* 1,2,3,4,etc. to switch between agents (if several are present in the environment)
+* Press O to toggle the overview camera, use mouse to control view angle
+* Use UHJK keys to control the position of the camera in the overview mode
+* Press R to reset the episode
+* Press ENTER to toggle Bullet collision debug view (only OpenGL version)
+
+### Using megaverse_test_app
+
+TODO..
+
+## Troubleshooting
 
 * A crash (segfault) on startup can be caused by the incorrect initialization of Vulkan device interface. Possible fixes:
     * `sudo apt remove mesa-vulkan-drivers` (unless other packages you require depend on this package)
     * Set envvar `export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json`, point to the location of `nvidia_icd.json` in your system.
 
-### Citation
+## Citation
 
 If you use this repository in your work or otherwise wish to cite it, please make reference to our ICML2021 paper.
 
@@ -134,3 +207,16 @@ If you use this repository in your work or otherwise wish to cite it, please mak
 
 For questions, issues, inquiries please email apetrenko1991@gmail.com. 
 Github issues and pull requests are welcome.
+
+
+
+
+
+
+
+
+
+
+
+
+

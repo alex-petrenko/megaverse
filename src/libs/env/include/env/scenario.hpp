@@ -48,6 +48,16 @@ public:
         TLOG(INFO) << "Scenario " << scenarioNameLowercase << " registered! " << scenarioRegistry.size() << " scenarios.";
     }
 
+    static std::vector<ScenarioRegistry::key_type> registeredScenarios()
+    {
+        auto &scenarioRegistry = getScenarioRegistry();
+        std::vector<ScenarioRegistry::key_type> keys;
+        keys.reserve(scenarioRegistry.size());
+        for (const auto& [key, _] : scenarioRegistry)
+            keys.emplace_back(key);
+        return keys;
+    }
+
     static ScenarioPtr create(const std::string &scenarioName, Env &env, Env::EnvState &envState)
     {
         const auto scenarioNameLowercase = toLower(scenarioName);

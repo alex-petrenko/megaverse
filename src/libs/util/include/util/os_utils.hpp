@@ -25,6 +25,6 @@ inline void unixProcessMemUsage(double& vm_usage, double& resident_set)
     }
 
     static long page_size_bytes = sysconf(_SC_PAGE_SIZE); // in case x86-64 is configured to use 2MB pages
-    vm_usage = vsize;
-    resident_set = rss * page_size_bytes;
+    vm_usage = double(vsize);
+    resident_set = double(rss) * double(page_size_bytes);
 }

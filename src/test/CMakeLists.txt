@@ -1,2 +1,2 @@
-add_test_default(test_app)
-target_link_libraries(test_app gtest gtest_main util magnum_rendering env mazes scenarios)
+add_test_default(run_unit_tests)
+target_link_libraries(run_unit_tests gtest gtest_main util magnum_rendering env mazes scenarios)

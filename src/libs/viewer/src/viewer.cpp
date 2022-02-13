@@ -73,9 +73,12 @@ Viewer::Viewer(Envs &envs, bool useVulkan, EnvRenderer *parentRenderer, const Ar
     setSwapInterval(0);
 
     TLOG(WARNING) << "\nControls:\n"
+                  << "WASD and arrow keys to control the agent\n"
+                  << "1,2,3,4,etc. to switch between agents (if several are present in the environment)\n"
                   << "Press O to toggle the overview camera, use mouse to control view angle\n"
                   << "Use UHJK keys to control the position of the camera\n"
-                  << "Press R to force reset the episode";
+                  << "Press R to reset the episode\n"
+                  << "Press ENTER to toggle Bullet collision debug view (only OpenGL version)\n";
 }
 
 void Viewer::step(const std::vector<bool> &dones)
@@ -114,7 +117,7 @@ void Viewer::drawEvent()
 
         GL::Texture2D texture;
         texture.setWrapping(GL::SamplerWrapping::ClampToEdge)
-               .setStorage(Math::log2(height) + 1, GL::TextureFormat::RGBA8, {width, height})
+               .setStorage(int(Math::log2(height)) + 1, GL::TextureFormat::RGBA8, {width, height})
                .setSubImage(0, {}, image)
                .generateMipmap();
 
@@ -152,15 +155,31 @@ void Viewer::keyPressEvent(Platform::Sdl2Application::KeyEvent &event)
 
     controlOverview(event.key(), true);
 
+    auto chgAgent = [this](int idx) {
+        if (idx >= envs[0]->getNumAgents())
+            TLOG(WARNING) << "Could not switch to agent " << idx << " (greater than numAgents)";
+        else
+            activeAgent = idx;
+    };
+
     switch (event.key()) {
         case KeyEvent::Key::One:
-            activeAgent = 0;
+            chgAgent(0);
             break;
         case KeyEvent::Key::Two:
-            activeAgent = 1;
+            chgAgent(1);
             break;
         case KeyEvent::Key::Three:
-            activeAgent = 2;
+            chgAgent(2);
+            break;
+        case KeyEvent::Key::Four:
+            chgAgent(3);
+            break;
+        case KeyEvent::Key::Five:
+            chgAgent(4);
+            break;
+        case KeyEvent::Key::Six:
+            chgAgent(5);
             break;
         case KeyEvent::Key::R:
             forceReset = true;
