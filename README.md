@@ -115,6 +115,8 @@ python -m megaverse_rl.enjoy --algo=APPO --env=megaverse_TowerBuilding --experim
 
 ## Development
 
+### Setting up a CMake project in IDE
+
 The core functionality of Megaverse is implemented in C++ and uses CMake build system.
 The easiest way to work on Megaverse C++ codebase is to use an IDE that can import a CMake project (defined by the root CMakeLists.txt in megaverse/src).
 Any such IDE would need to run `cmake` in order to build and debug the code.
@@ -135,20 +137,28 @@ $ conda activate megaverse
 
 Now in the IDE open megaverse/src/CMakeLists.txt as CMake project and you should be able to build and run targets.
 
+#### Running an IDE without Conda enviroment
+
 Alternatively, if IDE is not run from a conda environment we might need to explicitly specify paths to libraries in IDE's CMake command line
-(i.e. in CLion that would be Settings->Build,Execution,Deployment->CMake->CMake options).
+(i.e. in CLion that would be `Settings -> Build,Execution,Deployment -> CMake -> CMake options`).
 Your CMake options might looks like this:
 
 ```
 -DPYTHON_EXECUTABLE=/home/<user>/miniconda3/envs/megaverse/bin/python
 -DCMAKE_CUDA_COMPILER=/home/<user>/miniconda3/envs/megaverse/bin/nvcc
 -DOpenCV_DIR=/home/<user>/miniconda3/envs/megaverse/lib/cmake/opencv4
--DBULLET_ROOT=/home/<user>/miniconda3/envs/megaverse/lib/cmake/bullet
 -DBUILD_GUI_APPS=ON
 ```
 
-Besides, a `VULKAN_SDK` environment variable `VULKAN_SDK=/home/<user>/all/libs/vulkansdk-linux-x86_64-1.2.198.1/1.2.198.1/x86_64`.
+Additionally, an environment variable `VULKAN_SDK=/home/<user>/all/libs/vulkansdk-linux-x86_64-1.2.198.1/1.2.198.1/x86_64` must be set.
 In most IDEs this can be set in the same CMake configuration dialogue.
+
+Finally, CMake should be able to find Bullet physics library. There are three ways to accomplish this:
+1. Install `libbullet-dev` and CMake will find the system-wide installation
+2. To link against `bullet` installed by Conda you need to make sure your IDE also uses Conda's `cmake`,
+rather than `cmake` bundled with the IDE. In CLion you can change this in `Settings -> Build,Execution,Deployment -> Toolchains -> CMake`.
+This way `cmake` should be able to find Conda's Bullet CMake config `<env>/lib/cmake/bullet/BulletConfig.cmake`
+3. Alternatively, you can build Bullet from sources and add a CMake option `-DBULLET_ROOT` pointing to the correct location.
 
 ### Notable build targets
 
