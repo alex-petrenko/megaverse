@@ -67,9 +67,12 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}',
             f'-DPYTHON_EXECUTABLE={sys.executable}',
-            f'-DCMAKE_CUDA_COMPILER={locate_cuda()}',
             # f'-DOpenCV_DIR =/home/alex/all/lib/opencv/build',  # TODO!!!
         ]
+
+        if sys.platform != "darwin":
+            # if not on mac, look for cuda/nvcc
+            cmake_args.append(f'-DCMAKE_CUDA_COMPILER={locate_cuda()}')
 
         # that's a hacky way to do it but the best idea I have at the moment
         bullet_root = os.environ.get('BULLET_ROOT', None)
