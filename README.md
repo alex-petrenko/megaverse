@@ -54,9 +54,9 @@ $ conda activate megaverse
 ```
 
 ### macOS
-Although Vulkan-powered batched rendering is not supported on macOS, a limited OpenGL version can be built for
-local debugging and small-scale experiments on macOS. 
 
+Although Vulkan-powered batched rendering is not supported on macOS, a limited OpenGL version can be built for
+local debugging and small-scale experiments on macOS.
 Installing on mac is very similar to Linux, sans any Vulkan/CUDA dependencies.
 
 ```shell
@@ -72,8 +72,6 @@ $ conda create --name megaverse python=3.9
 $ conda activate megaverse
 (megaverse) $ conda install -c conda-forge opencv bullet
 (megaverse) $ conda install -c conda-forge 'cmake>=3.13'
-
-# (alternatively you can boostrap from an environment file: conda env create -f environment.yml)
 
 # 4) Install megaverse into a conda env
 (megaverse) $ python setup.py develop
