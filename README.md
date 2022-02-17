@@ -54,6 +54,8 @@ $ conda activate megaverse
 ```
 
 ### macOS
+Although Vulkan-powered batched rendering is not supported on macOS, a limited OpenGL version can be built for
+local debugging and small-scale experiments on macOS. 
 
 Installing on mac is very similar to Linux, sans any Vulkan/CUDA dependencies.
 
