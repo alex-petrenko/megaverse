@@ -40,8 +40,7 @@ $ git submodule update --init --recursive
 # 5) Create a conda environment and install dependencies
 $ conda create --name megaverse python=3.9
 $ conda activate megaverse
-(megaverse) $ conda install -c conda-forge opencv bullet cudatoolkit cudatoolkit-dev
-(megaverse) $ conda install -c conda-forge 'cmake>=3.13'
+(megaverse) $ conda install -c conda-forge 'opencv==4.4.0' 'cmake>=3.13' bullet cudatoolkit cudatoolkit-dev
 
 # (alternatively you can boostrap from an environment file: conda env create -f environment.yml)
 
@@ -70,8 +69,7 @@ $ git submodule update --init --recursive
 # 3) Create a conda environment and install dependencies
 $ conda create --name megaverse python=3.9
 $ conda activate megaverse
-(megaverse) $ conda install -c conda-forge opencv bullet
-(megaverse) $ conda install -c conda-forge 'cmake>=3.13'
+(megaverse) $ conda install -c conda-forge 'opencv==4.4.0' 'cmake>=3.13' bullet
 
 # 4) Install megaverse into a conda env
 (megaverse) $ python setup.py develop
