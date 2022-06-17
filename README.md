@@ -1,5 +1,7 @@
 # Megaverse
 
+[<img src="https://img.shields.io/discord/987232982798598164?label=discord">](https://discord.gg/4ZNdhfaZtK)
+
 Megaverse is a dedicated high-throughput rendering and simulation engine for Artificial Intelligence research.
 It features an optimized batched renderer that enables generation of up to 1,000,000 observations per second on a single machine.
 
