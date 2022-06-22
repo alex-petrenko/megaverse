@@ -18,12 +18,14 @@ Left: RL agent completing a TowerBuilding task. Right: human player solving a ra
 ## Installation
 
 Currently, the easiest way to install Megaverse is to build directly from sources.
-Note that none of the installation instructions require elevated privileges!
-We bring most dependencies through conda which makes it easy to set up on a cluster without the use of Docker.
 
 ### Linux
 
+
 ```shell
+# 0) A completely clean Linux installation needs basic OpenGL libraries. The rest of the dependencies are installed with Conda and don't require elevated privileges.
+$ sudo apt install libgl1-mesa-dev libegl1-mesa-dev
+
 # 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
 $ wget wget https://sdk.lunarg.com/sdk/download/1.2.198.1/linux/vulkansdk-linux-x86_64-1.2.198.1.tar.gz
 $ mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.198.1.tar.gz --directory vulkansdk
@@ -42,7 +44,7 @@ $ git submodule update --init --recursive
 # 5) Create a conda environment and install dependencies
 $ conda create --name megaverse python=3.9
 $ conda activate megaverse
-(megaverse) $ conda install -c conda-forge 'opencv>=4.4,<4.5' 'cmake>=3.13' bullet cudatoolkit cudatoolkit-dev
+(megaverse) $ conda install -c conda-forge 'opencv>=4.4,<4.5' 'cmake>=3.13' bullet cudatoolkit cudatoolkit-dev sdl2
 
 # (alternatively you can boostrap from an environment file: conda env create -f environment.yml)
 
