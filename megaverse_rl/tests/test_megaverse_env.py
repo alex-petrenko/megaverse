@@ -1,25 +1,25 @@
 from unittest import TestCase
 
-from sample_factory.algorithms.utils.arguments import default_cfg
 from sample_factory.envs.create_env import create_env
 from sample_factory.utils.utils import log
 
-from megaverse_rl.megaverse_utils import register_env
+from megaverse_rl.train_megaverse import register_megaverse_components, parse_megaverse_args
 
 
 class TestMegaverse(TestCase):
     def test_megaverse(self):
-        register_env()
+        register_megaverse_components()
 
-        env_name = 'megaverse_Sokoban'
-        env = create_env(env_name, cfg=default_cfg(env=env_name))
+        cfg = parse_megaverse_args(['--algo=APPO', '--env=Sokoban', '--experiment=test_megaverse'])
+
+        env = create_env(cfg.env, cfg=cfg)
         log.info('Env action space: %r', env.action_space)
         log.info('Env obs space: %r', env.observation_space)
 
         env.reset()
         total_rew = 0
         for i in range(1000):
-            obs, rew, done, info = env.step([env.action_space.sample() for _ in range(env.num_agents)])
+            obs, rew, terminated, truncated, info = env.step([env.action_space.sample() for _ in range(env.num_agents)])
             total_rew += sum(rew)
 
         log.info('Total rew: %.3f', total_rew)

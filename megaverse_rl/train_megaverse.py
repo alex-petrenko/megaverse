@@ -8,8 +8,8 @@ import sys
 from sample_factory.cfg.arguments import parse_full_cfg, parse_sf_args
 from sample_factory.envs.env_utils import register_env
 from sample_factory.train import run_rl
-from megaverse_rl.sf.megaverse.megaverse_params import add_megaverse_args, megaverse_override_defaults
-from megaverse_rl.sf.megaverse.megaverse_utils import MEGAVERSE_ENVS, make_megaverse
+from megaverse_rl.megaverse_params import add_megaverse_args, megaverse_override_defaults
+from megaverse_rl.megaverse_utils import MEGAVERSE_ENVS, make_megaverse
 
 
 def register_megaverse_envs():

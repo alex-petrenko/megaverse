@@ -27,7 +27,7 @@ Currently, the easiest way to install Megaverse is to build directly from source
 $ sudo apt install libgl1-mesa-dev libegl1-mesa-dev
 
 # 1) Install VulkanSDK from https://vulkan.lunarg.com/sdk/home#linux (download and unzip), or use the following commands:
-$ wget wget https://sdk.lunarg.com/sdk/download/1.2.198.1/linux/vulkansdk-linux-x86_64-1.2.198.1.tar.gz
+$ wget https://sdk.lunarg.com/sdk/download/1.2.198.1/linux/vulkansdk-linux-x86_64-1.2.198.1.tar.gz
 $ mkdir vulkansdk && tar -xzf vulkansdk-linux-x86_64-1.2.198.1.tar.gz --directory vulkansdk
 
 # 2) Add Vulkan SDK binaries to PATH (might need to do it each time recompiling Megaverse is required):
@@ -123,19 +123,24 @@ while True:
 Example training script using Sample Factory RL framework. First install the prerequisite:
 
 ```
-pip install "sample-factory<2.0"
+pip install "sample-factory>=2.0"
 ```
+
+(this instruction was tested on version from branch `sf2`, commit 3670bac08065de7c58e14ac9e210dfdb07c9cb6b,
+`pip install git+https://github.com/alex-petrenko/sample-factory.git@3670bac08065de7c58e14ac9e210dfdb07c9cb6b`)
 
 Then, to train agents in the TowerBuilding environment, execute:
 ```
-python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps=2000000000 --algo=APPO --gamma=0.997 --use_rnn=True --rnn_num_layers=2 --num_workers=10 --num_envs_per_worker=2 --ppo_epochs=1 --rollout=32 --recurrence=32 --batch_size=4096 --actor_worker_gpus 0 --num_policies=1 --with_pbt=False --max_grad_norm=0.0 --exploration_loss=symmetric_kl --exploration_loss_coeff=0.001 --megaverse_num_simulation_threads=1 --megaverse_num_envs_per_instance=30 --megaverse_num_agents_per_env=4 --megaverse_use_vulkan=True --policy_workers_per_policy=2 --reward_clip=30 --env=megaverse_TowerBuilding --experiment=TowerBuilding
+python -m megaverse_rl.train --train_for_seconds=360000000 --train_for_env_steps=2000000000 --algo=APPO --gamma=0.997 --use_rnn=True --rnn_num_layers=2 --num_workers=8 --num_envs_per_worker=2 --num_epochs=1 --rollout=32 --recurrence=32 --batch_size=4096 --actor_worker_gpus 0 --num_policies=1 --with_pbt=False --max_grad_norm=0.0 --exploration_loss=symmetric_kl --exploration_loss_coeff=0.001 --megaverse_num_simulation_threads=1 --megaverse_num_envs_per_instance=48 --megaverse_num_agents_per_env=1 --megaverse_use_vulkan=True --policy_workers_per_policy=2 --reward_clip=30 --env=TowerBuilding --experiment=TowerBuilding
 ```
 
 Observe the behavior of agents by running:
 
 ```
-python -m megaverse_rl.enjoy --algo=APPO --env=megaverse_TowerBuilding --experiment=TowerBuilding --megaverse_num_envs_per_instance=1 --fps=20 --megaverse_use_vulkan=True
+python -m megaverse_rl.enjoy --algo=APPO --env=TowerBuilding --experiment=TowerBuilding --megaverse_num_envs_per_instance=1 --fps=20 --megaverse_use_vulkan=True
 ```
+
+See Sample Factory 2 documentation for additional information.
 
 ## Development
 

@@ -7,7 +7,7 @@ SAMPLER_GPUS = '0 1 2 3 4 5 6 7'  # replace with '0 1 2 3 4 5 6 7' for 8-GPU ser
 _megaverse_cli = f'python -m sample_factory.run_algorithm --algo=DUMMY_SAMPLER --num_workers={NUM_WORKERS_MEGAVERSE} --num_envs_per_worker=1 --experiment=benchmark --sampler_worker_gpus {SAMPLER_GPUS} --megaverse_num_envs_per_instance=64 --megaverse_num_agents_per_env=2 --megaverse_num_simulation_threads=2 --timeout_seconds={TIMEOUT_SECONDS}'
 
 _params_megaverse = ParamGrid([
-    ('env', ['megaverse_TowerBuilding', 'megaverse_ObstaclesEasy', 'megaverse_ObstaclesHard', 'megaverse_Collect', 'megaverse_Sokoban', 'megaverse_HexMemory', 'megaverse_HexExplore', 'megaverse_Rearrange']),
+    ('env', ['TowerBuilding', 'ObstaclesEasy', 'ObstaclesHard', 'Collect', 'Sokoban', 'HexMemory', 'HexExplore', 'Rearrange']),
     ('megaverse_use_vulkan', [True]),
 ])
 

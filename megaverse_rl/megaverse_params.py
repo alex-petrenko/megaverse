@@ -9,8 +9,9 @@ def megaverse_override_defaults(env, parser):
         hidden_size=512,
         obs_subtract_mean=0.0,
         obs_scale=255.0,
-        actor_worker_gpus=[0],
-        env_gpu_observations=False,
+        actor_worker_gpus=[0],  # rollout workers need GPUs to render (provide a list of GPUs to use)
+        env_gpu_actions=False,  # but OpenAI Gym interface is entirely CPU-based
+        env_gpu_observations=False,  # (which can actually be optimized for even higher throughput)
         exploration_loss="symmetric_kl",
         exploration_loss_coeff=0.001,
         normalize_input=True,

@@ -1,7 +1,7 @@
 import sys
 
 from sample_factory.enjoy import enjoy
-from megaverse_rl.sf.train_megaverse import parse_megaverse_args, register_megaverse_components
+from megaverse_rl.train_megaverse import parse_megaverse_args, register_megaverse_components
 
 
 def main():
