@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
+from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 
 NUM_WORKERS = 20  # typically num logical cores
 NUM_WORKERS_MEGAVERSE = 10  # typically num logical cores / 2, limited by the num of available Vulkan contexts

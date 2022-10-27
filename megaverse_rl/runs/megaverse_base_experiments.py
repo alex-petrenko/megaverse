@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import Experiment, ParamGrid
+from sample_factory.launcher.run_description import Experiment, ParamGrid
 
 _params = ParamGrid([
     ('env', ['TowerBuilding', 'ObstaclesEasy', 'ObstaclesHard', 'Collect', 'Sokoban', 'HexMemory', 'HexExplore', 'Rearrange']),

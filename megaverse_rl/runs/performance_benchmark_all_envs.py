@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
+from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 
 NUM_WORKERS_MEGAVERSE = 48  # typically num logical cores / 2, limited by the num of available Vulkan contexts
 TIMEOUT_SECONDS = 180
