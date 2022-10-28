@@ -126,8 +126,8 @@ Example training script using Sample Factory RL framework. First install the pre
 pip install "sample-factory>=2.0"
 ```
 
-(this instruction was tested on version from branch `sf2`, commit 3670bac08065de7c58e14ac9e210dfdb07c9cb6b,
-`pip install git+https://github.com/alex-petrenko/sample-factory.git@3670bac08065de7c58e14ac9e210dfdb07c9cb6b`)
+(this instruction was tested on version from branch `sf2`, commit f4b5e971f467fc8dcabc0adee8b1c04885412fbb,
+`pip install git+https://github.com/alex-petrenko/sample-factory.git@f4b5e971f467fc8dcabc0adee8b1c04885412fbb`)
 
 Then, to train agents in the TowerBuilding environment, execute:
 ```
