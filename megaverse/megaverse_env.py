@@ -181,6 +181,7 @@ class MegaverseEnv(gym.Env):
         obs_final = np.concatenate(rows, axis=0)
         cv2.imshow(f'agent_{id(self)}', obs_final)
         cv2.waitKey(1)
+        return obs_final
 
     def get_default_reward_shaping(self):
         return self.default_shaping_scheme
